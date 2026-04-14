@@ -24,8 +24,6 @@ export default function AuthPage() {
     trangThai: 1,
   });
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  // Các state để ẩn/hiện mật khẩu
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -53,7 +51,13 @@ export default function AuthPage() {
         const actualData = res.data;
         localStorage.setItem('token', actualData.accessToken);
         localStorage.setItem('user', JSON.stringify(actualData.user));
-        navigate('/');
+        
+        if (actualData.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+
       } else {
         const errData = res.data || res;
         if (errData.password) {
