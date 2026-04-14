@@ -40,11 +40,7 @@ function AppContent() {
 
   return (
     <div className="bg-background min-h-screen flex flex-col font-body antialiased">
-<<<<<<< HEAD
       {!isAuthOrAdmin && <Header />}
-=======
-      {!isAuthPage && <Header />}
->>>>>>> 0ae0dc8b4321e7786aa6e55273b90c88a1507e10
       
       <main className="flex-grow">
         <Routes>
@@ -64,12 +60,8 @@ function AppContent() {
           </Route>
         </Routes>
       </main>
-<<<<<<< HEAD
 
       {!isAuthOrAdmin && <Footer />}
-=======
-      {!isAuthPage && <Footer />}
->>>>>>> 0ae0dc8b4321e7786aa6e55273b90c88a1507e10
     </div>
   );
 }
