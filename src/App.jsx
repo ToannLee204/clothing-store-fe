@@ -5,7 +5,6 @@ import HomePage from './pages/HomePage';
 import CartPage from './pages/CartPage';
 import AuthPage from './pages/AuthPage';
 
-// 1. Tạo Component phụ để xử lý logic ẩn Header/Footer
 function AppContent() {
   const location = useLocation();
   
@@ -14,7 +13,6 @@ function AppContent() {
 
   return (
     <div className="bg-background min-h-screen flex flex-col font-body antialiased">
-      {/* Ẩn Header chung khi vào trang Auth để không bị đè lên giao diện riêng của nó */}
       {!isAuthPage && <Header />}
       
       <main className="flex-grow">
@@ -24,14 +22,11 @@ function AppContent() {
           <Route path="/auth" element={<AuthPage />} />
         </Routes>
       </main>
-
-      {/* Tương tự với Footer */}
       {!isAuthPage && <Footer />}
     </div>
   );
 }
 
-// 2. Component App chính - Chỉ chứa DUY NHẤT một thẻ Router ở đây
 export default function App() {
   return (
     <Router>
