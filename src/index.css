@@ -2,8 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900; 
+  }
+}
+
 @layer utilities {
+
   .hero-gradient {
-    background: linear-gradient(to right, rgba(253, 249, 244, 0.9) 0%, rgba(253, 249, 244, 0) 60%);
+    background: linear-gradient(to right, rgba(248, 250, 252, 0.9) 0%, rgba(248, 250, 252, 0) 60%);
   }
 }

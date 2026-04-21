@@ -1,15 +1,20 @@
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer'; 
-import AdminSidebar from './components/AdminSidebar';
-import AdminHeader from './components/AdminHeader';
 import HomePage from './pages/HomePage';
 import CartPage from './pages/CartPage';
 import AuthPage from './pages/AuthPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminDashboard from './pages/AdminDashboard';
 import ScrollToTop from './components/ScrollToTop';
+import AdminProducts from './pages/AdminProducts';
+import AdminAddProduct from './pages/AdminAddProduct';
+import AdminCategories from './pages/AdminCategories';
+import AdminProductVariants from './pages/AdminProductVariants';
+import AdminProductEdit from './pages/AdminProductEdit';
+import AdminLayout from './components/AdminLayout';
 
+// Hàm bảo vệ Route Admin
 function AdminRoute({ children }) {
   const userStr = localStorage.getItem('user');
   if (!userStr) return <Navigate to="/auth" replace />;
@@ -19,19 +24,6 @@ function AdminRoute({ children }) {
     return <Navigate to="/" replace />;
   }
   return children;
-}
-
-function AdminLayout() {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  return (
-    <div className="bg-surface min-h-screen">
-      <AdminSidebar />
-      <AdminHeader user={user} />
-      <main className="ml-72 pt-32 pb-20 px-10 min-h-screen">
-        <Outlet />
-      </main>
-    </div>
-  );
 }
 
 function AppContent() {
@@ -49,14 +41,20 @@ function AppContent() {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/profile" element={<ProfilePage />} />
 
+          {/* Dùng thẻ AdminLayout đã được import từ file bên ngoài */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<AdminDashboard />} />
-            <Route path="products" element={<div>Quản lý sản phẩm</div>} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="products/add" element={<AdminAddProduct />} />
+            <Route path="products/variants/:id" element={<AdminProductVariants />} />
+            <Route path="products/edit/:id" element={<AdminProductEdit />} />
+            <Route path="categories" element={<AdminCategories />} />
             <Route path="orders" element={<div>Quản lý đơn hàng</div>} />
             <Route path="customers" element={<div>Quản lý khách hàng</div>} />
             <Route path="invoices" element={<div>Quản lý hóa đơn</div>} />
             <Route path="reports" element={<div>Báo cáo & Thống kê</div>} />
             <Route path="settings" element={<div>Cài đặt hệ thống</div>} />
+            <Route path="vouchers" element={<div>Quản lý Voucher</div>} />
           </Route>
         </Routes>
       </main>
