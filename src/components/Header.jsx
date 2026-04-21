@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CHI_TIET_GIO_HANG } from '../data/mockData';
 
 export default function Header() {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const dropdownRef = useRef(null);
@@ -41,108 +40,130 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-background/80 backdrop-blur-xl w-full top-0 sticky z-50 border-b border-surface-container-highest transition-all duration-300">
-      <nav className="flex justify-between items-center w-full px-6 md:px-12 py-5 max-w-[1920px] mx-auto relative h-[80px]">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+      <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-8">
         
-        {/* --- LOGO --- */}
-        <div className="flex-shrink-0 z-30">
-          <Link to="/" className="flex flex-col leading-none group">
-            <span className="font-headline text-2xl font-bold tracking-tighter text-primary italic">Fashion</span>
-            <span className="font-label text-[10px] tracking-[0.3em] uppercase opacity-60">Store</span>
+        {/* CỤM 1: Brand Logo & Navigation Menu */}
+        <div className="flex items-center gap-10">
+          {/* Brand Logo */}
+          <Link to="/" className="text-2xl font-black tracking-tighter uppercase text-slate-900 flex-shrink-0">
+            FASHION STORE
           </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-8">
+            <Link to="/products" className="text-sm font-bold uppercase tracking-widest text-slate-600 hover:text-[#ec5b13] transition-colors">
+              Tất cả
+            </Link>
+            <Link to="/products?category=ao" className="text-sm font-bold uppercase tracking-widest text-slate-600 hover:text-[#ec5b13] transition-colors">
+              Áo
+            </Link>
+            <Link to="/products?category=quan" className="text-sm font-bold uppercase tracking-widest text-slate-600 hover:text-[#ec5b13] transition-colors">
+              Quần
+            </Link>
+            <Link to="/products?category=phu-kien" className="text-sm font-bold uppercase tracking-widest text-slate-600 hover:text-[#ec5b13] transition-colors">
+              Phụ kiện
+            </Link>
+          </nav>
         </div>
 
-        {/* --- MENU TRUNG TÂM --- */}
-        <div className="flex-1 flex justify-center items-center px-8">
-          <div className={`hidden lg:flex gap-10 items-center transition-all ${isSearchOpen ? 'opacity-0 scale-95 invisible' : 'opacity-100 scale-100 visible'}`}>
-            <Link to="/" className="relative group text-on-surface-variant hover:text-primary transition-colors font-label uppercase tracking-[0.15rem] text-[0.6875rem]">
-              Đồ Nam
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-secondary rounded-full scale-0 group-hover:scale-100 transition-transform"></span>
-            </Link>
-            <Link to="/" className="relative group text-on-surface-variant hover:text-primary transition-colors font-label uppercase tracking-[0.15rem] text-[0.6875rem]">
-              Đồ Nữ
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-secondary rounded-full scale-0 group-hover:scale-100 transition-transform"></span>
-            </Link>
-          </div>
-
-          {/* Thanh Search trượt */}
-          <div className={`absolute inset-x-24 md:inset-x-48 flex items-center bg-white shadow-sm z-50 px-6 py-2 transition-all duration-500 border-b border-primary/20 ${isSearchOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
-            <span className="material-symbols-outlined text-on-surface-variant mr-3">search</span>
-            <input type="text" placeholder="Tìm kiếm sản phẩm..." className="w-full bg-transparent border-none outline-none focus:ring-0 text-sm font-body" autoFocus={isSearchOpen} />
-            <button onClick={() => setIsSearchOpen(false)}><span className="material-symbols-outlined text-lg">close</span></button>
+        {/* CỤM 2: Search Bar */}
+        <div className="hidden md:flex flex-1 max-w-md">
+          <div className="relative w-full group">
+            <input
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:bg-white focus:border-[#ec5b13] transition-all text-sm text-slate-900 placeholder:text-slate-400"
+              placeholder="Tìm kiếm sản phẩm..." 
+              type="text" 
+            />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#ec5b13] transition-colors">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
           </div>
         </div>
 
-        {/* --- ICON BÊN PHẢI --- */}
-        <div className="flex items-center gap-6 z-30">
-          <button onClick={() => setIsSearchOpen(!isSearchOpen)} className={isSearchOpen ? 'text-secondary' : ''}>
-            <span className="material-symbols-outlined text-[24px]">search</span>
-          </button>
+        {/* CỤM 3: Action Icons */}
+        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           
-          {/* USER DROPDOWN */}
+          {/* User Profile & Dropdown */}
           <div className="relative" ref={dropdownRef}>
-            {currentUser ? (
-              // NẾU ĐÃ ĐĂNG NHẬP
-              <>
-                <button 
-                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                  className="text-on-surface hover:opacity-50 transition-all flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-[24px]">person</span>
-                  <span className="hidden md:block text-xs font-bold max-w-[100px] truncate">{currentUser.fullName}</span>
-                </button>
+            <button 
+              onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+              className="p-2 text-slate-600 hover:text-[#ec5b13] hover:bg-orange-50 rounded-full transition-all flex items-center gap-2"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              {/* Hiển thị tên user trên desktop nếu đã đăng nhập */}
+              {currentUser && (
+                <span className="hidden md:block text-xs font-bold truncate max-w-[100px]">
+                  {currentUser.fullName}
+                </span>
+              )}
+            </button>
 
-                <div className={`absolute right-0 mt-4 w-56 bg-white border border-outline-variant shadow-xl transition-all duration-300 origin-top-right ${isUserDropdownOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
-                  <div className="py-2 flex flex-col">
+            {/* Menu Dropdown */}
+            <div className={`absolute right-0 mt-3 w-56 bg-white border border-slate-100 shadow-xl shadow-slate-200/50 rounded-xl transition-all duration-300 origin-top-right overflow-hidden ${isUserDropdownOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+              <div className="py-2 flex flex-col">
+                {currentUser ? (
+                  <>
                     <Link 
                       to="/profile" 
-                      className="px-6 py-3 text-[11px] font-label uppercase tracking-widest text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors flex items-center gap-3"
+                      className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-[#ec5b13] transition-colors"
                       onClick={() => setIsUserDropdownOpen(false)}
                     >
-                      <span className="material-symbols-outlined text-lg">account_circle</span>
                       Thông tin cá nhân
                     </Link>
                     <Link 
                       to="/orders" 
-                      className="px-6 py-3 text-[11px] font-label uppercase tracking-widest text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors flex items-center gap-3"
+                      className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-[#ec5b13] transition-colors"
                       onClick={() => setIsUserDropdownOpen(false)}
                     >
-                      <span className="material-symbols-outlined text-lg">package_2</span>
                       Đơn hàng của tôi
                     </Link>
-                    <div className="h-[1px] bg-outline-variant/30 my-1 mx-4"></div>
+                    <div className="h-[1px] bg-slate-100 my-1 mx-4"></div>
                     <button 
-                      className="px-6 py-3 text-[11px] font-label uppercase tracking-widest text-error hover:bg-error-container/10 transition-colors text-left flex items-center gap-3"
+                      className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors text-left"
                       onClick={handleLogout}
                     >
-                      <span className="material-symbols-outlined text-lg text-error">logout</span>
                       Đăng xuất
                     </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              // NẾU CHƯA ĐĂNG NHẬP
-              <Link 
-                to="/auth" 
-                className="text-on-surface hover:opacity-50 transition-all flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[24px]">person</span>
-                <span className="hidden md:block text-[11px] font-label uppercase tracking-widest font-bold">Đăng nhập / Đăng ký</span>
-              </Link>
-            )}
+                  </>
+                ) : (
+                  <Link 
+                    to="/auth" 
+                    className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-[#ec5b13] transition-colors"
+                    onClick={() => setIsUserDropdownOpen(false)}
+                  >
+                    Đăng nhập / Đăng ký
+                  </Link>
+                )}
+              </div>
+            </div>
           </div>
-          
-          <Link to="/cart" className="text-on-surface hover:opacity-50 relative group">
-            <span className="material-symbols-outlined text-[24px]">shopping_bag</span>
+
+          {/* Shopping Cart */}
+          <Link to="/cart" className="p-2 text-slate-600 hover:text-[#ec5b13] hover:bg-orange-50 rounded-full transition-all relative">
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
             {totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 bg-secondary text-[8px] text-white w-3.5 h-3.5 flex items-center justify-center rounded-full font-bold animate-pulse">
+              <span className="absolute top-0 right-0 bg-[#ec5b13] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none border-2 border-white">
                 {totalItems}
               </span>
             )}
           </Link>
+
+          {/* Mobile Menu Toggle (Hamburger) */}
+          <button className="lg:hidden p-2 text-slate-600 hover:text-[#ec5b13] hover:bg-orange-50 rounded-full transition-all">
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+            </svg>
+          </button>
+          
         </div>
-      </nav>
+      </div>
     </header>
   );
 }

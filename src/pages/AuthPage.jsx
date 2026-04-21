@@ -28,6 +28,52 @@ export default function AuthPage() {
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // const handleLogin = async (e) => {
+  //   e.preventDefault();
+  //   setError('');
+    
+  //   try {
+  //     const response = await fetch(`${API_BASE_URL}/login`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //           email: loginData.email,
+  //           password: loginData.matKhau
+  //       })
+  //     });
+
+  //     const res = await response.json();
+
+  //     if (response.ok) {
+  //       alert('Đăng nhập thành công!');
+  //       const actualData = res.data;
+  //       localStorage.setItem('token', actualData.accessToken);
+  //       localStorage.setItem('user', JSON.stringify(actualData.user));
+        
+  //       if (actualData.user.role === 'admin') {
+  //         navigate('/admin');
+  //       } else {
+  //         navigate('/');
+  //       }
+
+  //     } else {
+  //       const errData = res.data || res;
+  //       if (errData.password) {
+  //           setError('Lỗi mật khẩu: ' + errData.password);
+  //       } else if (typeof res.message === 'string') {
+  //           setError(res.message);
+  //       } else {
+  //           setError(JSON.stringify(errData));
+  //       }
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     setError('Không thể kết nối đến Server Backend!');
+  //   }
+  // };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -35,9 +81,7 @@ export default function AuthPage() {
     try {
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             email: loginData.email,
             password: loginData.matKhau
@@ -47,30 +91,34 @@ export default function AuthPage() {
       const res = await response.json();
 
       if (response.ok) {
-        alert('Đăng nhập thành công!');
-        const actualData = res.data;
-        localStorage.setItem('token', actualData.accessToken);
-        localStorage.setItem('user', JSON.stringify(actualData.user));
-        
-        if (actualData.user.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/');
-        }
+        // Tự động tìm accessToken bất kể BE bọc kiểu gì (res.accessToken hoặc res.data.accessToken)
+        const token = res.accessToken || (res.data && res.data.accessToken);
+        const user = res.user || (res.data && res.data.user);
 
-      } else {
-        const errData = res.data || res;
-        if (errData.password) {
-            setError('Lỗi mật khẩu: ' + errData.password);
-        } else if (typeof res.message === 'string') {
-            setError(res.message);
+        if (token) {
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          
+          alert('Đăng nhập thành công!');
+
+          // Chuyển Role về chữ hoa và kiểm tra chứa chữ ADMIN
+          const role = (user && user.role) ? user.role.toUpperCase() : "";
+          
+          if (role.includes('ADMIN')) {
+            navigate('/admin');
+          } else {
+            navigate('/');
+          }
         } else {
-            setError(JSON.stringify(errData));
+          // In ra console để mày nhìn xem thực tế BE trả về cái gì nếu vẫn lỗi
+          console.error("Dữ liệu BE trả về không đúng cấu trúc:", res);
+          setError('Không tìm thấy Token trong phản hồi từ Server!');
         }
+      } else {
+        setError(res.message || 'Đăng nhập thất bại!');
       }
     } catch (err) {
-      console.error(err);
-      setError('Không thể kết nối đến Server Backend!');
+      setError('Lỗi kết nối Server!');
     }
   };
 
@@ -131,7 +179,6 @@ export default function AuthPage() {
 
   return (
     <div className="bg-surface text-on-surface min-h-screen font-body selection:bg-secondary-container">
-      {/* Ném CSS vào đây để tiêu diệt cái nền xanh Autofill, đéo cần mò file CSS ngoài */}
       <style>
         {`
           input:-webkit-autofill,
