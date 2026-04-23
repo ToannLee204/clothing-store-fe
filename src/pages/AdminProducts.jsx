@@ -157,7 +157,7 @@ const AdminProducts = () => {
   };
 
   return (
-    <main className="flex-1 overflow-auto p-8 bg-slate-50 font-sans min-h-screen">
+    <main className="flex-1 overflow-auto p-8 bg-slate-50 bg-[#f8f6f6] font-sans min-h-screen">
       <div className="flex flex-col gap-8 max-w-7xl mx-auto">
         
         {/* Title and Top Actions */}
