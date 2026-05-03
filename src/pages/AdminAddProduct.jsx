@@ -82,7 +82,7 @@ const AdminAddProduct = () => {
     setImages(reorderedImages);
   };
 
-  // 5. GỬI DỮ LIỆU LÊN API BE
+  // 5. GỬI DỮ LIỆU LÊN API BE (multipart/form-data)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -93,7 +93,8 @@ const AdminAddProduct = () => {
 
     setLoading(true);
     try {
-      const payload = {
+      // Build the product JSON object matching ProductCreateRequest
+      const productPayload = {
         ...productData,
         basePrice: Number(productData.basePrice),
         variants: variants.map(v => ({
@@ -104,13 +105,20 @@ const AdminAddProduct = () => {
         imageUrls: images.filter(img => img.imageUrl.trim() !== '').map(img => img.imageUrl)
       };
 
+      // Backend expects multipart/form-data with @RequestPart("product")
+      const formData = new FormData();
+      formData.append(
+        'product',
+        new Blob([JSON.stringify(productPayload)], { type: 'application/json' })
+      );
+
       const response = await fetch('/api/v1/admin/products', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
+          // Không set Content-Type — browser tự thêm multipart/form-data + boundary
         },
-        body: JSON.stringify(payload)
+        body: formData
       });
 
       const text = await response.text();
