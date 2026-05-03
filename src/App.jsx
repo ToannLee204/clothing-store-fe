@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -15,6 +15,14 @@ import AdminProductVariants from './pages/AdminProductVariants';
 import AdminProductEdit from './pages/AdminProductEdit';
 import AdminLayout from './components/AdminLayout';
 import AdminVouchers from './pages/AdminVouchers';
+import ProductsPage from './pages/ProductsPage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import OrdersPage from './pages/OrdersPage';
+import OrderDetailPage from './pages/OrderDetailPage';
+import CheckoutPage from './pages/CheckoutPage';
+import AdminOrders from './pages/AdminOrders';
+import AdminCustomers from './pages/AdminCustomers';
+import AdminReports from './pages/AdminReports';
 
 // Hàm bảo vệ Route Admin
 function AdminRoute({ children }) {
@@ -79,6 +87,11 @@ function AppContent() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/orders/:orderId" element={<OrderDetailPage />} />
+          <Route path="/product/:id" element={<ProductDetailPage />} />
 
           {/* Dùng thẻ AdminLayout đã được import từ file bên ngoài */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
@@ -88,10 +101,10 @@ function AppContent() {
             <Route path="products/variants/:id" element={<AdminProductVariants />} />
             <Route path="products/edit/:id" element={<AdminProductEdit />} />
             <Route path="categories" element={<AdminCategories />} />
-            <Route path="orders" element={<div>Quản lý đơn hàng</div>} />
-            <Route path="customers" element={<div>Quản lý khách hàng</div>} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="customers" element={<AdminCustomers />} />
             <Route path="invoices" element={<div>Quản lý hóa đơn</div>} />
-            <Route path="reports" element={<div>Báo cáo & Thống kê</div>} />
+            <Route path="reports" element={<AdminReports />} />
             <Route path="settings" element={<div>Cài đặt hệ thống</div>} />
             <Route path="vouchers" element={<AdminVouchers />} />
           </Route>
