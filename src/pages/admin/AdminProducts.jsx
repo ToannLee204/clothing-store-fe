@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './AdminProducts.css';
 
 const currencyFormatter = new Intl.NumberFormat('vi-VN');
 
@@ -249,347 +250,162 @@ const AdminProducts = () => {
 
   return (
     <main className="flex-1 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
-      <div className="flex flex-col gap-6">
-        <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0066A2] via-[#3385b5] to-[#66a3c7]" />
-          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#0066A2]/8 blur-3xl" />
-          <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-slate-200/60 blur-3xl" />
+      <h2 className="sr-only">Trang quản lý sản phẩm thời trang — bao gồm thống kê, bộ lọc và danh sách sản phẩm</h2>
+      <div className="pm-wrap">
 
-          <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-2xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#0066A2]/15 bg-[#0066A2]/8 px-3 py-1 text-xs font-semibold text-[#004b76]">
-                <span className="material-symbols-outlined text-[16px]">dashboard</span>
-                Admin / Sản phẩm
+        <div className="pm-topbar">
+          <div className="pm-title-block">
+            <div className="pm-title">Quản lý sản phẩm</div>
+            <div className="pm-subtitle">Theo dõi tồn kho, trạng thái và xử lý sản phẩm nhanh chóng ngay tại đây.</div>
+          </div>
+          <div className="pm-actions">
+            <button className="btn-ghost"><span className="material-symbols-outlined" style={{ fontSize: '18px' }}>file_download</span> Xuất Excel</button>
+            <button className="btn-primary" onClick={() => navigate('/admin/products/add')}><span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span> Thêm sản phẩm</button>
+          </div>
+        </div>
+
+        {error && (
+          <div style={{ padding: '12px', background: '#fcebeb', color: '#a32d2d', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+            {error}
+          </div>
+        )}
+
+        <div className="stats-grid">
+          {stats.map((stat, idx) => (
+            <div key={stat.label} className={`stat-card ${stat.label === 'Sắp hết hàng' ? 'warn' : ''}`}>
+              <div className={`stat-icon ${idx === 0 ? 'si-blue' : idx === 1 ? 'si-teal' : idx === 2 ? 'si-amber' : 'si-gray'}`}>
+                <span className="material-symbols-outlined">{stat.icon}</span>
               </div>
-
-              <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                Quản lý sản phẩm
-              </h2>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
-                Giao diện được làm mới theo phong cách hiện đại, giữ nguyên tông màu chủ đạo của hệ thống
-                nhưng tối ưu hơn cho thao tác quản trị, quan sát tồn kho và xử lý sản phẩm nhanh.
-              </p>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Danh mục</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{categories.length} nhóm</p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Trang hiện tại</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    {pagination.current}/{pagination.pages}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Bộ lọc</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    {hasFilters ? 'Đang áp dụng' : 'Chưa lọc'}
-                  </p>
-                </div>
-              </div>
+              <div className="stat-label">{stat.label}</div>
+              <div className="stat-value">{stat.value}</div>
+              <div className="stat-desc">{stat.detail}</div>
             </div>
+          ))}
+        </div>
 
-            <div className="grid w-full gap-3 sm:grid-cols-2 xl:w-[420px]">
-              <button className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50">
-                <span className="material-symbols-outlined text-[20px]">file_download</span>
-                Xuất Excel
-              </button>
-              <button
-                onClick={() => navigate('/admin/products/add')}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:-translate-y-0.5 hover:bg-[#005587]"
-              >
-                <span className="material-symbols-outlined text-[20px]">add</span>
-                Thêm sản phẩm
-              </button>
+        <div className="filter-bar">
+          <div className="filter-top">
+            <span className="filter-label">Bộ lọc & thao tác nhanh</span>
+            <span className="filter-adv" onClick={clearFilters}><span className="material-symbols-outlined" style={{ fontSize: '16px' }}>filter_list</span> {hasFilters ? 'Xóa lọc' : 'Lọc nâng cao'}</span>
+          </div>
+          <div className="filter-row">
+            <div className="filter-selects">
+              <select className="fselect" value={filters.categoryId} onChange={(e) => handleFilterChange('categoryId', e.target.value)}>
+                <option value="">Tất cả danh mục</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <select className="fselect" value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
+                <option value="">Tất cả trạng thái</option>
+                <option value="1">Đang hiển thị</option>
+                <option value="0">Đang ẩn</option>
+              </select>
+            </div>
+            <div className="filter-counts">
+              <span className="dot-count"><span className="dot dot-teal"></span> {products.filter(p => Number(p.status) !== 0).length} đang hiển thị</span>
+              <span className="dot-count"><span className="dot dot-gray"></span> {pagination.total} kết quả</span>
             </div>
           </div>
+        </div>
 
-          <div className="relative mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.08)]"
-              >
-                <div className="flex items-start justify-between gap-3">
+        <div className="table-wrap">
+          <div className="tbl-header">
+            <div className="th"></div>
+            <div className="th">Tên sản phẩm</div>
+            <div className="th">Danh mục</div>
+            <div className="th right">Giá bán</div>
+            <div className="th center">Trạng thái</div>
+            <div className="th right">Thao tác</div>
+          </div>
+
+          {products.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>Không tìm thấy sản phẩm phù hợp.</div>
+          ) : (
+            products.map((product) => {
+              const totalStock = Number(product.totalStock) || 0;
+              const variantCount = product.variants?.length || 0;
+              const isVisible = Number(product.status) !== 0;
+
+              return (
+                <div className="tbl-row" key={product.id}>
                   <div>
-                    <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-                    <p className="mt-2 text-2xl font-black tracking-tight text-slate-900">{stat.value}</p>
+                    <div className="prod-thumb">
+                      {product.thumbnailUrl || product.thumbnail_url ? (
+                        <img 
+                          src={product.thumbnailUrl || product.thumbnail_url} 
+                          alt={product.name} 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => { e.currentTarget.src = 'https://placehold.co/100x140?text=Error'; }}
+                        />
+                      ) : (
+                        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>checkroom</span>
+                      )}
+                    </div>
                   </div>
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${stat.accent} text-white shadow-lg`}>
-                    <span className="material-symbols-outlined text-[22px]">{stat.icon}</span>
+                  <div>
+                    <div className="prod-name">{product.name}</div>
+                    <div className="prod-meta">
+                      <span className="prod-tag"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>palette</span> {variantCount} biến thể</span>
+                      <span className="prod-tag"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>layers</span> Tồn kho {totalStock}</span>
+                    </div>
+                  </div>
+                  <div><span className="badge badge-cat">{product.categoryName || 'Chưa phân loại'}</span></div>
+                  <div>
+                    <div className="price-val">{formatCurrency(product.basePrice || 0)}</div>
+                    <div className="price-note">Giá gốc hệ thống</div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <span 
+                      className={`badge ${isVisible ? (totalStock > 0 ? 'badge-green' : 'badge-red') : 'badge-red'}`} 
+                      style={{ cursor: 'pointer' }} 
+                      onClick={() => handleToggleVisibility(product.id)}
+                      title="Click để Ẩn/Hiện sản phẩm"
+                    >
+                      <span className="dot" style={{ width: '5px', height: '5px', borderRadius: '50%', marginRight: '4px' }}></span>
+                      {isVisible ? (totalStock > 0 ? `Còn hàng (${totalStock})` : 'Hết hàng') : 'Đang ẩn'}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="act-row">
+                      <button className="act-btn" onClick={() => handleViewVariants(product.id)}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>style</span> Kho
+                      </button>
+                      <button className="act-btn edit" onClick={() => navigate(`/admin/products/edit/${product.id}`)}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span> Sửa
+                      </button>
+                      <button className="act-btn del" onClick={() => handleDelete(product.id)}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <p className="mt-3 text-xs leading-5 text-slate-500">{stat.detail}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Bộ lọc & thao tác nhanh</h3>
-              <p className="mt-1 text-sm text-slate-500">Lọc danh mục, trạng thái và giữ layout gọn hơn cho màn quản trị.</p>
-            </div>
-
-            <button className="inline-flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">
-              <span className="material-symbols-outlined text-[20px]">filter_list</span>
-              Lọc nâng cao
-            </button>
-          </div>
-
-          <div className="mt-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
-              <div className="relative min-w-[220px]">
-                <select
-                  value={filters.categoryId}
-                  onChange={(e) => handleFilterChange('categoryId', e.target.value)}
-                  className="w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-sm font-medium text-slate-700 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
-                >
-                  <option value="">Tất cả danh mục</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-                <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-slate-400">
-                  expand_more
-                </span>
-              </div>
-
-              <div className="relative min-w-[220px]">
-                <select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-sm font-medium text-slate-700 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
-                >
-                  <option value="">Tất cả trạng thái</option>
-                  <option value="1">Đang hiển thị</option>
-                  <option value="0">Đang ẩn</option>
-                </select>
-                <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-slate-400">
-                  expand_more
-                </span>
-              </div>
-
-              {hasFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
-                >
-                  <span className="material-symbols-outlined text-[18px]">close</span>
-                  Xóa lọc
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-600">
-                <span className="size-2 rounded-full bg-[#0066A2]" />
-                {products.length} sản phẩm đang hiển thị
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-600">
-                <span className="size-2 rounded-full bg-slate-400" />
-                {pagination.total} tổng kết quả
-              </span>
-            </div>
-          </div>
-
-          {error && (
-            <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-              {error}
-            </div>
+              );
+            })
           )}
-        </section>
 
-        <section className="overflow-hidden rounded-3xl border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
-                <tr className="border-b border-slate-200">
-                  <th className="w-24 px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Ảnh
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Tên sản phẩm
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Danh mục
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Giá bán
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-center">
-                    Trạng thái
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-right">
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100">
-                {products.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-20 text-center">
-                      <div className="mx-auto flex max-w-md flex-col items-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0066A2]/10 text-[#0066A2]">
-                          <span className="material-symbols-outlined text-[30px]">inventory_2_off</span>
-                        </div>
-                        <h4 className="mt-4 text-lg font-bold text-slate-900">Không tìm thấy sản phẩm phù hợp</h4>
-                        <p className="mt-2 text-sm leading-6 text-slate-500">
-                          Hãy thử bỏ bớt bộ lọc hoặc thêm mới một sản phẩm để hiển thị trong danh sách.
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  products.map((product) => {
-                    const statusMeta = getProductStatusMeta(product);
-                    const totalStock = Number(product.totalStock) || 0;
-                    const variantCount = product.variants?.length || 0;
-
-                    return (
-                      <tr
-                        key={product.id}
-                        className="group transition hover:bg-[#fdf7f3]"
-                      >
-                        <td className="px-6 py-5 align-middle">
-                          <div className="relative h-16 w-14 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
-                            <img
-                              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                              src={
-                                product.thumbnailUrl ||
-                                product.thumbnail_url ||
-                                'https://placehold.co/100x140?text=No+Image'
-                              }
-                              alt={product.name}
-                              onError={(e) => {
-                                e.currentTarget.src = 'https://placehold.co/100x140?text=Error';
-                              }}
-                            />
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-5 align-middle">
-                          <div className="max-w-[360px]">
-                            <div className="text-sm font-bold text-slate-900">
-                              {product.name}
-                            </div>
-                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 font-medium">
-                                <span className="material-symbols-outlined text-[14px]">layers</span>
-                                {variantCount} biến thể
-                              </span>
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 font-medium">
-                                <span className="material-symbols-outlined text-[14px]">warehouse</span>
-                                Tồn kho {totalStock}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-5 align-middle">
-                          <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                            {product.categoryName || 'Chưa phân loại'}
-                          </span>
-                        </td>
-
-                        <td className="px-6 py-5 align-middle">
-                          <div className="text-sm font-black text-slate-900">
-                            {formatCurrency(product.basePrice || 0)}
-                          </div>
-                          <div className="mt-1 text-xs text-slate-400">Giá gốc hiển thị trong hệ thống</div>
-                        </td>
-
-                        <td className="px-6 py-5 align-middle text-center">
-                          <button
-                            onClick={() => handleToggleVisibility(product.id)}
-                            title="Click để Ẩn/Hiện sản phẩm"
-                            className={`inline-flex min-w-[140px] items-center justify-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition ${statusMeta.button}`}
-                          >
-                            <span className={`size-2 rounded-full ${statusMeta.dot}`} />
-                            {statusMeta.label}
-                          </button>
-                        </td>
-
-                        <td className="px-6 py-5 align-middle">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleViewVariants(product.id)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">style</span>
-                              Kho
-                            </button>
-
-                            <button
-                              onClick={() => navigate(`/admin/products/edit/${product.id}`)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#0066A2]/15 bg-[#0066A2]/10 px-3 py-2 text-xs font-semibold text-[#004b76] transition hover:bg-[#0066A2]/15"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">edit</span>
-                              Sửa
-                            </button>
-
-                            <button
-                              onClick={() => handleDelete(product.id)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-100"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">delete</span>
-                              Xóa
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex flex-col gap-4 border-t border-slate-200 bg-slate-50/80 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-500">
-              Đang hiển thị{' '}
-              <span className="font-bold text-slate-900">
-                {pageStart}
-              </span>{' '}
-              -{' '}
-              <span className="font-bold text-slate-900">
-                {pageEnd}
-              </span>{' '}
-              trong số{' '}
-              <span className="font-bold text-slate-900">
-                {pagination.total}
-              </span>{' '}
-              sản phẩm
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                disabled={pagination.current <= 1}
+          <div className="tbl-footer">
+            <span className="footer-text">Đang hiển thị <strong>{pageStart} – {pageEnd}</strong> trong số <strong>{pagination.total}</strong> sản phẩm</span>
+            <div className="pager">
+              <button 
+                className="page-btn" 
+                disabled={pagination.current <= 1} 
                 onClick={() => setPagination({ ...pagination, current: pagination.current - 1 })}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_left</span>
               </button>
-
-              <button className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl bg-[#0066A2] px-3 text-sm font-bold text-white shadow-[0_10px_20px_rgba(236,91,19,0.2)]">
-                {pagination.current}
-              </button>
-
-              <button
-                disabled={pagination.current >= pagination.pages}
+              <button className="page-btn active">{pagination.current}</button>
+              <button 
+                className="page-btn" 
+                disabled={pagination.current >= pagination.pages} 
                 onClick={() => setPagination({ ...pagination, current: pagination.current + 1 })}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
               </button>
             </div>
           </div>
-        </section>
+        </div>
+
       </div>
     </main>
   );
