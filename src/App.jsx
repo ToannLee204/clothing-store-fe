@@ -1,28 +1,34 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import Header from './components/Header';
-import Footer from './components/Footer';
+
+// Layout components
+import Header from './components/layout/Header';
+import Footer from './components/layout/Footer';
+import AdminLayout from './components/layout/AdminLayout';
+import ScrollToTop from './components/layout/ScrollToTop';
+
+// User pages
 import HomePage from './pages/HomePage';
 import CartPage from './pages/CartPage';
 import AuthPage from './pages/AuthPage';
 import ProfilePage from './pages/ProfilePage';
-import AdminDashboard from './pages/AdminDashboard';
-import ScrollToTop from './components/ScrollToTop';
-import AdminProducts from './pages/AdminProducts';
-import AdminAddProduct from './pages/AdminAddProduct';
-import AdminCategories from './pages/AdminCategories';
-import AdminProductVariants from './pages/AdminProductVariants';
-import AdminProductEdit from './pages/AdminProductEdit';
-import AdminLayout from './components/AdminLayout';
-import AdminVouchers from './pages/AdminVouchers';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
-import AdminOrders from './pages/AdminOrders';
-import AdminCustomers from './pages/AdminCustomers';
-import AdminReports from './pages/AdminReports';
+
+// Admin pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminAddProduct from './pages/admin/AdminAddProduct';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminProductVariants from './pages/admin/AdminProductVariants';
+import AdminProductEdit from './pages/admin/AdminProductEdit';
+import AdminVouchers from './pages/admin/AdminVouchers';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminCustomers from './pages/admin/AdminCustomers';
+import AdminReports from './pages/admin/AdminReports';
 
 // Hàm bảo vệ Route Admin
 function AdminRoute({ children }) {
@@ -93,7 +99,7 @@ function AppContent() {
           <Route path="/orders/:orderId" element={<OrderDetailPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
 
-          {/* Dùng thẻ AdminLayout đã được import từ file bên ngoài */}
+          {/* Admin routes */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />

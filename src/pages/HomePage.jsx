@@ -1,23 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import {
-  DANH_MUC,
-  SAN_PHAM,
-  MA_GIAM_GIA,
-  DANH_GIA
-} from '../data/mockData';
+import { DANH_MUC, SAN_PHAM, MA_GIAM_GIA, DANH_GIA } from '../data/mockData';
+import { formatPrice } from '../utils/format';
 
-function formatPrice(value) {
-  if (!value) return '0đ';
-  return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
-}
-
-function ArrowIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M5 12h14m-6-6 6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+import HeroSection from '../components/home/HeroSection';
+import CategorySpotlight from '../components/home/CategorySpotlight';
+import FeaturedProducts from '../components/home/FeaturedProducts';
+import SectionTitle from '../components/common/SectionTitle';
 
 function SparkIcon() {
   return (
@@ -27,41 +15,17 @@ function SparkIcon() {
   );
 }
 
-function SectionTitle({ kicker, title, description, align = 'left' }) {
-  return (
-    <div className={align === 'center' ? 'mx-auto text-center max-w-3xl' : 'max-w-3xl'}>
-      {kicker ? (
-        <span className="mb-4 block text-[0.72rem] font-bold uppercase tracking-[0.22rem] text-[#ec5b13]">
-          {kicker}
-        </span>
-      ) : null}
-      <h2 className="font-headline text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
-        {title}
-      </h2>
-      {description ? (
-        <p className="mt-5 text-base leading-7 text-slate-500 md:text-lg">
-          {description}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 export default function HomePage() {
-  // 1. STATE LƯU TRỮ DỮ LIỆU (Mặc định lấy từ mockData để trang không bị trắng khi load)
   const [products, setProducts] = useState(SAN_PHAM.slice(0, 4));
   const [categories, setCategories] = useState(DANH_MUC);
   const [heroImage, setHeroImage] = useState(SAN_PHAM[2]?.anhDaiDien);
 
-  // Dữ liệu chưa có API Public, dùng Mock
   const review = DANH_GIA[0];
   const voucher = MA_GIAM_GIA[0];
 
-  // 2. GỌI API ĐỂ CẬP NHẬT DỮ LIỆU THẬT
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        // Fetch Sản phẩm nổi bật
         const prodRes = await fetch('/api/v1/products?page=0&pageSize=4');
         if (prodRes.ok) {
           const prodData = await prodRes.json();
@@ -73,14 +37,12 @@ export default function HomePage() {
           else if (prodData.result && Array.isArray(prodData.result)) prodArr = prodData.result;
 
           if (prodArr.length > 0) {
-            setProducts(prodArr.slice(0, 4)); // Lấy 4 cái mới nhất
-            // Set ảnh nền Hero bằng ảnh sản phẩm đầu tiên hoặc thứ 3 cho ngầu
+            setProducts(prodArr.slice(0, 4));
             const img = prodArr[2]?.imageUrl || prodArr[0]?.imageUrl;
             if (img) setHeroImage(img);
           }
         }
 
-        // Fetch Danh mục
         const catRes = await fetch('/api/v1/categories');
         if (catRes.ok) {
           const catData = await catRes.json();
@@ -101,7 +63,6 @@ export default function HomePage() {
     fetchHomeData();
   }, []);
 
-  // Map lại dữ liệu danh mục nổi bật (Lấy ảnh từ sản phẩm API để nó sinh động)
   const spotlightCategories = [
     {
       title: 'Nữ',
@@ -125,169 +86,13 @@ export default function HomePage() {
   return (
     <div className="bg-white text-slate-900">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-slate-950">
-        <div className="absolute inset-0">
-          <img
-            alt="Bộ sưu tập thời trang cao cấp"
-            className="h-full w-full object-cover opacity-60"
-            src={heroImage}
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-transparent" />
-        <div className="relative mx-auto flex min-h-[88vh] max-w-[1920px] items-center px-6 py-24 md:px-12">
-          <div className="max-w-3xl">
-            <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[0.7rem] font-bold uppercase tracking-[0.22rem] text-white/85 backdrop-blur">
-              <SparkIcon />
-              Bộ sưu tập mới 2026
-            </span>
-            <h1 className="font-headline text-5xl font-black leading-[0.92] tracking-tight text-white md:text-7xl">
-              Tối giản hơn.
-              <br />
-              Tinh tế hơn.
-              <br />
-              Đúng phong cách của bạn.
-            </h1>
-            <p className="mt-6 max-w-2xl text-base leading-8 text-white/75 md:text-lg">
-              Khám phá những thiết kế hiện đại, giữ nguyên tinh thần sang trọng nhưng được làm mới bằng bố cục rõ ràng, chất liệu cao cấp và trải nghiệm mua sắm mượt mà hơn.
-            </p>
-
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <a
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ec5b13] px-8 py-4 text-sm font-bold uppercase tracking-[0.14rem] text-white transition-all duration-300 hover:bg-[#d95210] hover:shadow-lg hover:shadow-[#ec5b13]/30"
-                href="#featured-products"
-              >
-                Khám phá ngay
-                <ArrowIcon />
-              </a>
-              <a
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/30 bg-white/5 px-8 py-4 text-sm font-bold uppercase tracking-[0.14rem] text-white transition-all duration-300 hover:border-white hover:bg-white hover:text-slate-950"
-                href="#story"
-              >
-                Xem câu chuyện
-              </a>
-            </div>
-
-            <div className="mt-14 grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
-              {[
-                { value: '120+', label: 'Thiết kế được chọn lọc' },
-                { value: '24h', label: 'Giao diện cập nhật nhanh' },
-                { value: '98%', label: 'Khách hàng hài lòng' }
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-3xl border border-white/10 bg-white/8 p-5 backdrop-blur"
-                >
-                  <div className="text-3xl font-black text-white">{item.value}</div>
-                  <div className="mt-2 text-sm leading-6 text-white/65">{item.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <HeroSection heroImage={heroImage} />
 
       {/* Category spotlight */}
-      <section className="mx-auto max-w-[1920px] px-6 py-20 md:px-12 md:py-28">
-        <SectionTitle
-          kicker="Danh mục nổi bật"
-          title="Chọn nhanh theo nhu cầu, giữ trọn vẻ thanh lịch."
-          description="Bố cục mới được tối ưu để người dùng lướt nhanh, hiểu nhanh và đi thẳng tới nhóm sản phẩm mình quan tâm."
-        />
-
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {spotlightCategories.map((item, index) => (
-            <article
-              key={item.title}
-              className={`group overflow-hidden rounded-[2rem] bg-slate-50 ${index === 1 ? 'md:mt-10' : ''}`}
-            >
-              <div className="aspect-[4/5] overflow-hidden">
-                <img
-                  alt={item.title}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  src={item.image}
-                />
-              </div>
-              <div className="p-6">
-                <div className="flex items-center justify-between gap-4">
-                  <h3 className="font-headline text-3xl font-black text-slate-900">{item.title}</h3>
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#ec5b13] shadow-sm transition-all group-hover:bg-[#ec5b13] group-hover:text-white">
-                    <ArrowIcon />
-                  </span>
-                </div>
-                <p className="mt-3 text-sm leading-6 text-slate-500">{item.description}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+      <CategorySpotlight spotlightCategories={spotlightCategories} />
 
       {/* Featured products */}
-      <section id="featured-products" className="bg-slate-50 py-20 md:py-28">
-        <div className="mx-auto max-w-[1920px] px-6 md:px-12">
-          <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-            <SectionTitle
-              kicker="Sản phẩm mới"
-              title="Bộ sưu tập vừa cập bến."
-              description="Những thiết kế mới nhất vừa được đưa lên kệ, lấy trực tiếp từ hệ thống dữ liệu."
-            />
-            <a
-              className="inline-flex items-center gap-2 self-start text-[0.72rem] font-bold uppercase tracking-[0.18rem] text-slate-500 transition-colors hover:text-[#ec5b13] sm:self-auto"
-              href="/products"
-            >
-              Xem toàn bộ
-              <ArrowIcon />
-            </a>
-          </div>
-
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-            {products.map((product) => {
-              // Hỗ trợ cả property của MockData (tiếng Việt) và API (tiếng Anh)
-              const id = product.id || product.maSP;
-              const name = product.name || product.ten;
-              const desc = product.description || product.moTa;
-              const price = product.price || product.gia;
-              const image = product.imageUrl || product.anhDaiDien;
-
-              return (
-                <article
-                  key={id}
-                  className="group overflow-hidden rounded-[1.8rem] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
-                >
-                  <div className="relative aspect-[3/4] overflow-hidden bg-slate-200">
-                    <img
-                      alt={name}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      src={image}
-                    />
-                    <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18rem] text-[#ec5b13] shadow-sm">
-                      Mới về
-                    </div>
-                    <button className="absolute bottom-4 right-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg transition-all duration-300 hover:bg-[#ec5b13] hover:text-white">
-                      <SparkIcon />
-                    </button>
-                  </div>
-
-                  <div className="p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900 transition-colors group-hover:text-[#ec5b13]">
-                          {name}
-                        </h3>
-                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">
-                          {desc}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-sm font-bold text-[#ec5b13]">
-                        {formatPrice(price)}
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      <FeaturedProducts products={products} />
 
       {/* Collections + voucher */}
       <section id="collections" className="mx-auto max-w-[1920px] px-6 py-20 md:px-12 md:py-28">

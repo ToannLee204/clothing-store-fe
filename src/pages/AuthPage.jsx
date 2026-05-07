@@ -6,46 +6,19 @@ import {
   readGuestCart,
   saveCartSnapshotCount,
 } from '../utils/cart';
-
-function EyeIcon({ hidden = false }) {
-  return (
-    <span className="material-symbols-outlined text-[18px]">
-      {hidden ? 'visibility_off' : 'visibility'}
-    </span>
-  );
-}
+import { parseResponseBody, extractMessage } from '../api/http';
+import LoginForm from '../components/auth/LoginForm';
+import RegisterForm from '../components/auth/RegisterForm';
 
 const API_BASE_URL = '/api/v1/auth';
 const API_CART_URL = '/api/v1/cart';
-
-const parseResponseBody = async (response) => {
-  const text = await response.text();
-  if (!text) return null;
-
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    return text;
-  }
-};
-
-const extractMessage = (payload, fallback) => {
-  if (!payload) return fallback;
-  if (typeof payload === 'string') return payload;
-  if (typeof payload?.message === 'string') return payload.message;
-  if (typeof payload?.error === 'string') return payload.error;
-  if (typeof payload?.data?.message === 'string') return payload.data.message;
-  return fallback;
-};
 
 const sumCartCount = (items) =>
   (Array.isArray(items) ? items : []).reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0);
 
 const fetchBackendCartSnapshot = async (token) => {
   const response = await fetch(API_CART_URL, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
 
   const payload = await parseResponseBody(response);
@@ -56,9 +29,7 @@ const fetchBackendCartSnapshot = async (token) => {
 
   const data = payload?.data ?? payload;
   const backendCount = sumCartCount(data?.items);
-
   saveCartSnapshotCount(backendCount);
-
   return { backendCount, data };
 };
 
@@ -129,26 +100,7 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
-  // --- LOGIC STATES (GIỮ NGUYÊN 100%) ---
-  const [loginData, setLoginData] = useState({ email: '', matKhau: '' });
-  const [regData, setRegData] = useState({
-    hoTen: '',
-    ngaySinh: '',
-    gioiTinh: 1,
-    email: '',
-    matKhau: '',
-    soDienThoai: '',
-    vaiTro: 'user',
-    trangThai: 1,
-  });
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
-  const [showRegPassword, setShowRegPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // --- HANDLERS (GIỮ NGUYÊN 100%) ---
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (loginData) => {
     setError('');
     try {
       const response = await fetch(`${API_BASE_URL}/login`, {
@@ -198,8 +150,7 @@ export default function AuthPage() {
     }
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
+  const handleRegister = async (regData, confirmPassword) => {
     setError('');
     if (regData.matKhau !== confirmPassword) {
       setError('Mật khẩu xác nhận không khớp!');
@@ -222,17 +173,6 @@ export default function AuthPage() {
       if (response.ok) {
         alert('Đăng ký thành công, vui lòng đăng nhập!');
         setIsLogin(true);
-        setRegData({
-          hoTen: '',
-          ngaySinh: '',
-          gioiTinh: 1,
-          email: '',
-          matKhau: '',
-          soDienThoai: '',
-          vaiTro: 'user',
-          trangThai: 1,
-        });
-        setConfirmPassword('');
       } else {
         const errData = res.data || res;
         if (errData.fullName) setError('Lỗi họ tên: ' + errData.fullName);
@@ -245,13 +185,6 @@ export default function AuthPage() {
       setError('Không thể kết nối đến Server Backend!');
     }
   };
-
-  // --- STYLE CHUẨN UI/UX ---
-  const inputBase =
-    'w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:border-[#ec5b13] focus:ring-2 focus:ring-[#ec5b13]/20 font-medium';
-  const labelBase = 'mb-1.5 block text-sm font-bold text-slate-700';
-  const formButtonBase =
-    'w-full rounded-xl bg-[#ec5b13] px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#ec5b13]/20 transition-all hover:bg-[#d95210] hover:-translate-y-0.5';
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans flex">
@@ -266,7 +199,7 @@ export default function AuthPage() {
         </Link>
       </div>
 
-      {/* CỘT TRÁI: HÌNH ẢNH (Ẩn trên mobile) */}
+      {/* CỘT TRÁI: HÌNH ẢNH */}
       <div className="hidden lg:flex w-1/2 relative bg-slate-950 items-end justify-start p-12">
         <div className="absolute inset-0">
           <img
@@ -333,167 +266,11 @@ export default function AuthPage() {
             </div>
           )}
 
-          {/* FORM ĐĂNG NHẬP */}
+          {/* FORM */}
           {isLogin ? (
-            <form className="space-y-5 animate-fade-in" onSubmit={handleLogin}>
-              <div>
-                <label className={labelBase}>Email</label>
-                <input
-                  className={inputBase}
-                  type="email"
-                  value={loginData.email}
-                  onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                  placeholder="VD: you@example.com"
-                  required
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between items-end mb-1.5">
-                  <label className="text-sm font-bold text-slate-700 block">Mật khẩu</label>
-                  <a href="#" className="text-xs font-bold text-[#ec5b13] hover:underline">
-                    Quên mật khẩu?
-                  </a>
-                </div>
-                <div className="relative">
-                  <input
-                    className={`${inputBase} pr-12`}
-                    type={showLoginPassword ? 'text' : 'password'}
-                    value={loginData.matKhau}
-                    onChange={(e) => setLoginData({ ...loginData, matKhau: e.target.value })}
-                    placeholder="••••••••"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#ec5b13] transition-colors p-1"
-                  >
-                    <EyeIcon hidden={showLoginPassword} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <button type="submit" className={formButtonBase}>
-                  Đăng nhập ngay
-                </button>
-              </div>
-            </form>
+            <LoginForm onSubmit={handleLogin} error={error} />
           ) : (
-            /* FORM ĐĂNG KÝ */
-            <form className="space-y-5 animate-fade-in" onSubmit={handleRegister}>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelBase}>Họ tên</label>
-                  <input
-                    className={inputBase}
-                    type="text"
-                    value={regData.hoTen}
-                    onChange={(e) => setRegData({ ...regData, hoTen: e.target.value })}
-                    placeholder="Nguyễn Văn A"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className={labelBase}>Số điện thoại</label>
-                  <input
-                    className={inputBase}
-                    type="tel"
-                    value={regData.soDienThoai}
-                    onChange={(e) => setRegData({ ...regData, soDienThoai: e.target.value })}
-                    placeholder="0987654321"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelBase}>Ngày sinh</label>
-                  <input
-                    className={inputBase}
-                    type="date"
-                    value={regData.ngaySinh}
-                    onChange={(e) => setRegData({ ...regData, ngaySinh: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className={labelBase}>Giới tính</label>
-                  <select
-                    className={inputBase}
-                    value={regData.gioiTinh}
-                    onChange={(e) => setRegData({ ...regData, gioiTinh: parseInt(e.target.value) })}
-                  >
-                    <option value="0">Nam</option>
-                    <option value="1">Nữ</option>
-                    <option value="2">Khác</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className={labelBase}>Email</label>
-                <input
-                  className={inputBase}
-                  type="email"
-                  value={regData.email}
-                  onChange={(e) => setRegData({ ...regData, email: e.target.value })}
-                  placeholder="you@example.com"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelBase}>Mật khẩu</label>
-                  <div className="relative">
-                    <input
-                      className={`${inputBase} pr-10`}
-                      type={showRegPassword ? 'text' : 'password'}
-                      value={regData.matKhau}
-                      onChange={(e) => setRegData({ ...regData, matKhau: e.target.value })}
-                      placeholder="••••••••"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowRegPassword(!showRegPassword)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#ec5b13] p-1"
-                    >
-                      <EyeIcon hidden={showRegPassword} />
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className={labelBase}>Xác nhận</label>
-                  <div className="relative">
-                    <input
-                      className={`${inputBase} pr-10`}
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#ec5b13] p-1"
-                    >
-                      <EyeIcon hidden={showConfirmPassword} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <button type="submit" className={formButtonBase}>
-                  Tạo tài khoản
-                </button>
-              </div>
-            </form>
+            <RegisterForm onSubmit={handleRegister} error={error} />
           )}
         </div>
       </div>

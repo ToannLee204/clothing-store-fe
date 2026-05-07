@@ -6,7 +6,7 @@ import {
   CART_SNAPSHOT_KEY,
   getCartCount,
   readGuestCart,
-} from '../utils/cart';
+} from '../../utils/cart';
 
 export default function Header() {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
