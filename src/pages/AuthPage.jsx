@@ -213,13 +213,13 @@ export default function AuthPage() {
         <div className="relative z-10 max-w-lg text-white">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-widest backdrop-blur mb-6">
             <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
-            Lumina 2026
+            Clothing Store 2026
           </div>
           <h1 className="text-5xl font-black tracking-tight leading-[1.1] mb-6">
             Định hình<br />phong cách của bạn.
           </h1>
           <p className="text-slate-300 text-lg font-medium leading-relaxed">
-            Đăng nhập để trải nghiệm mua sắm cá nhân hóa, lưu giữ giỏ hàng và nhận vô vàn ưu đãi đặc quyền từ Lumina.
+            Đăng nhập để trải nghiệm mua sắm cá nhân hóa, lưu giữ giỏ hàng và nhận vô vàn ưu đãi đặc quyền từ Clothing Store.
           </p>
         </div>
       </div>
@@ -230,7 +230,7 @@ export default function AuthPage() {
           {/* Header Form */}
           <div className="mb-10 text-center lg:text-left">
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white font-black text-xl mb-6 shadow-md">
-              LU
+              CS
             </div>
             <h2 className="text-3xl font-black text-slate-900 tracking-tight">
               {isLogin ? 'Chào mừng trở lại' : 'Tạo tài khoản mới'}

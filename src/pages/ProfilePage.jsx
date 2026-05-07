@@ -235,7 +235,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="overflow-hidden">
                   <p className="text-sm font-bold truncate">Chào, {user.fullName}</p>
-                  <p className="text-xs text-slate-500 truncate mt-0.5">Thành viên Lumina+</p>
+                  <p className="text-xs text-slate-500 truncate mt-0.5">Thành viên Clothing Store+</p>
                 </div>
               </div>
               

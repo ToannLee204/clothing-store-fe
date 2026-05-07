@@ -166,7 +166,7 @@ export default function HomePage() {
 
             <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-100">
               <SectionTitle
-                kicker="Tại sao chọn Lumina"
+                kicker="Tại sao chọn Clothing Store"
                 title="Sản phẩm thật, API thật."
                 description="Hệ thống đã được kết nối để đồng bộ dữ liệu thời gian thực."
               />

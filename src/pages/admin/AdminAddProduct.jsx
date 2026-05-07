@@ -204,7 +204,7 @@ const AdminAddProduct = () => {
               Thêm sản phẩm mới
             </h1>
             <p className="text-xs text-stone-600 mt-0.5">
-              Tạo sản phẩm mới cho hệ thống Lumina
+              Tạo sản phẩm mới cho hệ thống Clothing Store
             </p>
           </div>
         </div>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
-import AdminHeader from './AdminHeader';
 
 const AdminLayout = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -27,8 +26,7 @@ const AdminLayout = () => {
       {/* VÙNG NỘI DUNG CO GIÃN */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${isCollapsed ? 'ml-20' : 'ml-64'}`}>
         
-        {/* TRUYỀN PROPS CHO HEADER */}
-        <AdminHeader isCollapsed={isCollapsed} user={user} />
+        {/* VÙNG NỘI DUNG CHÍNH */}
         
         <div className="p-0">
           <Outlet /> {/* Vùng render nội dung các trang (Products, Categories...) */}
