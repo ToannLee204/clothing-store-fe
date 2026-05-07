@@ -19,7 +19,6 @@ import OrderDetailPage from './pages/OrderDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 
 // Admin pages
-import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminAddProduct from './pages/admin/AdminAddProduct';
 import AdminCategories from './pages/admin/AdminCategories';
@@ -99,9 +98,8 @@ function AppContent() {
           <Route path="/orders/:orderId" element={<OrderDetailPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
 
-          {/* Admin routes */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-            <Route index element={<AdminDashboard />} />
+            <Route index element={<AdminReports />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="products/add" element={<AdminAddProduct />} />
             <Route path="products/variants/:id" element={<AdminProductVariants />} />
@@ -110,7 +108,6 @@ function AppContent() {
             <Route path="orders" element={<AdminOrders />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="invoices" element={<div>Quản lý hóa đơn</div>} />
-            <Route path="reports" element={<AdminReports />} />
             <Route path="settings" element={<div>Cài đặt hệ thống</div>} />
             <Route path="vouchers" element={<AdminVouchers />} />
           </Route>

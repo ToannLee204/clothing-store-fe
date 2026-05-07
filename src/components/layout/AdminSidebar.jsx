@@ -12,13 +12,12 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed, currentUser 
   };
 
   const menuItems = [
-    { path: '/admin', icon: 'dashboard', label: 'Bảng điều khiển' },
+    { path: '/admin', icon: 'bar_chart', label: 'Báo cáo & Thống kê' },
     { path: '/admin/products', icon: 'inventory_2', label: 'Quản lý Sản phẩm' },
     { path: '/admin/categories', icon: 'category', label: 'Quản lý Danh mục' },
     { path: '/admin/vouchers', icon: 'local_offer', label: 'Quản lý Voucher' },
     { path: '/admin/orders', icon: 'shopping_cart', label: 'Quản lý Đơn hàng' },
     { path: '/admin/customers', icon: 'group', label: 'Quản lý Khách hàng' },
-    { path: '/admin/reports', icon: 'bar_chart', label: 'Báo cáo & Thống kê' },
     { path: '/admin/settings', icon: 'settings', label: 'Cài đặt hệ thống' },
   ];
 
