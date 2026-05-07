@@ -30,6 +30,7 @@ import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminReports from './pages/admin/AdminReports';
 import AdminChangePassword from './pages/admin/AdminChangePassword';
 import AdminProfile from './pages/admin/AdminProfile';
+import AdminInvoices from './pages/admin/AdminInvoices';
 
 // Hàm bảo vệ Route Admin
 function AdminRoute({ children }) {
@@ -109,7 +110,7 @@ function AppContent() {
             <Route path="categories" element={<AdminCategories />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="customers" element={<AdminCustomers />} />
-            <Route path="invoices" element={<div>Quản lý hóa đơn</div>} />
+            <Route path="invoices" element={<AdminInvoices />} />
             <Route path="vouchers" element={<AdminVouchers />} />
             <Route path="change-password" element={<AdminChangePassword />} />
             <Route path="profile" element={<AdminProfile />} />

@@ -41,6 +41,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed, currentUser 
     { path: '/admin/categories', icon: 'category', label: 'Quản lý Danh mục' },
     { path: '/admin/vouchers', icon: 'local_offer', label: 'Quản lý Voucher' },
     { path: '/admin/orders', icon: 'shopping_cart', label: 'Quản lý Đơn hàng' },
+    { path: '/admin/invoices', icon: 'receipt', label: 'Quản lý Hóa đơn' },
     { path: '/admin/customers', icon: 'group', label: 'Quản lý Khách hàng' },
   ];
 
