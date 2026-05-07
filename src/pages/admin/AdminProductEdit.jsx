@@ -15,6 +15,8 @@ const AdminProductEdit = () => {
   const token = localStorage.getItem('token');
   const thumbnailInputRef = useRef(null);
   const galleryInputRef = useRef(null);
+  // Lưu URLs ảnh ban đầu khi load để tính diff khi submit
+  const initialImageUrlsRef = useRef([]);
 
   // State lưu trữ dữ liệu
   const [categories, setCategories] = useState([]);
@@ -75,6 +77,8 @@ const AdminProductEdit = () => {
             typeof img === 'string' ? { url: img } : img
           );
           setExistingImages(mappedImages);
+          // Lưu lại URLs gốc để tính diff khi submit
+          initialImageUrlsRef.current = mappedImages.map(img => img.url || img.imageUrl).filter(Boolean);
         }
       } catch (error) {
         console.error('Lỗi khi tải dữ liệu:', error);
@@ -152,9 +156,19 @@ const AdminProductEdit = () => {
       const productPayload = {
         ...formData,
         basePrice: Number(formData.basePrice) || 0,
-        // Giả sử mảng ảnh hiện có cần gửi kèm ID để giữ lại
-        retainedImageIds: existingImages.map(img => img.id).filter(id => id),
       };
+
+      // Tính danh sách URL ảnh bị xóa = URLs ban đầu - URLs còn lại hiện tại
+      const currentUrls = existingImages.map(img => img.url || img.imageUrl).filter(Boolean);
+      const removedUrls = initialImageUrlsRef.current.filter(url => !currentUrls.includes(url));
+
+      // Gắn removeImageUrls vào query string (BE dùng @RequestParam)
+      const queryParams = new URLSearchParams();
+      removedUrls.forEach(url => queryParams.append('removeImageUrls', url));
+      const queryString = queryParams.toString();
+      const requestUrl = queryString
+        ? `/api/v1/admin/products/${id}?${queryString}`
+        : `/api/v1/admin/products/${id}`;
 
       const submitData = new FormData();
       submitData.append(
@@ -164,9 +178,6 @@ const AdminProductEdit = () => {
 
       if (thumbnailFile) {
         submitData.append('thumbnail', thumbnailFile);
-      } else if (!existingThumbnailUrl) {
-        // Gửi cờ xóa thumbnail nếu API hỗ trợ
-        submitData.append('removeThumbnail', 'true');
       }
 
       if (imageFiles.length > 0) {
@@ -175,7 +186,7 @@ const AdminProductEdit = () => {
         });
       }
 
-      const response = await fetch(`/api/v1/admin/products/${id}`, {
+      const response = await fetch(requestUrl, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -400,16 +411,20 @@ const AdminProductEdit = () => {
                 </button>
               </div>
 
-              {(imageFiles.length === 0 && existingImages.length === 0) ? (
-                <label className="upload-zone cursor-pointer w-full rounded-xl border-2 border-dashed border-stone-200 py-7 flex flex-col items-center gap-2 transition-all bg-stone-50">
-                  <input type="file" className="hidden" accept="image/*" multiple ref={galleryInputRef} onChange={handleGallerySelect} />
+              {/* Input ẩn đặt ngoài điều kiện để galleryInputRef luôn trỏ đến element tồn tại trong DOM */}
+            <input type="file" className="hidden" accept="image/*" multiple ref={galleryInputRef} onChange={handleGallerySelect} />
+
+            {(imageFiles.length === 0 && existingImages.length === 0) ? (
+                <div
+                  className="upload-zone cursor-pointer w-full rounded-xl border-2 border-dashed border-stone-200 py-7 flex flex-col items-center gap-2 transition-all bg-stone-50"
+                  onClick={() => galleryInputRef.current?.click()}
+                >
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                   <span className="text-sm font-medium text-stone-500">Bấm để chọn ảnh từ máy tính</span>
                   <span className="text-xs text-stone-400">Có thể chọn nhiều ảnh cùng lúc</span>
-                </label>
+                </div>
               ) : (
                 <div>
-                  <input type="file" className="hidden" accept="image/*" multiple ref={galleryInputRef} onChange={handleGallerySelect} />
                   <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                     {existingImages.map((img, idx) => (
                       <div key={`exist-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 group">

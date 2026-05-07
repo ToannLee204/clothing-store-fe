@@ -515,7 +515,8 @@ const AdminProductVariants = () => {
             className="text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl"
             style={{ fontFamily: '"Cormorant Garamond", serif' }}
           >
-            Biến thể sản phẩm
+            Biến thể của sản phẩm{' '}
+            {product?.name && <span className="text-[#3b5bdb]">{product.name}</span>}
           </h1>
           <p className="mt-1 max-w-lg text-sm leading-relaxed text-stone-400">
             Quản lý biến thể theo phong cách dashboard hiện đại, tối ưu khả năng đọc, thao tác nhanh và theo dõi tồn
@@ -745,3 +746,5 @@ const AdminProductVariants = () => {
 };
 
 export default AdminProductVariants;
+
+

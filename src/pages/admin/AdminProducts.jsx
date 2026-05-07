@@ -52,8 +52,6 @@ const AdminProducts = () => {
     status: '',
     minPrice: '',
     maxPrice: '',
-    color: '',
-    size: '',
     sortBy: '',
   });
 
@@ -64,8 +62,6 @@ const AdminProducts = () => {
   const [advancedInput, setAdvancedInput] = useState({
     minPrice: '',
     maxPrice: '',
-    color: '',
-    size: '',
   });
 
   const PRODUCT_API_URL = '/api/v1/admin/products';
@@ -94,8 +90,8 @@ const AdminProducts = () => {
 
   const clearFilters = () => {
     setKeywordInput('');
-    setAdvancedInput({ minPrice: '', maxPrice: '', color: '', size: '' });
-    setFilters({ keyword: '', categoryId: '', status: '', minPrice: '', maxPrice: '', color: '', size: '', sortBy: '' });
+    setAdvancedInput({ minPrice: '', maxPrice: '' });
+    setFilters({ keyword: '', categoryId: '', status: '', minPrice: '', maxPrice: '', sortBy: '' });
     setPagination((prev) => ({ ...prev, current: 1 }));
     setShowAdvanced(false);
   };
@@ -106,8 +102,6 @@ const AdminProducts = () => {
       ...prev,
       minPrice: parsePriceRaw(advancedInput.minPrice),
       maxPrice: parsePriceRaw(advancedInput.maxPrice),
-      color: advancedInput.color,
-      size: advancedInput.size,
     }));
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
@@ -139,8 +133,6 @@ const AdminProducts = () => {
       if (filters.status !== '') queryParams.append('status', filters.status);
       if (filters.minPrice)   queryParams.append('minPrice', filters.minPrice);
       if (filters.maxPrice)   queryParams.append('maxPrice', filters.maxPrice);
-      if (filters.color)      queryParams.append('color', filters.color);
-      if (filters.size)       queryParams.append('size', filters.size);
       if (filters.sortBy)     queryParams.append('sortBy', filters.sortBy);
 
       const response = await fetch(`${PRODUCT_API_URL}?${queryParams.toString()}`, {
@@ -238,7 +230,7 @@ const AdminProducts = () => {
   const pageEnd   = products.length > 0 ? (pagination.current - 1) * pagination.pageSize + products.length : 0;
 
   const hasFilters = filters.keyword || filters.categoryId || filters.status !== '' ||
-    filters.minPrice || filters.maxPrice || filters.color || filters.size || filters.sortBy;
+    filters.minPrice || filters.maxPrice || filters.sortBy;
 
   return (
     <main className="flex-1 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
@@ -366,7 +358,7 @@ const AdminProducts = () => {
 
           {/* Row 2: Advanced filters (toggle) */}
           {showAdvanced && (
-            <div style={{
+            <div className="advanced-filter-row" style={{
               display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center',
               paddingTop: '12px', borderTop: '1px solid #f1f5f9',
             }}>
