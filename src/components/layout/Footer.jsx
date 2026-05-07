@@ -3,7 +3,7 @@ export default function Footer() {
       <footer className="bg-[#2C3E50] text-white w-full mt-12 md:mt-24">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 px-6 md:px-12 py-16 md:py-20 max-w-[1920px] mx-auto">
           <div className="flex flex-col gap-6">
-            <a className="text-xl font-headline font-bold text-white tracking-tighter" href="#">FASHION STORE</a>
+            <a className="text-xl font-headline font-bold text-white tracking-tighter" href="#">CLOTHING STORE</a>
             <p className="font-body text-sm leading-relaxed text-gray-300 max-w-xs">
               Điểm đến của sự tinh tế và đẳng cấp trong thời trang tối giản.
             </p>
@@ -50,7 +50,7 @@ export default function Footer() {
         
         <div className="px-6 md:px-12 py-8 border-t border-white/10 max-w-[1920px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
           <span className="font-label uppercase tracking-widest text-[10px] text-gray-400">
-            © 2026 FASHION STORE. BẢN QUYỀN ĐƯỢC BẢO LƯU.
+            © 2026 CLOTHING STORE. BẢN QUYỀN ĐƯỢC BẢO LƯU.
           </span>
           <div className="flex flex-wrap justify-center gap-6 md:gap-8">
             <a className="font-label uppercase tracking-widest text-[10px] text-gray-400 hover:text-white transition-colors" href="#">Điều khoản</a>

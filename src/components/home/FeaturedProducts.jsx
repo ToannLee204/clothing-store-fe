@@ -1,86 +1,59 @@
-import SectionTitle from '../common/SectionTitle';
+import React from 'react';
 import { formatPrice } from '../../utils/format';
-
-function ArrowIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M5 12h14m-6-6 6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function SparkIcon() {
-  return (
-    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-      <path d="M12 3l1.9 5.9H20l-4.9 3.6L17 18.6 12 15l-5 3.6 1.9-5.1L4 8.9h6.1L12 3z" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 export default function FeaturedProducts({ products }) {
   return (
-    <section id="featured-products" className="bg-slate-50 py-20 md:py-28">
-      <div className="mx-auto max-w-[1920px] px-6 md:px-12">
-        <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-          <SectionTitle
-            kicker="Sản phẩm mới"
-            title="Bộ sưu tập vừa cập bến."
-            description="Những thiết kế mới nhất vừa được đưa lên kệ, lấy trực tiếp từ hệ thống dữ liệu."
-          />
-          <a
-            className="inline-flex items-center gap-2 self-start text-[0.72rem] font-bold uppercase tracking-[0.18rem] text-slate-500 transition-colors hover:text-[#0066A2] sm:self-auto"
-            href="/products"
+    <section id="featured-products" className="bg-slate-50 py-24">
+      <div className="container mx-auto px-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+          <div>
+            <p className="text-[#0066A2] text-[11px] font-black uppercase tracking-[0.25em] mb-4">HÀNG MỚI VỀ</p>
+            <h2 className="font-display text-5xl md:text-6xl font-medium text-slate-900 leading-tight">
+              Bộ sưu tập vừa cập bến.
+            </h2>
+          </div>
+          <a 
+            href="/products" 
+            className="group inline-flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-[#0066A2] transition-all"
           >
-            Xem toàn bộ
-            <ArrowIcon />
+            Xem tất cả 
+            <span className="w-8 h-px bg-slate-300 transition-all group-hover:w-12 group-hover:bg-[#0066A2]"></span>
           </a>
         </div>
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-          {products.map((product) => {
-            const id = product.id || product.maSP;
-            const name = product.name || product.ten;
-            const desc = product.description || product.moTa;
-            const price = product.price || product.gia;
-            const image = product.imageUrl || product.anhDaiDien;
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {products.map((product, idx) => (
+            <div key={idx} className="group cursor-pointer">
+              {/* Product Image Container */}
+              <div className="relative rounded-2xl overflow-hidden aspect-[3/4] mb-6 shadow-sm ring-1 ring-slate-100 transition-all hover:shadow-xl">
+                <img 
+                  src={product.imageUrl || product.anhDaiDien} 
+                  alt={product.productName || product.ten} 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                />
+                
+                {/* Badge Overlay */}
+                <div className="absolute top-4 left-4">
+                  <span className="bg-[#0066A2] text-white text-[9px] font-black tracking-widest px-3 py-1.5 rounded-full uppercase">Mới</span>
+                </div>
 
-            return (
-              <article
-                key={id}
-                className="group overflow-hidden rounded-[1.8rem] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
-              >
-                <div className="relative aspect-[3/4] overflow-hidden bg-slate-200">
-                  <img
-                    alt={name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    src={image}
-                  />
-                  <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18rem] text-[#0066A2] shadow-sm">
-                    Mới về
-                  </div>
-                  <button className="absolute bottom-4 right-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg transition-all duration-300 hover:bg-[#0066A2] hover:text-white">
-                    <SparkIcon />
+                {/* Quick Add Button with Admin Style */}
+                <div className="absolute bottom-4 left-4 right-4 translate-y-8 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                  <button className="w-full py-3 rounded-xl bg-white text-slate-950 text-xs font-bold uppercase tracking-widest shadow-xl hover:bg-[#0066A2] hover:text-white transition-colors">
+                    + Thêm vào giỏ
                   </button>
                 </div>
+              </div>
 
-                <div className="p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-base font-bold text-slate-900 transition-colors group-hover:text-[#0066A2]">
-                        {name}
-                      </h3>
-                      <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">
-                        {desc}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-sm font-bold text-[#0066A2]">
-                      {formatPrice(price)}
-                    </span>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+              {/* Product Info */}
+              <div className="space-y-1">
+                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">{product.categoryName || 'Sản phẩm'}</p>
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0066A2] transition-colors">{product.productName || product.ten}</h3>
+                <p className="font-display text-xl font-medium text-[#0066A2]">{formatPrice(product.price || product.giaHienTai || 0)}</p>
+                <p className="text-[11px] text-slate-500 line-clamp-1">{product.description || 'Chất liệu cao cấp, kiểu dáng hiện đại.'}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

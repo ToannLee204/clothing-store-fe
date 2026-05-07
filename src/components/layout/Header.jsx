@@ -108,7 +108,7 @@ export default function Header() {
       <div className="container mx-auto flex h-20 items-center justify-between gap-8 px-4">
         <div className="flex items-center gap-10">
           <Link to="/" className="flex-shrink-0 text-2xl font-black uppercase tracking-tighter text-slate-900">
-            FASHION STORE
+            CLOTHING STORE
           </Link>
 
           <nav className="hidden items-center gap-8 lg:flex">
