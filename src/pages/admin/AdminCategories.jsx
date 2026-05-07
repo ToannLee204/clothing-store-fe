@@ -1,12 +1,59 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import './AdminProducts.css';
+
+const DEFAULT_PAGE_SIZE = 20;
+
+const parseJsonText = async (response) => {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+};
+
+const getResponseMessage = (payload, fallback) => {
+  if (!payload) return fallback;
+  if (typeof payload === 'string') return payload;
+  return payload.message || payload.error || payload?.data?.message || fallback;
+};
+
+const extractListMetaAndItems = (payload) => {
+  if (!payload) return { meta: null, items: [] };
+
+  const meta = payload.meta || payload.data?.meta || null;
+  const rawItems =
+    payload.result ||
+    payload.data?.result ||
+    payload.data?.content ||
+    payload.content ||
+    payload.data ||
+    [];
+
+  return { meta, items: Array.isArray(rawItems) ? rawItems : [] };
+};
 
 const AdminCategories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '', parentId: '' });
+
+  const [keywordInput, setKeywordInput] = useState('');
+  const [filters, setFilters] = useState({
+    keyword: '',
+    status: '', // '', 'true', 'false'
+  });
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+    total: 0,
+    pages: 1,
+  });
 
   const token = localStorage.getItem('token');
 
@@ -27,26 +74,61 @@ const AdminCategories = () => {
     return flatList;
   };
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (page = 1, nextFilters = filters) => {
+    setLoading(true);
+    setError('');
+
     try {
-      const response = await fetch('/api/v1/categories', {
+      const queryParams = new URLSearchParams({
+        page: String(page - 1),
+        pageSize: String(pagination.pageSize || DEFAULT_PAGE_SIZE),
+      });
+
+      const keyword = (nextFilters.keyword || '').trim();
+      if (keyword) queryParams.append('keyword', keyword);
+      if (nextFilters.status === 'true') queryParams.append('status', 'true');
+      if (nextFilters.status === 'false') queryParams.append('status', 'false');
+
+      const response = await fetch(`/api/v1/categories?${queryParams.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const text = await response.text();
+      const payload = await parseJsonText(response);
 
-      if (response.ok && text) {
-        const actualData = JSON.parse(text);
-        const rawData = actualData.data || actualData || [];
-        const flatData = flattenCategories(rawData);
-        setCategories(flatData);
+      if (!response.ok) {
+        throw new Error(getResponseMessage(payload, 'Không thể tải danh mục.'));
+      }
+
+      const { meta, items } = extractListMetaAndItems(payload);
+      const flatData = flattenCategories(items);
+      setCategories(flatData);
+
+      if (meta) {
+        setPagination((prev) => ({
+          ...prev,
+          current: meta.page !== undefined ? meta.page + 1 : page,
+          pageSize: meta.pageSize || prev.pageSize || DEFAULT_PAGE_SIZE,
+          total: meta.totals || meta.totalElements || flatData.length,
+          pages: meta.pages || meta.totalPages || 1,
+        }));
+      } else {
+        setPagination((prev) => ({
+          ...prev,
+          current: page,
+          total: flatData.length,
+          pages: 1,
+        }));
       }
     } catch (err) {
-      console.error('Lỗi lấy danh mục:', err);
+      setError(err?.message || 'Lỗi lấy danh mục.');
+      setCategories([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCategories();
+    fetchCategories(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e) => {
@@ -75,10 +157,10 @@ const AdminCategories = () => {
 
       if (response.ok) {
         cancelEdit();
-        fetchCategories();
+        fetchCategories(pagination.current);
       } else {
-        const text = await response.text();
-        alert('Lỗi từ Server: ' + text);
+        const payloadText = await parseJsonText(response);
+        alert('Lỗi từ Server: ' + getResponseMessage(payloadText, 'Không thể lưu danh mục.'));
       }
     } catch (err) {
       alert('Lỗi kết nối đến Server!');
@@ -112,7 +194,7 @@ const AdminCategories = () => {
       });
 
       if (response.ok) {
-        fetchCategories();
+        fetchCategories(pagination.current);
       } else {
         alert('Không thể xóa. Có thể danh mục này đang chứa danh mục con hoặc sản phẩm!');
       }
@@ -129,7 +211,7 @@ const AdminCategories = () => {
       });
 
       if (response.ok) {
-        fetchCategories();
+        fetchCategories(pagination.current);
       } else {
         alert('Chưa cấu hình API đổi trạng thái ở Backend!');
       }
@@ -138,378 +220,380 @@ const AdminCategories = () => {
     }
   };
 
+  const handleKeywordKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    const nextFilters = { ...filters, keyword: keywordInput };
+    setFilters(nextFilters);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    fetchCategories(1, nextFilters);
+  };
+
+  const handleStatusChange = (value) => {
+    const nextFilters = { ...filters, status: value };
+    setFilters(nextFilters);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    fetchCategories(1, nextFilters);
+  };
+
+  const clearFilters = () => {
+    const nextFilters = { keyword: '', status: '' };
+    setKeywordInput('');
+    setFilters(nextFilters);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    fetchCategories(1, nextFilters);
+  };
+
   const stats = useMemo(() => {
-    const visibleCount = categories.filter((cat) => Number(cat.status) !== 0).length;
-    const hiddenCount = categories.filter((cat) => Number(cat.status) === 0).length;
+    const visibleCount = categories.filter((cat) => Number(cat.status) !== 0 && cat.status !== false).length;
+    const hiddenCount = categories.filter((cat) => Number(cat.status) === 0 || cat.status === false).length;
     const rootCount = categories.filter((cat) => !cat.parentId && !cat.parent?.id).length;
 
     return [
       {
         label: 'Tổng danh mục',
-        value: categories.length,
+        value: pagination.total || categories.length,
         icon: 'category',
-        accent: 'from-[#0066A2] to-[#3385b5]',
-        detail: 'Tất cả danh mục đã được đồng bộ từ hệ thống',
+        detail: 'Tất cả danh mục theo bộ lọc hiện tại',
       },
       {
         label: 'Danh mục gốc',
         value: rootCount,
         icon: 'account_tree',
-        accent: 'from-slate-600 to-slate-400',
         detail: 'Các nút cấp cao nhất trong cây phân loại',
       },
       {
         label: 'Đang hiển thị',
         value: visibleCount,
         icon: 'visibility',
-        accent: 'from-emerald-500 to-emerald-400',
         detail: 'Danh mục đang mở cho người dùng',
       },
       {
         label: 'Đang ẩn',
         value: hiddenCount,
         icon: 'visibility_off',
-        accent: 'from-amber-500 to-amber-400',
         detail: 'Danh mục chưa công khai hoặc đang tạm ẩn',
       },
     ];
-  }, [categories]);
+  }, [categories, pagination.total]);
 
   const hasFormData = formData.name.trim().length > 0 || formData.parentId !== '';
+  const hasFilters = filters.keyword || filters.status;
+  const canPrev = pagination.current > 1;
+  const canNext = pagination.current < pagination.pages;
 
   return (
     <main className="flex-1 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
-      <div className="flex flex-col gap-6">
-        <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0066A2] via-[#3385b5] to-[#66a3c7]" />
-          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#0066A2]/8 blur-3xl" />
-          <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-slate-200/60 blur-3xl" />
-
-          <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-2xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#0066A2]/15 bg-[#0066A2]/8 px-3 py-1 text-xs font-semibold text-[#004b76]">
-                <span className="material-symbols-outlined text-[16px]">category</span>
-                Admin / Danh mục
-              </div>
-
-              <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                Quản lý danh mục
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
-                Giao diện được làm mới theo kiểu dashboard hiện đại, giữ nguyên tông màu của hệ thống
-                nhưng tối ưu hơn cho việc phân loại, chỉnh sửa và quản lý cây danh mục.
-              </p>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Tổng danh mục</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{categories.length}</p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Trạng thái form</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    {isFormOpen ? (editingId ? 'Đang chỉnh sửa' : 'Đang thêm mới') : 'Đang đóng'}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Bộ lọc cây</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">Dạng phân cấp</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid w-full gap-3 sm:grid-cols-2 xl:w-[420px]">
-              <button
-                onClick={() => {
-                  setIsFormOpen(true);
-                  setEditingId(null);
-                  setFormData({ name: '', parentId: '' });
-                }}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:-translate-y-0.5 hover:bg-[#005587]"
-              >
-                <span className="material-symbols-outlined text-[20px]">add</span>
-                Thêm danh mục mới
-              </button>
-
-              <button
-                onClick={fetchCategories}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
-              >
-                <span className="material-symbols-outlined text-[20px]">refresh</span>
-                Làm mới
-              </button>
-            </div>
-          </div>
-
-          <div className="relative mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.08)]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-                    <p className="mt-2 text-2xl font-black tracking-tight text-slate-900">{stat.value}</p>
-                  </div>
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${stat.accent} text-white shadow-lg`}>
-                    <span className="material-symbols-outlined text-[22px]">{stat.icon}</span>
-                  </div>
-                </div>
-                <p className="mt-3 text-xs leading-5 text-slate-500">{stat.detail}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {isFormOpen && (
-          <section className="rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-5">
+      {isFormOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 60,
+            background: 'rgba(15, 23, 42, 0.38)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+          }}
+        >
+          <section
+            className="filter-bar"
+            style={{
+              width: '100%',
+              maxWidth: '720px',
+              marginBottom: 0,
+              boxShadow: '0 20px 60px rgba(15, 23, 42, 0.18)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start', marginBottom: '18px' }}>
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#0066A2]/15 bg-[#0066A2]/8 px-3 py-1 text-xs font-semibold text-[#004b76]">
-                  <span className="material-symbols-outlined text-[16px]">
-                    {editingId ? 'edit' : 'add_circle'}
-                  </span>
-                  {editingId ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới'}
+                <div className="filter-label">{editingId ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới'}</div>
+                <div style={{ marginTop: '4px', fontSize: '13px', color: '#64748b' }}>
+                  {hasFormData ? 'Biểu mẫu đang có dữ liệu thay đổi.' : 'Điền thông tin để tạo hoặc cập nhật danh mục.'}
                 </div>
-                <h2 className="mt-3 text-xl font-black tracking-tight text-slate-900">
-                  {editingId ? 'Cập nhật danh mục' : 'Tạo danh mục mới'}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Thiết kế form theo phong cách tối giản, rõ ràng và dễ thao tác hơn trên màn quản trị.
-                </p>
               </div>
-
               <button
+                type="button"
                 onClick={cancelEdit}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                className="page-btn"
+                style={{ width: '36px', height: '36px', flexShrink: 0 }}
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-              <div className="grid gap-4 lg:grid-cols-2">
+            <form onSubmit={handleSubmit}>
+              <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)' }}>
                 <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Tên danh mục <span className="text-red-500">*</span>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                    Tên danh mục <span style={{ color: '#dc2626' }}>*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="VD: Áo sơ mi, Váy dạ hội..."
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      background: '#f8fafc',
+                      fontSize: '13px',
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Danh mục cha <span className="font-medium normal-case tracking-normal text-slate-400">(tùy chọn)</span>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                    Danh mục cha <span style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0, color: '#94a3b8' }}>(tùy chọn)</span>
                   </label>
-                  <div className="relative">
-                    <select
-                      className="w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-sm font-medium text-slate-700 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
-                      value={formData.parentId}
-                      onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
-                    >
-                      <option value="">-- Danh mục gốc (Không có cha) --</option>
-                      {categories
-                        .filter((c) => c.id !== editingId)
-                        .map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.displayName || cat.name}
-                          </option>
-                        ))}
-                    </select>
-                    <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-slate-400">
-                      expand_more
-                    </span>
-                  </div>
+                  <select
+                    className="fselect"
+                    style={{ width: '100%' }}
+                    value={formData.parentId}
+                    onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
+                  >
+                    <option value="">-- Danh mục gốc (Không có cha) --</option>
+                    {categories
+                      .filter((c) => c.id !== editingId)
+                      .map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.displayName || cat.name}
+                        </option>
+                      ))}
+                  </select>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-slate-500">
-                  {hasFormData ? 'Biểu mẫu đang có dữ liệu thay đổi.' : 'Điền thông tin để tạo hoặc cập nhật danh mục.'}
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Hủy bỏ
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex items-center gap-2 rounded-2xl bg-[#0066A2] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {loading ? (
-                      <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
-                    ) : (
-                      <span className="material-symbols-outlined text-[18px]">save</span>
-                    )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '13px', color: '#64748b' }}>
+                  {editingId ? 'Đang cập nhật dữ liệu danh mục hiện có.' : 'Danh mục mới sẽ được thêm ngay sau khi lưu.'}
+                </span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="button" className="btn-ghost" onClick={cancelEdit}>Hủy bỏ</button>
+                  <button type="submit" className="btn-primary" disabled={loading} style={{ opacity: loading ? 0.7 : 1 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                      {loading ? 'sync' : 'save'}
+                    </span>
                     Lưu danh mục
                   </button>
                 </div>
               </div>
             </form>
           </section>
-        )}
+        </div>
+      )}
 
-        <section className="overflow-hidden rounded-3xl border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Danh sách danh mục</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Hiển thị theo dạng bảng gọn hơn để dễ quét tên và cấp cha con.
-              </p>
+      <div className="pm-wrap">
+        <div className="pm-topbar">
+          <div className="pm-title-block">
+            <div className="pm-title">Quản lý danh mục</div>
+            <div className="pm-subtitle">
+              Tìm kiếm theo tên, lọc theo trạng thái và quản lý cây danh mục theo API phân trang.
+            </div>
+          </div>
+          <div className="pm-actions">
+            <button className="btn-ghost" onClick={() => fetchCategories(pagination.current)}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>refresh</span>Làm mới
+            </button>
+            <button
+              className="btn-primary"
+              onClick={() => {
+                setIsFormOpen(true);
+                setEditingId(null);
+                setFormData({ name: '', parentId: '' });
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>Thêm danh mục
+            </button>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          {stats.map((stat, idx) => (
+            <div key={stat.label} className={`stat-card ${stat.label === 'Đang ẩn' ? 'warn' : ''}`}>
+              <div className={`stat-icon ${idx === 0 ? 'si-blue' : idx === 1 ? 'si-gray' : idx === 2 ? 'si-teal' : 'si-amber'}`}>
+                <span className="material-symbols-outlined">{stat.icon}</span>
+              </div>
+              <div className="stat-label">{stat.label}</div>
+              <div className="stat-value">{stat.value}</div>
+              <div className="stat-desc">{stat.detail}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="filter-bar">
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: '1 1 260px', minWidth: '220px' }}>
+              <span
+                className="material-symbols-outlined"
+                style={{
+                  position: 'absolute',
+                  left: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  fontSize: '17px',
+                  color: '#94a3b8',
+                  pointerEvents: 'none',
+                }}
+              >
+                search
+              </span>
+              <input
+                type="text"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+                onKeyDown={handleKeywordKeyDown}
+                placeholder="Tìm theo tên danh mục... (Enter để tìm)"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px 8px 34px',
+                  borderRadius: '6px',
+                  border: '1px solid #e2e8f0',
+                  background: '#f8fafc',
+                  fontSize: '13px',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
             </div>
 
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-600">
-              <span className="size-2 rounded-full bg-[#0066A2]" />
-              {categories.length} mục
+            <select className="fselect" value={filters.status} onChange={(e) => handleStatusChange(e.target.value)}>
+              <option value="">Tất cả trạng thái</option>
+              <option value="true">Đang hiển thị</option>
+              <option value="false">Đang ẩn</option>
+            </select>
+
+            {hasFilters && (
+              <button className="btn-ghost" onClick={clearFilters}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>Xóa lọc
+              </button>
+            )}
+          </div>
+
+          {error && (
+            <div style={{ padding: '12px', background: '#fef2f2', color: '#dc2626', borderRadius: '8px', marginBottom: '12px', fontSize: '13px', border: '1px solid #fecaca' }}>
+              {error}
+            </div>
+          )}
+
+          <div className="filter-counts">
+            <span className="dot-count"><span className="dot dot-teal" />{categories.filter((cat) => Number(cat.status) !== 0 && cat.status !== false).length} đang hiển thị</span>
+            <span className="dot-count"><span className="dot dot-gray" />{pagination.total} danh mục</span>
+            {loading && (
+              <span style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px', animation: 'spin 1s linear infinite' }}>progress_activity</span>Đang tải...
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="table-wrap">
+          <div
+            className="tbl-header"
+            style={{ gridTemplateColumns: '90px minmax(0,1.5fr) minmax(0,1fr) 140px 170px' }}
+          >
+            <div className="th">Mã ID</div>
+            <div className="th">Tên danh mục</div>
+            <div className="th">Thuộc danh mục</div>
+            <div className="th center">Trạng thái</div>
+            <div className="th right">Thao tác</div>
+          </div>
+
+          {!loading && categories.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
+              Không tìm thấy danh mục phù hợp.
+            </div>
+          ) : (
+            categories.map((cat) => {
+              const parentName = cat.parentId
+                ? categories.find((c) => c.id === cat.parentId)?.name
+                : cat.parent?.name || null;
+
+              const isHidden = Number(cat.status) === 0 || cat.status === false;
+              const statusTone = isHidden ? 'badge-red' : 'badge-green';
+              const statusText = isHidden ? 'Đã ẩn' : 'Hiển thị';
+
+              return (
+                <div
+                  key={cat.id}
+                  className="tbl-row"
+                  style={{ gridTemplateColumns: '90px minmax(0,1.5fr) minmax(0,1fr) 140px 170px' }}
+                >
+                  <div>
+                    <span className="badge badge-cat" style={{ fontFamily: 'monospace' }}>#{cat.id}</span>
+                  </div>
+
+                  <div>
+                    <div className="prod-name">{cat.name}</div>
+                    <div className="prod-meta">
+                      <span className="prod-tag">
+                        <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>account_tree</span>
+                        {cat.displayName !== cat.name ? cat.displayName : 'Danh mục gốc hoặc cấp hiện tại'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="badge badge-cat">{parentName || 'Danh mục gốc'}</span>
+                  </div>
+
+                  <div style={{ textAlign: 'center' }}>
+                    <button
+                      onClick={() => handleToggleVisibility(cat.id)}
+                      className={`badge ${statusTone}`}
+                      title="Click để Ẩn/Hiện danh mục"
+                    >
+                      <span className="dot" style={{ marginRight: '4px' }} />
+                      {statusText}
+                    </button>
+                  </div>
+
+                  <div>
+                    <div className="act-row">
+                      <button className="act-btn edit" onClick={() => handleEdit(cat)}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>Sửa
+                      </button>
+                      <button className="act-btn del" onClick={() => handleDelete(cat.id)}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>Xóa
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+
+          <div className="tbl-footer">
+            <span className="footer-text">
+              Trang <strong>{pagination.current}</strong> / <strong>{pagination.pages}</strong> · Tổng <strong>{pagination.total}</strong> danh mục
             </span>
+            <div className="pager">
+              <button
+                className="page-btn"
+                disabled={!canPrev}
+                onClick={() => fetchCategories(pagination.current - 1)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_left</span>
+              </button>
+              <button className="page-btn active">{pagination.current}</button>
+              <button
+                className="page-btn"
+                disabled={!canNext}
+                onClick={() => fetchCategories(pagination.current + 1)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
+              </button>
+            </div>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead className="bg-slate-50/95 backdrop-blur">
-                <tr className="border-b border-slate-200">
-                  <th className="w-28 px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Mã ID
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Tên danh mục
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Thuộc danh mục
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-center">
-                    Trạng thái
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-right">
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100">
-                {categories.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-20 text-center">
-                      <div className="mx-auto flex max-w-md flex-col items-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0066A2]/10 text-[#0066A2]">
-                          <span className="material-symbols-outlined text-[30px]">category_off</span>
-                        </div>
-                        <h4 className="mt-4 text-lg font-bold text-slate-900">Chưa có danh mục nào</h4>
-                        <p className="mt-2 text-sm leading-6 text-slate-500">
-                          Hãy tạo danh mục đầu tiên để bắt đầu tổ chức hệ thống sản phẩm.
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  categories.map((cat) => {
-                    const parentName = cat.parentId
-                      ? categories.find((c) => c.id === cat.parentId)?.name
-                      : cat.parent?.name || null;
-
-                    const isHidden = Number(cat.status) === 0;
-                    const statusTone = isHidden
-                      ? 'bg-slate-100 text-slate-600 border-slate-200'
-                      : 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                    const statusDot = isHidden ? 'bg-slate-400' : 'bg-emerald-500';
-                    const statusText = isHidden ? 'Đã ẩn' : 'Hiển thị';
-
-                    return (
-                      <tr key={cat.id} className="group transition hover:bg-[#fdf7f3]">
-                        <td className="px-6 py-5 align-middle">
-                          <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 font-mono text-xs font-semibold text-slate-600">
-                            #{cat.id}
-                          </span>
-                        </td>
-
-                        <td className="px-6 py-5 align-middle">
-                          <div className="max-w-[320px]">
-                            <div className="text-sm font-bold text-slate-900">{cat.name}</div>
-                            <div className="mt-1 text-xs text-slate-500">
-                              {cat.displayName !== cat.name ? `Hiển thị nhánh: ${cat.displayName}` : 'Danh mục cấp gốc hoặc cấp hiện tại'}
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-5 align-middle">
-                          {parentName ? (
-                            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                              <span className="material-symbols-outlined text-[16px] text-slate-400">
-                                subdirectory_arrow_right
-                              </span>
-                              {parentName}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500">
-                              <span className="material-symbols-outlined text-[16px] text-slate-400">
-                                account_tree
-                              </span>
-                              Danh mục gốc
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="px-6 py-5 align-middle text-center">
-                          <button
-                            onClick={() => handleToggleVisibility(cat.id)}
-                            className={`inline-flex min-w-[120px] items-center justify-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition hover:brightness-95 ${statusTone}`}
-                            title="Click để Ẩn/Hiện danh mục"
-                          >
-                            <span className={`size-2 rounded-full ${statusDot}`} />
-                            {statusText}
-                          </button>
-                        </td>
-
-                        <td className="px-6 py-5 align-middle">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleEdit(cat)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#0066A2]/15 bg-[#0066A2]/10 px-3 py-2 text-xs font-semibold text-[#004b76] transition hover:bg-[#0066A2]/15"
-                              title="Sửa danh mục"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">edit</span>
-                              Sửa
-                            </button>
-
-                            <button
-                              onClick={() => handleDelete(cat.id)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-100"
-                              title="Xóa danh mục"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">delete</span>
-                              Xóa
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/80 px-6 py-4">
-            <p className="text-sm text-slate-500">
-              Tổng cộng <span className="font-bold text-slate-900">{categories.length}</span> danh mục
-            </p>
-            <p className="text-sm text-slate-500">
-              {isFormOpen ? 'Form đang mở để thao tác' : 'Sẵn sàng cho chỉnh sửa nhanh'}
-            </p>
-          </div>
-        </section>
+        </div>
       </div>
     </main>
   );
