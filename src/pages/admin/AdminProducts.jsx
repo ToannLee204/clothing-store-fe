@@ -1,4 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+
+const priceFormatter = new Intl.NumberFormat('vi-VN');
+const formatPriceDisplay = (raw) => {
+  if (raw === '' || raw === null || raw === undefined) return '';
+  const digits = String(raw).replace(/\D/g, '');
+  if (!digits) return '';
+  return priceFormatter.format(Number(digits));
+};
+const parsePriceRaw = (formatted) => String(formatted).replace(/\D/g, '');
 import { useNavigate } from 'react-router-dom';
 import './AdminProducts.css';
 
@@ -16,117 +25,125 @@ const getImageUrl = (url) => {
   return `http://localhost:8080/api/v1/uploads/products/${url}`;
 };
 
-const getProductStatusMeta = (product) => {
-  const isVisible = Number(product?.status) !== 0;
-  const totalStock = Number(product?.totalStock) || 0;
+const SORT_OPTIONS = [
+  { value: '', label: 'Mặc định' },
+  { value: 'newest', label: 'Mới nhất' },
+  { value: 'name', label: 'Tên A→Z' },
+  { value: 'price_asc', label: 'Giá tăng dần' },
+  { value: 'price_desc', label: 'Giá giảm dần' },
+];
 
-  if (!isVisible) {
-    return {
-      label: 'Đã ẩn',
-      tone: 'bg-slate-100 text-slate-600 border-slate-200',
-      dot: 'bg-slate-400',
-      button: 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100',
-    };
-  }
-
-  if (totalStock === 0) {
-    return {
-      label: 'Hết hàng',
-      tone: 'bg-rose-50 text-rose-700 border-rose-200',
-      dot: 'bg-rose-500',
-      button: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100',
-    };
-  }
-
-  if (totalStock < 10) {
-    return {
-      label: `Sắp hết (${totalStock})`,
-      tone: 'bg-amber-50 text-amber-700 border-amber-200',
-      dot: 'bg-amber-500',
-      button: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
-    };
-  }
-
-  return {
-    label: `Còn hàng (${totalStock})`,
-    tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    dot: 'bg-emerald-500',
-    button: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
-  };
-};
+const SIZE_OPTIONS = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const navigate = useNavigate();
 
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0, pages: 1 });
 
-  const [filters, setFilters] = useState({ categoryId: '', status: '' });
+  // Tất cả filter theo ProductFilterRequest
+  const [filters, setFilters] = useState({
+    keyword: '',
+    categoryId: '',
+    status: '',
+    minPrice: '',
+    maxPrice: '',
+    color: '',
+    size: '',
+    sortBy: '',
+  });
+
+  // Keyword input state (chỉ cập nhật khi gõ, chưa call API)
+  const [keywordInput, setKeywordInput] = useState('');
+
+  // Advanced filter input state (lazy — chỉ apply khi bấm Lọc)
+  const [advancedInput, setAdvancedInput] = useState({
+    minPrice: '',
+    maxPrice: '',
+    color: '',
+    size: '',
+  });
 
   const PRODUCT_API_URL = '/api/v1/admin/products';
   const CATEGORY_API_URL = '/api/v1/categories';
   const token = localStorage.getItem('token');
-
-  const handleViewVariants = (productId) => {
-    navigate(`/admin/products/variants/${productId}`);
-  };
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
+  // Chỉ gõ, không call API
+  const handleKeywordChange = (e) => {
+    setKeywordInput(e.target.value);
+  };
+
+  // Commit keyword vào filter → trigger API
+  const handleKeywordSearch = () => {
+    setFilters((prev) => ({ ...prev, keyword: keywordInput }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const handleKeywordKeyDown = (e) => {
+    if (e.key === 'Enter') handleKeywordSearch();
+  };
+
   const clearFilters = () => {
-    setFilters({ categoryId: '', status: '' });
+    setKeywordInput('');
+    setAdvancedInput({ minPrice: '', maxPrice: '', color: '', size: '' });
+    setFilters({ keyword: '', categoryId: '', status: '', minPrice: '', maxPrice: '', color: '', size: '', sortBy: '' });
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    setShowAdvanced(false);
+  };
+
+  // Commit advanced inputs vào filters → trigger API
+  const handleAdvancedApply = () => {
+    setFilters((prev) => ({
+      ...prev,
+      minPrice: parsePriceRaw(advancedInput.minPrice),
+      maxPrice: parsePriceRaw(advancedInput.maxPrice),
+      color: advancedInput.color,
+      size: advancedInput.size,
+    }));
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(CATEGORY_API_URL, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const text = await response.text();
-      let actualData = {};
-
-      if (text) {
-        try {
-          actualData = JSON.parse(text);
-        } catch (e) {
-          actualData = {};
-        }
-      }
-
-      if (response.ok) {
-        setCategories(actualData.data || actualData || []);
+      const res = await fetch(CATEGORY_API_URL, { headers: { Authorization: `Bearer ${token}` } });
+      const text = await res.text();
+      if (res.ok && text) {
+        const json = JSON.parse(text);
+        setCategories(json.data || json || []);
       }
     } catch (err) {
       console.error('Lỗi kết nối API Danh mục:', err);
     }
   };
 
-  const fetchProducts = async (page = 1) => {
+  const fetchProducts = useCallback(async (page = 1) => {
     setError('');
-
+    setLoading(true);
     try {
       const queryParams = new URLSearchParams({
         page: page - 1,
         pageSize: pagination.pageSize || 10,
       });
 
-      if (filters.categoryId) {
-        queryParams.append('categoryId', filters.categoryId);
-      }
-
-      if (filters.status !== '') {
-        queryParams.append('status', filters.status);
-      }
+      if (filters.keyword)    queryParams.append('keyword', filters.keyword);
+      if (filters.categoryId) queryParams.append('categoryId', filters.categoryId);
+      if (filters.status !== '') queryParams.append('status', filters.status);
+      if (filters.minPrice)   queryParams.append('minPrice', filters.minPrice);
+      if (filters.maxPrice)   queryParams.append('maxPrice', filters.maxPrice);
+      if (filters.color)      queryParams.append('color', filters.color);
+      if (filters.size)       queryParams.append('size', filters.size);
+      if (filters.sortBy)     queryParams.append('sortBy', filters.sortBy);
 
       const response = await fetch(`${PRODUCT_API_URL}?${queryParams.toString()}`, {
-        method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -146,51 +163,46 @@ const AdminProducts = () => {
               const detail = detailJson.data;
               const variants = detail?.variants || [];
               const totalStock = variants.reduce((sum, v) => sum + (v.stockQty || 0), 0);
-
               return { ...p, variants, totalStock };
-            } catch (err) {
+            } catch {
               return { ...p, variants: [], totalStock: 0 };
             }
           })
         );
 
         setProducts(fullProducts);
-        setPagination({
+        setPagination((prev) => ({
+          ...prev,
           current: meta.page !== undefined ? meta.page + 1 : 1,
           pageSize: meta.pageSize || 10,
           total: meta.totals || meta.totalElements || 0,
           pages: meta.pages || meta.totalPages || 1,
-        });
+        }));
       } else {
         setError(res.message || 'Lỗi truy cập dữ liệu');
       }
-    } catch (err) {
+    } catch {
       setError('Không thể kết nối đến máy chủ');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [filters, pagination.pageSize, token]);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    fetchProducts(pagination.current);
-  }, [filters, pagination.current]);
+  useEffect(() => { fetchCategories(); }, []);
+  useEffect(() => { fetchProducts(pagination.current); }, [filters, pagination.current]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Xác nhận xóa sản phẩm này?')) return;
-
     try {
       const response = await fetch(`${PRODUCT_API_URL}/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (response.ok) {
         alert('Xóa sản phẩm thành công!');
         fetchProducts(pagination.current);
       }
-    } catch (err) {
+    } catch {
       alert('Không thể kết nối Server để xóa.');
     }
   };
@@ -201,82 +213,62 @@ const AdminProducts = () => {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (response.ok) {
-        fetchProducts(pagination.current);
-      }
+      if (response.ok) fetchProducts(pagination.current);
     } catch (err) {
       console.error('Lỗi khi thay đổi trạng thái:', err);
     }
   };
 
   const stats = useMemo(() => {
-    const visibleCount = products.filter((product) => Number(product.status) !== 0).length;
-    const hiddenCount = products.filter((product) => Number(product.status) === 0).length;
-    const lowStockCount = products.filter((product) => {
-      const isVisible = Number(product.status) !== 0;
-      const totalStock = Number(product.totalStock) || 0;
-      return isVisible && totalStock < 10;
+    const visibleCount = products.filter((p) => Number(p.status) !== 0).length;
+    const hiddenCount = products.filter((p) => Number(p.status) === 0).length;
+    const lowStockCount = products.filter((p) => {
+      const isVisible = Number(p.status) !== 0;
+      return isVisible && (Number(p.totalStock) || 0) < 10;
     }).length;
-
     return [
-      {
-        label: 'Tổng sản phẩm',
-        value: products.length,
-        icon: 'inventory_2',
-        accent: 'from-[#0066A2] to-[#3385b5]',
-        detail: `${pagination.total || products.length} sản phẩm trong hệ thống`,
-      },
-      {
-        label: 'Đang hiển thị',
-        value: visibleCount,
-        icon: 'visibility',
-        accent: 'from-emerald-500 to-emerald-400',
-        detail: 'Sản phẩm đang xuất hiện trên cửa hàng',
-      },
-      {
-        label: 'Sắp hết hàng',
-        value: lowStockCount,
-        icon: 'warning',
-        accent: 'from-amber-500 to-amber-400',
-        detail: 'Cần bổ sung tồn kho sớm',
-      },
-      {
-        label: 'Đang ẩn',
-        value: hiddenCount,
-        icon: 'visibility_off',
-        accent: 'from-slate-500 to-slate-400',
-        detail: 'Sản phẩm chưa công khai',
-      },
+      { label: 'Tổng sản phẩm', value: products.length, icon: 'inventory_2', detail: `${pagination.total || products.length} sản phẩm` },
+      { label: 'Đang hiển thị', value: visibleCount, icon: 'visibility', detail: 'Trên cửa hàng' },
+      { label: 'Sắp hết hàng', value: lowStockCount, icon: 'warning', detail: 'Cần bổ sung kho' },
+      { label: 'Đang ẩn', value: hiddenCount, icon: 'visibility_off', detail: 'Chưa công khai' },
     ];
   }, [pagination.total, products]);
 
   const pageStart = products.length > 0 ? (pagination.current - 1) * pagination.pageSize + 1 : 0;
-  const pageEnd = products.length > 0 ? (pagination.current - 1) * pagination.pageSize + products.length : 0;
-  const hasFilters = filters.categoryId || filters.status !== '';
+  const pageEnd   = products.length > 0 ? (pagination.current - 1) * pagination.pageSize + products.length : 0;
+
+  const hasFilters = filters.keyword || filters.categoryId || filters.status !== '' ||
+    filters.minPrice || filters.maxPrice || filters.color || filters.size || filters.sortBy;
 
   return (
     <main className="flex-1 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
-      <h2 className="sr-only">Trang quản lý sản phẩm thời trang — bao gồm thống kê, bộ lọc và danh sách sản phẩm</h2>
+      <h2 className="sr-only">Trang quản lý sản phẩm thời trang</h2>
       <div className="pm-wrap">
 
+        {/* Top bar */}
         <div className="pm-topbar">
           <div className="pm-title-block">
             <div className="pm-title">Quản lý sản phẩm</div>
-            <div className="pm-subtitle">Theo dõi tồn kho, trạng thái và xử lý sản phẩm nhanh chóng ngay tại đây.</div>
+            <div className="pm-subtitle">Tìm kiếm, lọc và quản lý toàn bộ sản phẩm trong hệ thống.</div>
           </div>
           <div className="pm-actions">
-            <button className="btn-ghost"><span className="material-symbols-outlined" style={{ fontSize: '18px' }}>file_download</span> Xuất Excel</button>
-            <button className="btn-primary" onClick={() => navigate('/admin/products/add')}><span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span> Thêm sản phẩm</button>
+            <button className="btn-ghost">
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>file_download</span>Xuất Excel
+            </button>
+            <button className="btn-primary" onClick={() => navigate('/admin/products/add')}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>Thêm sản phẩm
+            </button>
           </div>
         </div>
 
+        {/* Error */}
         {error && (
           <div style={{ padding: '12px', background: '#fcebeb', color: '#a32d2d', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
             {error}
           </div>
         )}
 
+        {/* Stats */}
         <div className="stats-grid">
           {stats.map((stat, idx) => (
             <div key={stat.label} className={`stat-card ${stat.label === 'Sắp hết hàng' ? 'warn' : ''}`}>
@@ -290,32 +282,170 @@ const AdminProducts = () => {
           ))}
         </div>
 
+        {/* ── FILTER BAR ── */}
         <div className="filter-bar">
-          <div className="filter-top">
-            <span className="filter-label">Bộ lọc & thao tác nhanh</span>
-            <span className="filter-adv" onClick={clearFilters}><span className="material-symbols-outlined" style={{ fontSize: '16px' }}>filter_list</span> {hasFilters ? 'Xóa lọc' : 'Lọc nâng cao'}</span>
+          {/* Row 1: Search + quick selects + sort */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
+            {/* Search keyword */}
+            <div style={{ position: 'relative', flex: '1 1 220px', minWidth: '180px' }}>
+              <span className="material-symbols-outlined" style={{
+                position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)',
+                fontSize: '17px', color: '#94a3b8', pointerEvents: 'none'
+              }}>search</span>
+              <input
+                type="text"
+                value={keywordInput}
+                onChange={handleKeywordChange}
+                onKeyDown={handleKeywordKeyDown}
+                placeholder="Tìm theo tên sản phẩm... (Enter để tìm)"
+                style={{
+                  width: '100%', padding: '8px 40px 8px 34px', borderRadius: '6px',
+                  border: '1px solid #e2e8f0', background: '#f8fafc',
+                  fontSize: '13px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box'
+                }}
+              />
+              {keywordInput && (
+                <button
+                  onClick={handleKeywordSearch}
+                  title="Tìm kiếm"
+                  style={{
+                    position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                    background: '#0f172a', border: 'none', borderRadius: '4px',
+                    width: '24px', height: '24px', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', cursor: 'pointer', color: '#fff',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_forward</span>
+                </button>
+              )}
+            </div>
+
+            {/* Danh mục */}
+            <select className="fselect" value={filters.categoryId} onChange={(e) => handleFilterChange('categoryId', e.target.value)}>
+              <option value="">Tất cả danh mục</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+
+            {/* Trạng thái */}
+            <select className="fselect" value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
+              <option value="">Tất cả trạng thái</option>
+              <option value="1">Đang hiển thị</option>
+              <option value="0">Đang ẩn</option>
+            </select>
+
+            {/* Sắp xếp */}
+            <select className="fselect" value={filters.sortBy} onChange={(e) => handleFilterChange('sortBy', e.target.value)}>
+              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+
+            {/* Advanced toggle */}
+            <button
+              onClick={() => setShowAdvanced(v => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '5px',
+                padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0',
+                background: showAdvanced ? '#f1f5f9' : 'transparent',
+                fontSize: '13px', color: '#475569', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>tune</span>
+              Bộ lọc nâng cao
+            </button>
+
+            {hasFilters && (
+              <button onClick={clearFilters} style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                padding: '8px 12px', borderRadius: '6px', border: '1px solid #fecaca',
+                background: '#fef2f2', fontSize: '13px', color: '#dc2626',
+                cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>close</span>Xóa lọc
+              </button>
+            )}
           </div>
-          <div className="filter-row">
-            <div className="filter-selects">
-              <select className="fselect" value={filters.categoryId} onChange={(e) => handleFilterChange('categoryId', e.target.value)}>
-                <option value="">Tất cả danh mục</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+
+          {/* Row 2: Advanced filters (toggle) */}
+          {showAdvanced && (
+            <div style={{
+              display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center',
+              paddingTop: '12px', borderTop: '1px solid #f1f5f9',
+            }}>
+              {/* Giá từ */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>Giá từ</span>
+                <input
+                  type="text" inputMode="numeric" placeholder="0"
+                  value={formatPriceDisplay(advancedInput.minPrice)}
+                  onChange={(e) => setAdvancedInput(prev => ({ ...prev, minPrice: parsePriceRaw(e.target.value) }))}
+                  style={{
+                    width: '110px', padding: '7px 10px', borderRadius: '6px',
+                    border: '1px solid #e2e8f0', background: '#f8fafc',
+                    fontSize: '13px', fontFamily: 'inherit', outline: 'none', textAlign: 'right',
+                  }}
+                />
+              </div>
+
+              {/* Giá đến */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>đến</span>
+                <input
+                  type="text" inputMode="numeric" placeholder="∞"
+                  value={formatPriceDisplay(advancedInput.maxPrice)}
+                  onChange={(e) => setAdvancedInput(prev => ({ ...prev, maxPrice: parsePriceRaw(e.target.value) }))}
+                  style={{
+                    width: '110px', padding: '7px 10px', borderRadius: '6px',
+                    border: '1px solid #e2e8f0', background: '#f8fafc',
+                    fontSize: '13px', fontFamily: 'inherit', outline: 'none', textAlign: 'right',
+                  }}
+                />
+              </div>
+
+              {/* Màu sắc */}
+              <input
+                type="text" placeholder="Màu sắc (VD: Đen)"
+                value={advancedInput.color}
+                onChange={(e) => setAdvancedInput(prev => ({ ...prev, color: e.target.value }))}
+                style={{
+                  width: '140px', padding: '7px 10px', borderRadius: '6px',
+                  border: '1px solid #e2e8f0', background: '#f8fafc',
+                  fontSize: '13px', fontFamily: 'inherit', outline: 'none',
+                }}
+              />
+
+              {/* Size */}
+              <select className="fselect" value={advancedInput.size}
+                onChange={(e) => setAdvancedInput(prev => ({ ...prev, size: e.target.value }))}>
+                <option value="">Tất cả size</option>
+                {SIZE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
-              <select className="fselect" value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
-                <option value="">Tất cả trạng thái</option>
-                <option value="1">Đang hiển thị</option>
-                <option value="0">Đang ẩn</option>
-              </select>
+
+              {/* Nút Lọc */}
+              <button
+                onClick={handleAdvancedApply}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '7px 16px', borderRadius: '6px', border: 'none',
+                  background: '#0f172a', color: '#fff', fontSize: '13px',
+                  fontFamily: 'inherit', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap',
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>filter_list</span>
+                Lọc
+              </button>
             </div>
-            <div className="filter-counts">
-              <span className="dot-count"><span className="dot dot-teal"></span> {products.filter(p => Number(p.status) !== 0).length} đang hiển thị</span>
-              <span className="dot-count"><span className="dot dot-gray"></span> {pagination.total} kết quả</span>
-            </div>
+          )}
+
+          {/* Row 3: counts */}
+          <div className="filter-counts" style={{ marginTop: '10px' }}>
+            <span className="dot-count"><span className="dot dot-teal" />{products.filter(p => Number(p.status) !== 0).length} đang hiển thị</span>
+            <span className="dot-count"><span className="dot dot-gray" />{pagination.total} kết quả</span>
+            {loading && <span style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '14px', animation: 'spin 1s linear infinite' }}>progress_activity</span>Đang tải...
+            </span>}
           </div>
         </div>
 
+        {/* Table */}
         <div className="table-wrap">
           <div className="tbl-header">
             <div className="th"></div>
@@ -327,7 +457,9 @@ const AdminProducts = () => {
           </div>
 
           {products.length === 0 ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>Không tìm thấy sản phẩm phù hợp.</div>
+            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
+              {loading ? 'Đang tải...' : 'Không tìm thấy sản phẩm phù hợp.'}
+            </div>
           ) : (
             products.map((product) => {
               const totalStock = Number(product.totalStock) || 0;
@@ -339,11 +471,11 @@ const AdminProducts = () => {
                   <div>
                     <div className="prod-thumb">
                       {product.thumbnailUrl || product.thumbnail_url ? (
-                        <img 
-                          src={getImageUrl(product.thumbnailUrl || product.thumbnail_url)} 
-                          alt={product.name} 
+                        <img
+                          src={getImageUrl(product.thumbnailUrl || product.thumbnail_url)}
+                          alt={product.name}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          onError={(e) => { e.currentTarget.src = 'https://placehold.co/100x140?text=Error'; }}
+                          onError={(e) => { e.currentTarget.src = 'https://placehold.co/100x140?text=?'; }}
                         />
                       ) : (
                         <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>checkroom</span>
@@ -353,33 +485,37 @@ const AdminProducts = () => {
                   <div>
                     <div className="prod-name">{product.name}</div>
                     <div className="prod-meta">
-                      <span className="prod-tag"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>palette</span> {variantCount} biến thể</span>
-                      <span className="prod-tag"><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>layers</span> Tồn kho {totalStock}</span>
+                      <span className="prod-tag">
+                        <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>palette</span>{variantCount} biến thể
+                      </span>
+                      <span className="prod-tag">
+                        <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>layers</span>Kho: {totalStock}
+                      </span>
                     </div>
                   </div>
                   <div><span className="badge badge-cat">{product.categoryName || 'Chưa phân loại'}</span></div>
                   <div>
                     <div className="price-val">{formatCurrency(product.basePrice || 0)}</div>
-                    <div className="price-note">Giá gốc hệ thống</div>
+                    <div className="price-note">Giá gốc</div>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <span 
-                      className={`badge ${isVisible ? (totalStock > 0 ? 'badge-green' : 'badge-red') : 'badge-red'}`} 
-                      style={{ cursor: 'pointer' }} 
+                    <span
+                      className={`badge ${isVisible ? (totalStock > 0 ? 'badge-green' : 'badge-red') : 'badge-red'}`}
+                      style={{ cursor: 'pointer' }}
                       onClick={() => handleToggleVisibility(product.id)}
                       title="Click để Ẩn/Hiện sản phẩm"
                     >
-                      <span className="dot" style={{ width: '5px', height: '5px', borderRadius: '50%', marginRight: '4px' }}></span>
+                      <span className="dot" style={{ width: '5px', height: '5px', borderRadius: '50%', marginRight: '4px' }} />
                       {isVisible ? (totalStock > 0 ? `Còn hàng (${totalStock})` : 'Hết hàng') : 'Đang ẩn'}
                     </span>
                   </div>
                   <div>
                     <div className="act-row">
-                      <button className="act-btn" onClick={() => handleViewVariants(product.id)}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>style</span> Kho
+                      <button className="act-btn" onClick={() => navigate(`/admin/products/variants/${product.id}`)}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>style</span>Kho
                       </button>
                       <button className="act-btn edit" onClick={() => navigate(`/admin/products/edit/${product.id}`)}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span> Sửa
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>Sửa
                       </button>
                       <button className="act-btn del" onClick={() => handleDelete(product.id)}>
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
@@ -391,22 +527,30 @@ const AdminProducts = () => {
             })
           )}
 
+          {/* Footer / Pagination */}
           <div className="tbl-footer">
-            <span className="footer-text">Đang hiển thị <strong>{pageStart} – {pageEnd}</strong> trong số <strong>{pagination.total}</strong> sản phẩm</span>
+            <span className="footer-text">
+              Hiển thị <strong>{pageStart} – {pageEnd}</strong> / <strong>{pagination.total}</strong> sản phẩm
+            </span>
             <div className="pager">
-              <button 
-                className="page-btn" 
-                disabled={pagination.current <= 1} 
-                onClick={() => setPagination({ ...pagination, current: pagination.current - 1 })}
-              >
+              <button className="page-btn" disabled={pagination.current <= 1}
+                onClick={() => setPagination(p => ({ ...p, current: p.current - 1 }))}>
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_left</span>
               </button>
-              <button className="page-btn active">{pagination.current}</button>
-              <button 
-                className="page-btn" 
-                disabled={pagination.current >= pagination.pages} 
-                onClick={() => setPagination({ ...pagination, current: pagination.current + 1 })}
-              >
+              {/* Page numbers */}
+              {Array.from({ length: Math.min(pagination.pages, 5) }, (_, i) => {
+                const page = i + 1;
+                return (
+                  <button
+                    key={page}
+                    className={`page-btn ${pagination.current === page ? 'active' : ''}`}
+                    onClick={() => setPagination(p => ({ ...p, current: page }))}
+                  >{page}</button>
+                );
+              })}
+              {pagination.pages > 5 && <span style={{ padding: '0 4px', color: '#94a3b8' }}>…</span>}
+              <button className="page-btn" disabled={pagination.current >= pagination.pages}
+                onClick={() => setPagination(p => ({ ...p, current: p.current + 1 }))}>
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
               </button>
             </div>

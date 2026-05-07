@@ -8,6 +8,13 @@ const formatCurrency = (value) => {
   return `${currencyFormatter.format(numericValue)}đ`;
 };
 
+const formatNumberWithDots = (value) => {
+  if (value === '' || value === null || value === undefined) return '';
+  const numericValue = String(value).replace(/\D/g, '');
+  if (!numericValue) return '';
+  return currencyFormatter.format(Number(numericValue));
+};
+
 const getStockMeta = (stockQty) => {
   const stock = Number(stockQty) || 0;
 
@@ -411,12 +418,17 @@ const AdminProductVariants = () => {
 
                 <Field label="Giá sale" hint="(trống = không sale)">
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     className={inputClassName}
-                    value={formData.salePrice}
-                    onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
-                    placeholder="123000"
+                    value={formatNumberWithDots(formData.salePrice)}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        salePrice: e.target.value.replace(/\D/g, ''),
+                      })
+                    }
+                    placeholder="123.000"
                   />
                 </Field>
               </div>
