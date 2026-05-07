@@ -1,10 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import './AdminProducts.css';
 
 const API_ADMIN_DASHBOARD_URL = '/api/v1/admin/dashboard';
 const API_STATISTICS_REVENUE_URL = '/api/v1/admin/statistics/revenue';
 const API_STATISTICS_ORDERS_URL = '/api/v1/admin/statistics/orders';
 const API_STATISTICS_PRODUCTS_URL = '/api/v1/admin/statistics/products';
 const API_STATISTICS_EXPORT_URL = '/api/v1/admin/statistics/export';
+
+const getImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('blob:') || url.startsWith('http') || url.startsWith('data:')) return url;
+  if (url.startsWith('/uploads/')) return `http://localhost:8080/api/v1${url}`;
+  return `http://localhost:8080/api/v1/uploads/products/${url}`;
+};
 
 function safeParseJson(res) {
   return res
@@ -34,7 +42,6 @@ function formatVND(value) {
   return `${new Intl.NumberFormat('vi-VN').format(n)}₫`;
 }
 
-
 function toChartPoints(values, width, height, paddingTop, paddingBottom) {
   const vals = Array.isArray(values) ? values.map((v) => Number(v) || 0) : [];
   if (!vals.length) return [];
@@ -55,7 +62,6 @@ function toChartPoints(values, width, height, paddingTop, paddingBottom) {
 
 function buildPath(points) {
   if (!points.length) return '';
-  // Simple polyline path
   const d = points
     .map((p, i) => {
       if (i === 0) return `M ${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
@@ -78,7 +84,6 @@ function buildAreaPath(points, height, paddingBottom) {
 function formatDateInput(date) {
   if (!date) return '';
   const d = new Date(date);
-  // local timezone safe
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
@@ -89,7 +94,6 @@ function parseDateInput(value) {
   if (!value) return null;
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
-  // backend expects ISO yyyy-MM-dd; we can just send value directly
   return value;
 }
 
@@ -106,15 +110,16 @@ export default function AdminReports() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [period, setPeriod] = useState('day'); // for revenue/orders
+  const [period, setPeriod] = useState('day');
   const [fromDate, setFromDate] = useState(defaultFromStr);
   const [toDate, setToDate] = useState(todayStr);
 
   const [revenueStat, setRevenueStat] = useState(null);
   const [orderStat, setOrderStat] = useState(null);
   const [productStat, setProductStat] = useState(null);
+  const [dashboardStat, setDashboardStat] = useState(null);
 
-  const [chartMode, setChartMode] = useState('revenue'); // 'revenue'|'profit'|'both'
+  const [chartMode, setChartMode] = useState('revenue');
 
   const headers = useMemo(
     () => (token ? { Authorization: `Bearer ${token}` } : {}),
@@ -124,35 +129,16 @@ export default function AdminReports() {
   const applyFilters = async () => {
     setLoading(true);
     setError('');
-    setRevenueStat(null);
-    setOrderStat(null);
-    setProductStat(null);
 
     try {
       const from = parseDateInput(fromDate);
       const to = parseDateInput(toDate);
-
-      // If user accidentally clears dates, fall back gracefully (backend also handles null but
-      // we are sending explicit values for consistency).
       const safeFrom = from || defaultFromStr;
       const safeTo = to || todayStr;
 
-      const qsRevenue = new URLSearchParams({
-        period,
-        from_date: safeFrom,
-        to_date: safeTo,
-      });
-
-      const qsOrders = new URLSearchParams({
-        period,
-        from_date: safeFrom,
-        to_date: safeTo,
-      });
-
-      const qsProducts = new URLSearchParams({
-        from_date: safeFrom,
-        to_date: safeTo,
-      });
+      const qsRevenue = new URLSearchParams({ period, from_date: safeFrom, to_date: safeTo });
+      const qsOrders = new URLSearchParams({ period, from_date: safeFrom, to_date: safeTo });
+      const qsProducts = new URLSearchParams({ from_date: safeFrom, to_date: safeTo });
 
       const [dashRes, revRes, ordRes, prodRes] = await Promise.all([
         fetch(API_ADMIN_DASHBOARD_URL, { headers }),
@@ -173,6 +159,7 @@ export default function AdminReports() {
       if (!ordRes.ok) throw new Error(extractMessage(ordPayload, 'Không thể tải thống kê đơn hàng.'));
       if (!prodRes.ok) throw new Error(extractMessage(prodPayload, 'Không thể tải thống kê sản phẩm.'));
 
+      setDashboardStat(dashPayload?.data || dashPayload);
       setRevenueStat(revPayload?.data || revPayload);
       setOrderStat(ordPayload?.data || ordPayload);
       setProductStat(prodPayload?.data || prodPayload);
@@ -184,29 +171,18 @@ export default function AdminReports() {
   };
 
   useEffect(() => {
-    // initial load
     applyFilters();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const canExport = useMemo(() => {
-    return !!(fromDate && toDate);
-  }, [fromDate, toDate]);
+  const canExport = useMemo(() => !!(fromDate && toDate), [fromDate, toDate]);
 
   const exportExcel = async () => {
     try {
       const from = parseDateInput(fromDate) || defaultFromStr;
       const to = parseDateInput(toDate) || todayStr;
+      const qs = new URLSearchParams({ from_date: from, to_date: to });
 
-      const qs = new URLSearchParams({
-        from_date: from,
-        to_date: to,
-      });
-
-      const res = await fetch(`${API_STATISTICS_EXPORT_URL}?${qs.toString()}`, {
-        headers,
-      });
-
+      const res = await fetch(`${API_STATISTICS_EXPORT_URL}?${qs.toString()}`, { headers });
       if (!res.ok) {
         const payload = await safeParseJson(res);
         throw new Error(extractMessage(payload, 'Không thể xuất Excel.'));
@@ -216,7 +192,7 @@ export default function AdminReports() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Bao_Cao_Thong_Ke.xlsx';
+      a.download = `Bao_Cao_Thong_Ke_${from}_${to}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -231,42 +207,54 @@ export default function AdminReports() {
     const labels = Array.isArray(revenueStat.labels) ? revenueStat.labels : [];
     const revenue = Array.isArray(revenueStat.revenue) ? revenueStat.revenue : [];
     const profit = Array.isArray(revenueStat.profit) ? revenueStat.profit : [];
-
     return { labels, revenue, profit };
   }, [revenueStat]);
 
   const orderChart = useMemo(() => {
     if (!orderStat) return null;
-    const chartData = Array.isArray(orderStat.chartData) ? orderStat.chartData : [];
-    // each item: {label, completed, cancelled}
-    return chartData;
+    return Array.isArray(orderStat.chartData) ? orderStat.chartData : [];
   }, [orderStat]);
 
-  const kpi = useMemo(() => {
-    const cards = [
+  const stats = useMemo(() => {
+    return [
       {
-        label: 'Tổng doanh thu',
-        value: revenueStat?.totalRevenue ?? 0,
-        tone: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+        label: 'Doanh thu hôm nay',
+        value: formatVND(dashboardStat?.revenueToday ?? 0),
+        icon: 'today',
+        siTone: 'si-blue',
+        detail: 'Doanh thu phát sinh trong ngày'
       },
       {
-        label: 'Tổng lợi nhuận',
-        value: revenueStat?.totalProfit ?? 0,
-        tone: 'bg-amber-50 border-amber-200 text-amber-800',
+        label: 'Đơn hàng mới',
+        value: dashboardStat?.newOrdersToday ?? 0,
+        icon: 'shopping_cart',
+        siTone: 'si-teal',
+        detail: 'Số đơn hàng vừa tạo hôm nay'
       },
       {
-        label: 'Tổng số đơn',
-        value: orderStat?.total ?? 0,
-        tone: 'bg-slate-50 border-slate-200 text-slate-800',
+        label: 'Doanh thu tháng này',
+        value: formatVND(dashboardStat?.revenueThisMonth ?? 0),
+        icon: 'calendar_month',
+        siTone: 'si-amber',
+        detail: 'Tổng doanh thu tính từ đầu tháng'
       },
       {
-        label: 'Tỷ lệ hoàn tất',
-        value: `${Number(orderStat?.completionRate || 0).toFixed(1)}%`,
-        tone: 'bg-rose-50 border-rose-200 text-rose-800',
+        label: 'Khách hàng mới',
+        value: dashboardStat?.newCustomersThisMonth ?? 0,
+        icon: 'person_add',
+        siTone: 'si-gray',
+        detail: 'Khách đăng ký mới trong tháng'
       },
+      {
+        label: 'Sắp hết hàng',
+        value: dashboardStat?.lowStockProducts ?? 0,
+        icon: 'inventory_2',
+        siTone: 'si-red',
+        detail: 'Số sản phẩm có tồn kho thấp',
+        isWarn: (dashboardStat?.lowStockProducts ?? 0) > 0
+      }
     ];
-    return cards;
-  }, [orderStat, revenueStat]);
+  }, [dashboardStat]);
 
   const tickLabels = useMemo(() => {
     const labels = revenueChart?.labels || [];
@@ -275,12 +263,9 @@ export default function AdminReports() {
     const step = Math.floor(n / 6) || 1;
     const idxs = new Set([0, n - 1]);
     for (let i = 1; i < n - 1; i += step) idxs.add(i);
-    return Array.from(idxs)
-      .sort((a, b) => a - b)
-      .map((i) => ({ label: labels[i], index: i }));
+    return Array.from(idxs).sort((a, b) => a - b).map((i) => ({ label: labels[i], index: i }));
   }, [revenueChart]);
 
-  // Chart drawing constants
   const chartW = 900;
   const chartH = 260;
   const padTop = 18;
@@ -296,573 +281,253 @@ export default function AdminReports() {
     return toChartPoints(revenueChart.profit, chartW, chartH, padTop, padBottom);
   }, [revenueChart]);
 
-  const revenuePath = useMemo(() => {
-    if (!revenuePoints) return '';
-    return buildPath(revenuePoints);
-  }, [revenuePoints]);
-
-  const profitPath = useMemo(() => {
-    if (!profitPoints) return '';
-    return buildPath(profitPoints);
-  }, [profitPoints]);
-
-  const revenueArea = useMemo(() => {
-    if (!revenuePoints) return '';
-    return buildAreaPath(revenuePoints, chartH, padBottom);
-  }, [revenuePoints]);
+  const revenuePath = useMemo(() => revenuePoints ? buildPath(revenuePoints) : '', [revenuePoints]);
+  const profitPath = useMemo(() => profitPoints ? buildPath(profitPoints) : '', [profitPoints]);
+  const revenueArea = useMemo(() => revenuePoints ? buildAreaPath(revenuePoints, chartH, padBottom) : '', [revenuePoints]);
 
   return (
     <main className="flex-1 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
-      <div className="flex flex-col gap-6">
-        <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0066A2] via-[#3385b5] to-[#66a3c7]" />
-          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#0066A2]/8 blur-3xl" />
-          <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-slate-200/60 blur-3xl" />
+      <div className="pm-wrap">
+        <div className="pm-topbar">
+          <div className="pm-title-block">
+            <div className="pm-title">Báo cáo & Thống kê</div>
+            <div className="pm-subtitle">Theo dõi tình hình kinh doanh, doanh thu và hiệu quả sản phẩm.</div>
+          </div>
+          <div className="pm-actions">
+            <button className="btn-ghost" disabled={!canExport || loading} onClick={exportExcel}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>file_download</span> Xuất Excel
+            </button>
+            <button className="btn-primary" onClick={applyFilters} disabled={loading}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>sync</span> {loading ? 'Đang cập nhật...' : 'Cập nhật dữ liệu'}
+            </button>
+          </div>
+        </div>
 
-          <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-2xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#0066A2]/15 bg-[#0066A2]/8 px-3 py-1 text-xs font-semibold text-[#004b76]">
-                <span className="material-symbols-outlined text-[16px]">bar_chart</span>
-                Admin / Báo cáo & Thống kê
+        {error && (
+          <div style={{ padding: '12px', background: '#fcebeb', color: '#a32d2d', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+            {error}
+          </div>
+        )}
+
+        {/* Stats Grid */}
+        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+          {stats.map((stat) => (
+            <div key={stat.label} className={`stat-card ${stat.isWarn ? 'warn' : ''}`}>
+              <div className={`stat-icon ${stat.siTone}`}>
+                <span className="material-symbols-outlined">{stat.icon}</span>
               </div>
+              <div className="stat-label">{stat.label}</div>
+              <div className="stat-value">{stat.value}</div>
+              <div className="stat-desc">{stat.detail}</div>
+            </div>
+          ))}
+        </div>
 
-              <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                Báo cáo thống kê
-              </h1>
+        {/* Filter Bar */}
+        <div className="filter-bar">
+          <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Từ ngày:</span>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                style={{
+                  padding: '7px 12px', borderRadius: '6px', border: '1px solid #e2e8f0',
+                  background: '#f8fafc', fontSize: '13px', fontFamily: 'inherit', outline: 'none'
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Đến ngày:</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                style={{
+                  padding: '7px 12px', borderRadius: '6px', border: '1px solid #e2e8f0',
+                  background: '#f8fafc', fontSize: '13px', fontFamily: 'inherit', outline: 'none'
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Xem theo:</span>
+              <select
+                className="fselect"
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+              >
+                <option value="day">Ngày</option>
+                <option value="week">Tuần</option>
+                <option value="month">Tháng</option>
+                <option value="year">Năm</option>
+              </select>
+            </div>
 
-              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
-                Theo dõi doanh thu, lợi nhuận, trạng thái đơn hàng và hiệu quả sản phẩm theo khoảng thời gian.
-              </p>
+            <div style={{ height: '24px', width: '1px', background: '#e2e8f0', margin: '0 5px' }} />
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                {kpi.map((c) => (
-                  <div
-                    key={c.label}
-                    className={`rounded-2xl border px-4 py-3 shadow-sm ${c.tone}`}
-                  >
-                    <p className="text-xs font-medium uppercase tracking-[0.18em] opacity-90">
-                      {c.label}
-                    </p>
-                    <p className="mt-2 text-lg font-black tracking-tight">
-                      {typeof c.value === 'number' ? formatVND(c.value) : c.value}
-                    </p>
-                  </div>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {[
+                { id: 'revenue', label: 'Doanh thu' },
+                { id: 'profit', label: 'Lợi nhuận' },
+                { id: 'both', label: 'Cả hai' }
+              ].map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => setChartMode(m.id)}
+                  style={{
+                    padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600,
+                    border: '1px solid',
+                    borderColor: chartMode === m.id ? '#0f172a' : '#e2e8f0',
+                    background: chartMode === m.id ? '#0f172a' : '#fff',
+                    color: chartMode === m.id ? '#fff' : '#64748b',
+                    cursor: 'pointer', transition: 'all 0.2s'
+                  }}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', marginBottom: '24px' }}>
+          {/* Revenue Chart */}
+          <div className="table-wrap" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'start', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontBold: 700, color: '#0f172a' }}>Biểu đồ Doanh thu & Lợi nhuận</h3>
+                <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Tăng trưởng so với kỳ trước: <span style={{ color: '#10b981', fontWeight: 700 }}>{revenueStat ? `${Number(revenueStat.growthRate || 0).toFixed(1)}%` : '0.0%'}</span></p>
+              </div>
+            </div>
+
+            <div style={{ position: 'relative', background: '#fff', borderRadius: '12px', border: '1px solid #f1f5f9', padding: '15px' }}>
+              <svg viewBox={`0 0 ${chartW} ${chartH}`} width="100%" height="300" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="revArea" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="#0066A2" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#0066A2" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                {[0, 1, 2, 3].map((i) => {
+                  const y = padTop + ((chartH - padTop - padBottom) * i) / 3;
+                  return <line key={i} x1="0" x2={chartW} y1={y} y2={y} stroke="#f1f5f9" strokeWidth="1" />;
+                })}
+                {chartMode !== 'profit' && revenueArea && <path d={revenueArea} fill="url(#revArea)" />}
+                {chartMode !== 'profit' && revenuePath && <path d={revenuePath} fill="none" stroke="#0066A2" strokeWidth="3" strokeLinecap="round" />}
+                {chartMode !== 'revenue' && profitPoints && <path d={buildPath(profitPoints)} fill="none" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" strokeDasharray="4 2" />}
+              </svg>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10px', marginTop: '10px' }}>
+                {tickLabels.map((t, idx) => (
+                  <span key={idx} style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>{t.label || t}</span>
                 ))}
               </div>
             </div>
+          </div>
 
-            <div className="w-full xl:w-[520px]">
-              <div className="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-sm">
-                <div className="flex flex-col gap-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Từ ngày
-                      </label>
-                      <input
-                        type="date"
-                        value={fromDate}
-                        onChange={(e) => setFromDate(e.target.value)}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Đến ngày
-                      </label>
-                      <input
-                        type="date"
-                        value={toDate}
-                        onChange={(e) => setToDate(e.target.value)}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Chi tiết theo
-                      </label>
-                      <select
-                        value={period}
-                        onChange={(e) => setPeriod(e.target.value)}
-                        className="mt-2 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-sm font-medium text-slate-700 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
-                      >
-                        <option value="day">Ngày</option>
-                        <option value="week">Tuần</option>
-                        <option value="month">Tháng</option>
-                        <option value="year">Năm</option>
-                      </select>
-                    </div>
-
-                    <div className="flex items-end">
-                      <button
-                        type="button"
-                        onClick={applyFilters}
-                        disabled={loading}
-                        className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {loading ? (
-                          <>
-                            <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
-                            Đang tải...
-                          </>
-                        ) : (
-                          <>
-                            <span className="material-symbols-outlined text-[18px]">search</span>
-                            Áp dụng
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setChartMode('revenue')}
-                      className={`rounded-2xl border px-3 py-2 text-sm font-bold transition ${
-                        chartMode === 'revenue'
-                          ? 'border-[#0066A2]/30 bg-[#0066A2]/10 text-[#004b76]'
-                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      Doanh thu
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setChartMode('profit')}
-                      className={`rounded-2xl border px-3 py-2 text-sm font-bold transition ${
-                        chartMode === 'profit'
-                          ? 'border-[#0066A2]/30 bg-[#0066A2]/10 text-[#004b76]'
-                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      Lợi nhuận
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setChartMode('both')}
-                      className={`rounded-2xl border px-3 py-2 text-sm font-bold transition ${
-                        chartMode === 'both'
-                          ? 'border-[#0066A2]/30 bg-[#0066A2]/10 text-[#004b76]'
-                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      Cả hai
-                    </button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3 pt-2">
-                    <button
-                      type="button"
-                      disabled={!canExport || loading}
-                      onClick={exportExcel}
-                      className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">file_download</span>
-                      Xuất Excel
-                    </button>
-                  </div>
-
-                  {error && (
-                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
-                      {error}
-                    </div>
-                  )}
-                </div>
-              </div>
+          {/* Orders Chart */}
+          <div className="table-wrap" style={{ padding: '24px' }}>
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '16px', fontBold: 700, color: '#0f172a' }}>Thống kê Đơn hàng</h3>
+              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Hoàn thành: <span style={{ color: '#10b981', fontWeight: 700 }}>{orderStat?.completed ?? 0}</span> · Hủy: <span style={{ color: '#f43f5e', fontWeight: 700 }}>{orderStat?.cancelled ?? 0}</span></p>
+            </div>
+            
+            <div style={{ position: 'relative', background: '#fff', borderRadius: '12px', border: '1px solid #f1f5f9', padding: '15px' }}>
+              <svg viewBox={`0 0 ${chartW} 240`} width="100%" height="240" preserveAspectRatio="none">
+                {[0, 1, 2, 3, 4].map((i) => {
+                  const y = 18 + (200 * i) / 4;
+                  return <line key={i} x1="0" x2={chartW} y1={y} y2={y} stroke="#f1f5f9" strokeWidth="1" />;
+                })}
+                {(() => {
+                  if (!orderChart || orderChart.length === 0) return null;
+                  const completed = orderChart.map((d) => Number(d.completed) || 0);
+                  const cancelled = orderChart.map((d) => Number(d.cancelled) || 0);
+                  const max = Math.max(...completed.map((v, i) => v + cancelled[i]), 1);
+                  const barW = (chartW / orderChart.length) * 0.6;
+                  const gap = (chartW / orderChart.length) * 0.4;
+                  return orderChart.map((d, i) => {
+                    const hC = (Number(d.completed) / max) * 200;
+                    const hX = (Number(d.cancelled) / max) * 200;
+                    return (
+                      <g key={i}>
+                        <rect x={i * (barW + gap) + gap / 2} y={218 - hC - hX} width={barW} height={hX} fill="#f43f5e" rx="2" />
+                        <rect x={i * (barW + gap) + gap / 2} y={218 - hC} width={barW} height={hC} fill="#10b981" rx="2" />
+                      </g>
+                    );
+                  });
+                })()}
+              </svg>
             </div>
           </div>
-        </section>
+        </div>
 
-        {loading ? (
-          <section className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm">
-            <div className="flex items-center gap-3 text-slate-700 font-bold">
-              <span className="material-symbols-outlined animate-spin">sync</span>
-              Đang tải báo cáo...
+        {/* Products Tables */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+          {/* Top Selling */}
+          <div className="table-wrap">
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Sản phẩm bán chạy</h3>
+              <span className="badge badge-green">{productStat?.topSelling?.length ?? 0} SP</span>
             </div>
-          </section>
-        ) : (
-          <>
-            <section className="rounded-3xl border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur overflow-hidden">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border-b border-slate-100 px-6 py-5 bg-slate-50/40">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Doanh thu & Lợi nhuận</h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Period: <span className="font-bold text-slate-700">{period}</span>
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-800">
-                    <span className="size-2 rounded-full bg-emerald-500" />
-                    Doanh thu
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5 text-sm font-medium text-amber-800">
-                    <span className="size-2 rounded-full bg-amber-500" />
-                    Lợi nhuận
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-6">
-                <div className="rounded-3xl border border-slate-200 bg-white p-4 overflow-hidden">
-                  <svg viewBox={`0 0 ${chartW} ${chartH}`} width="100%" height="320" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="revArea" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#0066A2" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#0066A2" stopOpacity="0" />
-                      </linearGradient>
-                      <linearGradient id="profitArea" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.28" />
-                        <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Grid lines */}
-                    {[0, 1, 2, 3].map((i) => {
-                      const y = padTop + ((chartH - padTop - padBottom) * i) / 3;
-                      return <line key={i} x1="0" x2={chartW} y1={y} y2={y} stroke="#e2e8f0" strokeWidth="1" />;
-                    })}
-
-                    {chartMode !== 'profit' && revenueArea && (
-                      <path d={revenueArea} fill="url(#revArea)" />
-                    )}
-
-                    {chartMode !== 'profit' && revenuePath && (
-                      <path d={revenuePath} fill="none" stroke="#0066A2" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
-                    )}
-
-                    {chartMode !== 'revenue' && profitPoints && (
-                      <path d={buildAreaPath(profitPoints, chartH, padBottom)} fill="url(#profitArea)" opacity={0.95} />
-                    )}
-
-                    {chartMode !== 'revenue' && profitPath && (
-                      <path d={profitPath} fill="none" stroke="#f59e0b" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
-                    )}
-                  </svg>
-
-                  <div className="mt-3 flex justify-between text-[11px] font-bold text-slate-400 px-2">
-                    {tickLabels && tickLabels.length ? (
-                      tickLabels.map((t) => (
-                        <span key={String(t.index)} className="truncate max-w-[90px]">
-                          {t.label}
-                        </span>
-                      ))
-                    ) : (
-                      <span>—</span>
-                    )}
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Tổng doanh thu
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ background: '#f8fafc' }}>
+                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Sản phẩm</th>
+                  <th style={{ padding: '12px 20px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Đã bán</th>
+                  <th style={{ padding: '12px 20px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Doanh thu</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productStat?.topSelling?.map(p => (
+                  <tr key={p.productId} style={{ borderBottom: '1px solid #f8fafc' }}>
+                    <td style={{ padding: '12px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <img src={getImageUrl(p.thumbnailUrl)} alt="" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                       </div>
-                      <div className="mt-2 text-xl font-black text-slate-900">
-                        {revenueStat ? formatVND(revenueStat.totalRevenue) : '—'}
+                    </td>
+                    <td style={{ padding: '12px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 700, color: '#475569' }}>{p.quantitySold}</td>
+                    <td style={{ padding: '12px 20px', textAlign: 'right', fontSize: '13px', fontWeight: 700, color: '#0066A2' }}>{formatVND(p.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Slow Moving */}
+          <div className="table-wrap">
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Sản phẩm tồn kho lâu</h3>
+              <span className="badge badge-red">{productStat?.slowMoving?.length ?? 0} SP</span>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ background: '#f8fafc' }}>
+                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Sản phẩm</th>
+                  <th style={{ padding: '12px 20px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Tồn kho</th>
+                  <th style={{ padding: '12px 20px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Danh mục</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productStat?.slowMoving?.map(p => (
+                  <tr key={p.productId} style={{ borderBottom: '1px solid #f8fafc' }}>
+                    <td style={{ padding: '12px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <img src={getImageUrl(p.thumbnailUrl)} alt="" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                       </div>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Tổng lợi nhuận
-                      </div>
-                      <div className="mt-2 text-xl font-black text-slate-900">
-                        {revenueStat ? formatVND(revenueStat.totalProfit) : '—'}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Growth rate
-                      </div>
-                      <div className="mt-2 text-xl font-black text-slate-900">
-                        {revenueStat ? `${Number(revenueStat.growthRate || 0).toFixed(1)}%` : '0.0%'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur overflow-hidden">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border-b border-slate-100 px-6 py-5 bg-slate-50/40">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Trạng thái đơn hàng</h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Completed vs Cancelled theo {period}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-800">
-                    <span className="size-2 rounded-full bg-emerald-500" />
-                    Completed: {orderStat?.completed ?? 0}
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-800">
-                    <span className="size-2 rounded-full bg-rose-500" />
-                    Cancelled: {orderStat?.cancelled ?? 0}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-6">
-                <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <div className="text-sm text-slate-500">
-                      Tổng đơn: <span className="font-bold text-slate-900">{orderStat?.total ?? 0}</span> · Delivery: <span className="font-bold text-slate-900">{orderStat?.delivering ?? 0}</span>
-                    </div>
-                    <div className="text-sm text-slate-500">
-                      Completion rate:{' '}
-                      <span className="font-bold text-slate-900">{Number(orderStat?.completionRate || 0).toFixed(1)}%</span>
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <svg viewBox={`0 0 ${chartW} 240`} width="100%" height="260" preserveAspectRatio="none">
-                      {/* grid */}
-                      {[0, 1, 2, 3, 4].map((i) => {
-                        const y = 18 + (200 * i) / 4;
-                        return <line key={i} x1="0" x2={chartW} y1={y} y2={y} stroke="#e2e8f0" strokeWidth="1" />;
-                      })}
-
-                      {(() => {
-                        if (!Array.isArray(orderChart) || orderChart.length === 0) return null;
-
-                        const completed = orderChart.map((d) => Number(d.completed) || 0);
-                        const cancelled = orderChart.map((d) => Number(d.cancelled) || 0);
-                        const max = Math.max(...completed.map((v, i) => v + cancelled[i]), 1);
-
-                        const usableH = 200;
-                        const baseY = 218;
-
-                        const barGap = 2;
-                        const total = orderChart.length;
-                        const barW = total ? (chartW - barGap * (total - 1)) / total : 0;
-
-                        return orderChart.map((d, i) => {
-                          const c = Number(d.completed) || 0;
-                          const x = i * (barW + barGap);
-                          const hC = (c / max) * usableH;
-
-                          const canc = Number(d.cancelled) || 0;
-                          const hCanc = (canc / max) * usableH;
-
-                          const yC = baseY - hC - hCanc; // stacked top
-
-                          return (
-                            <g key={d.label || i}>
-                              {/* cancelled */}
-                              <rect
-                                x={x}
-                                y={yC}
-                                width={barW}
-                                height={hCanc}
-                                rx="6"
-                                fill="#f43f5e"
-                                opacity="0.75"
-                              />
-                              {/* completed */}
-                              <rect
-                                x={x}
-                                y={baseY - hC}
-                                width={barW}
-                                height={hC}
-                                rx="6"
-                                fill="#10b981"
-                                opacity="0.85"
-                              />
-                            </g>
-                          );
-                        });
-                      })()}
-                    </svg>
-
-                    <div className="mt-3 flex justify-between text-[11px] font-bold text-slate-400 px-2">
-                      {(() => {
-                        if (!Array.isArray(orderChart) || orderChart.length === 0) return <span>—</span>;
-                        const n = orderChart.length;
-                        if (n <= 6) {
-                          return orderChart.map((d, i) => (
-                            <span key={d.label || i} className="truncate max-w-[100px]">
-                              {d.label}
-                            </span>
-                          ));
-                        }
-                        const step = Math.floor(n / 6) || 1;
-                        return orderChart.map((d, i) => {
-                          if (i === 0 || i === n - 1 || i % step === 0) {
-                            return (
-                              <span key={d.label || i} className="truncate max-w-[100px]">
-                                {d.label}
-                              </span>
-                            );
-                          }
-                          return <span key={d.label || i} className="opacity-0">.</span>;
-                        });
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <section className="rounded-3xl border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur overflow-hidden">
-                <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-5 bg-slate-50/40">
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">Sản phẩm bán chạy</h2>
-                    <p className="mt-1 text-sm text-slate-500">Top selling theo khoảng thời gian</p>
-                  </div>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-800">
-                    {productStat?.topSelling?.length ?? 0} sản phẩm
-                  </span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left">
-                    <thead className="bg-slate-50/95 backdrop-blur">
-                      <tr className="border-b border-slate-200">
-                        <th className="w-24 px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Ảnh</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Sản phẩm</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Danh mục</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-center">Đã bán</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-right">Doanh thu</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {productStat?.topSelling?.length ? (
-                        productStat.topSelling.map((p) => (
-                          <tr key={String(p.productId)} className="group transition hover:bg-[#fdf7f3]">
-                            <td className="px-6 py-5 align-middle">
-                              <div className="h-14 w-14 rounded-2xl border border-slate-200 bg-slate-100 overflow-hidden">
-                                <img
-                                  src={p.thumbnailUrl || 'https://placehold.co/120x120?text=No+Image'}
-                                  alt={p.name}
-                                  className="h-full w-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.src = 'https://placehold.co/120x120?text=Error';
-                                  }}
-                                />
-                              </div>
-                            </td>
-                            <td className="px-6 py-5 align-middle">
-                              <div className="max-w-[320px]">
-                                <div className="text-sm font-bold text-slate-900 truncate">{p.name}</div>
-                                <div className="mt-1 text-xs text-slate-500">
-                                  ID: <span className="font-mono text-slate-600">{p.productId}</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-5 align-middle">
-                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                                {p.categoryName || '—'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-5 align-middle text-center font-bold text-slate-700">
-                              {p.quantitySold ?? 0}
-                            </td>
-                            <td className="px-6 py-5 align-middle text-right font-black text-[#0066A2]">
-                              {formatVND(p.revenue ?? 0)}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="5" className="px-6 py-20 text-center">
-                            <div className="mx-auto flex max-w-md flex-col items-center">
-                              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                                <span className="material-symbols-outlined text-[30px]">inventory_2_off</span>
-                              </div>
-                              <h4 className="mt-4 text-lg font-bold text-slate-900">Không có dữ liệu</h4>
-                              <p className="mt-2 text-sm text-slate-500">Thử chọn lại khoảng thời gian.</p>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
-              <section className="rounded-3xl border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur overflow-hidden">
-                <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-5 bg-slate-50/40">
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">Sản phẩm tồn kho chậm</h2>
-                    <p className="mt-1 text-sm text-slate-500">Danh sách theo tồn kho</p>
-                  </div>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5 text-sm font-medium text-amber-800">
-                    {productStat?.slowMoving?.length ?? 0} sản phẩm
-                  </span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left">
-                    <thead className="bg-slate-50/95 backdrop-blur">
-                      <tr className="border-b border-slate-200">
-                        <th className="w-24 px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Ảnh</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Sản phẩm</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Danh mục</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-center">Tồn kho</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {productStat?.slowMoving?.length ? (
-                        productStat.slowMoving.map((p) => (
-                          <tr key={String(p.productId)} className="group transition hover:bg-[#fdf7f3]">
-                            <td className="px-6 py-5 align-middle">
-                              <div className="h-14 w-14 rounded-2xl border border-slate-200 bg-slate-100 overflow-hidden">
-                                <img
-                                  src={p.thumbnailUrl || 'https://placehold.co/120x120?text=No+Image'}
-                                  alt={p.name}
-                                  className="h-full w-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.src = 'https://placehold.co/120x120?text=Error';
-                                  }}
-                                />
-                              </div>
-                            </td>
-
-                            <td className="px-6 py-5 align-middle">
-                              <div className="max-w-[320px]">
-                                <div className="text-sm font-bold text-slate-900 truncate">{p.name}</div>
-                                <div className="mt-1 text-xs text-slate-500">
-                                  ID: <span className="font-mono text-slate-600">{p.productId}</span>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td className="px-6 py-5 align-middle">
-                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                                {p.categoryName || '—'}
-                              </span>
-                            </td>
-
-                            <td className="px-6 py-5 align-middle text-center font-black text-amber-700">
-                              {p.stockQty ?? 0}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="4" className="px-6 py-20 text-center">
-                            <div className="mx-auto flex max-w-md flex-col items-center">
-                              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-                                <span className="material-symbols-outlined text-[30px]">inventory_2_off</span>
-                              </div>
-                              <h4 className="mt-4 text-lg font-bold text-slate-900">Không có dữ liệu</h4>
-                              <p className="mt-2 text-sm text-slate-500">Hãy kiểm tra tồn kho hoặc khoảng thời gian.</p>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            </section>
-          </>
-        )}
+                    </td>
+                    <td style={{ padding: '12px 20px', textAlign: 'center', fontSize: '13px', fontWeight: 700, color: '#dc2626' }}>{p.stockQty}</td>
+                    <td style={{ padding: '12px 20px', textAlign: 'right' }}>
+                      <span className="badge badge-cat">{p.categoryName || '—'}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </main>
   );
