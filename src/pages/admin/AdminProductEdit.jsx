@@ -209,9 +209,9 @@ const AdminProductEdit = () => {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-stone-100 text-stone-800 font-sans">
+    <main className="flex-1 overflow-y-auto h-[calc(100vh-5rem)] bg-stone-100 text-stone-800 font-sans">
       {/* Top header bar */}
-      <header className="sticky top-0 z-20 bg-white border-b border-stone-200 px-6 py-3 flex items-center justify-between shadow-sm">
+      <header className="sticky top-0 z-30 bg-white/95 border-b border-stone-200 px-6 py-3 flex items-center justify-between shadow-sm backdrop-blur">
         <div className="flex items-center gap-3">
           <button 
             type="button"
