@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatPrice } from '../../utils/format';
+import { formatPrice, getImageUrl } from '../../utils/format';
 
 export default function FeaturedProducts({ products }) {
   return (
@@ -27,7 +27,7 @@ export default function FeaturedProducts({ products }) {
               {/* Product Image Container */}
               <div className="relative rounded-2xl overflow-hidden aspect-[3/4] mb-6 shadow-sm ring-1 ring-slate-100 transition-all hover:shadow-xl">
                 <img 
-                  src={product.imageUrl || product.anhDaiDien} 
+                  src={getImageUrl(product.imageUrl || product.anhDaiDien)} 
                   alt={product.productName || product.ten} 
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                 />

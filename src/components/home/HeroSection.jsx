@@ -1,4 +1,5 @@
 import React from 'react';
+import { getImageUrl } from '../../utils/format';
 
 export default function HeroSection({ heroImage }) {
   return (
@@ -6,7 +7,7 @@ export default function HeroSection({ heroImage }) {
       {/* Background Image with Zoom and Admin-like gradient */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <img
-          src={heroImage || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80"}
+          src={getImageUrl(heroImage)}
           alt="Hero Fashion"
           className="w-full h-full object-cover opacity-50 scale-105 animate-[pulse_10s_infinite]"
         />

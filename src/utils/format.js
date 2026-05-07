@@ -32,3 +32,10 @@ export function formatDateInput(date) {
   const dd = String(d.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 }
+
+export function getImageUrl(url) {
+  if (!url) return 'https://via.placeholder.com/400x600?text=No+Image';
+  if (url.startsWith('blob:') || url.startsWith('http') || url.startsWith('data:')) return url;
+  if (url.startsWith('/uploads/')) return `http://localhost:8080/api/v1${url}`;
+  return `http://localhost:8080/api/v1/uploads/products/${url}`;
+}
