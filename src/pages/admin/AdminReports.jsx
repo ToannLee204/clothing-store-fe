@@ -315,13 +315,13 @@ export default function AdminReports() {
     <main className="flex-1 min-h-screen overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[#f8f6f6] font-sans">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ec5b13] via-[#ff8a4c] to-[#ffd0b0]" />
-          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#ec5b13]/8 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0066A2] via-[#3385b5] to-[#66a3c7]" />
+          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#0066A2]/8 blur-3xl" />
           <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-slate-200/60 blur-3xl" />
 
           <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-2xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#ec5b13]/15 bg-[#ec5b13]/8 px-3 py-1 text-xs font-semibold text-[#c84c10]">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#0066A2]/15 bg-[#0066A2]/8 px-3 py-1 text-xs font-semibold text-[#004b76]">
                 <span className="material-symbols-outlined text-[16px]">bar_chart</span>
                 Admin / Báo cáo & Thống kê
               </div>
@@ -363,7 +363,7 @@ export default function AdminReports() {
                         type="date"
                         value={fromDate}
                         onChange={(e) => setFromDate(e.target.value)}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-[#ec5b13]/30 focus:bg-white focus:ring-4 focus:ring-[#ec5b13]/10"
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                       />
                     </div>
 
@@ -375,7 +375,7 @@ export default function AdminReports() {
                         type="date"
                         value={toDate}
                         onChange={(e) => setToDate(e.target.value)}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-[#ec5b13]/30 focus:bg-white focus:ring-4 focus:ring-[#ec5b13]/10"
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                       />
                     </div>
                   </div>
@@ -388,7 +388,7 @@ export default function AdminReports() {
                       <select
                         value={period}
                         onChange={(e) => setPeriod(e.target.value)}
-                        className="mt-2 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-sm font-medium text-slate-700 outline-none transition focus:border-[#ec5b13]/30 focus:bg-white focus:ring-4 focus:ring-[#ec5b13]/10"
+                        className="mt-2 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-sm font-medium text-slate-700 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                       >
                         <option value="day">Ngày</option>
                         <option value="week">Tuần</option>
@@ -402,7 +402,7 @@ export default function AdminReports() {
                         type="button"
                         onClick={applyFilters}
                         disabled={loading}
-                        className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#ec5b13] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#d95210] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {loading ? (
                           <>
@@ -425,7 +425,7 @@ export default function AdminReports() {
                       onClick={() => setChartMode('revenue')}
                       className={`rounded-2xl border px-3 py-2 text-sm font-bold transition ${
                         chartMode === 'revenue'
-                          ? 'border-[#ec5b13]/30 bg-[#ec5b13]/10 text-[#c84c10]'
+                          ? 'border-[#0066A2]/30 bg-[#0066A2]/10 text-[#004b76]'
                           : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -436,7 +436,7 @@ export default function AdminReports() {
                       onClick={() => setChartMode('profit')}
                       className={`rounded-2xl border px-3 py-2 text-sm font-bold transition ${
                         chartMode === 'profit'
-                          ? 'border-[#ec5b13]/30 bg-[#ec5b13]/10 text-[#c84c10]'
+                          ? 'border-[#0066A2]/30 bg-[#0066A2]/10 text-[#004b76]'
                           : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -447,7 +447,7 @@ export default function AdminReports() {
                       onClick={() => setChartMode('both')}
                       className={`rounded-2xl border px-3 py-2 text-sm font-bold transition ${
                         chartMode === 'both'
-                          ? 'border-[#ec5b13]/30 bg-[#ec5b13]/10 text-[#c84c10]'
+                          ? 'border-[#0066A2]/30 bg-[#0066A2]/10 text-[#004b76]'
                           : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -512,8 +512,8 @@ export default function AdminReports() {
                   <svg viewBox={`0 0 ${chartW} ${chartH}`} width="100%" height="320" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="revArea" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#ec5b13" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#ec5b13" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#0066A2" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#0066A2" stopOpacity="0" />
                       </linearGradient>
                       <linearGradient id="profitArea" x1="0" x2="0" y1="0" y2="1">
                         <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.28" />
@@ -532,7 +532,7 @@ export default function AdminReports() {
                     )}
 
                     {chartMode !== 'profit' && revenuePath && (
-                      <path d={revenuePath} fill="none" stroke="#ec5b13" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
+                      <path d={revenuePath} fill="none" stroke="#0066A2" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
                     )}
 
                     {chartMode !== 'revenue' && profitPoints && (
@@ -762,7 +762,7 @@ export default function AdminReports() {
                             <td className="px-6 py-5 align-middle text-center font-bold text-slate-700">
                               {p.quantitySold ?? 0}
                             </td>
-                            <td className="px-6 py-5 align-middle text-right font-black text-[#ec5b13]">
+                            <td className="px-6 py-5 align-middle text-right font-black text-[#0066A2]">
                               {formatVND(p.revenue ?? 0)}
                             </td>
                           </tr>

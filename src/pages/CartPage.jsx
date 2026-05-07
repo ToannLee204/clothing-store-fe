@@ -546,7 +546,7 @@ export default function CartPage() {
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <Link
           to="/products"
-          className="inline-flex items-center gap-2 rounded-2xl bg-[#ec5b13] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#d95210]"
+          className="inline-flex items-center gap-2 rounded-2xl bg-[#0066A2] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587]"
         >
           <span className="material-symbols-outlined text-[18px]">storefront</span>
           Tiếp tục mua sắm
@@ -572,7 +572,7 @@ export default function CartPage() {
         <header className="mb-8 rounded-3xl border border-white/70 bg-white/95 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ec5b13]">Giỏ hàng</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0066A2]">Giỏ hàng</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
                 Giỏ hàng của bạn
               </h1>
@@ -676,7 +676,7 @@ export default function CartPage() {
                             <div className="min-w-0">
                               <Link
                                 to={`/product/${item.productId}`}
-                                className="line-clamp-2 text-lg font-black tracking-tight text-slate-900 transition hover:text-[#ec5b13]"
+                                className="line-clamp-2 text-lg font-black tracking-tight text-slate-900 transition hover:text-[#0066A2]"
                               >
                                 {item.productName}
                               </Link>
@@ -717,7 +717,7 @@ export default function CartPage() {
                             type="button"
                             onClick={() => updateItemQuantity(item, item.quantity - 1)}
                             disabled={isBusy || item.quantity <= 1}
-                            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-[#ec5b13] hover:text-[#ec5b13] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-[#0066A2] hover:text-[#0066A2] disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <span className="material-symbols-outlined text-[18px]">remove</span>
                           </button>
@@ -728,7 +728,7 @@ export default function CartPage() {
                             type="button"
                             onClick={() => updateItemQuantity(item, item.quantity + 1)}
                             disabled={isBusy || isStockOut}
-                            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-[#ec5b13] hover:text-[#ec5b13] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-[#0066A2] hover:text-[#0066A2] disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <span className="material-symbols-outlined text-[18px]">add</span>
                           </button>
@@ -754,7 +754,7 @@ export default function CartPage() {
             <aside className="rounded-3xl border border-white/70 bg-white/95 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
               <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ec5b13]">Tóm tắt</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0066A2]">Tóm tắt</p>
                   <h2 className="mt-2 text-xl font-black text-slate-900">Thanh toán</h2>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
@@ -782,7 +782,7 @@ export default function CartPage() {
               <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-[22px] text-[#ec5b13]">local_activity</span>
+                    <span className="material-symbols-outlined text-[22px] text-[#0066A2]">local_activity</span>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Mã giảm giá</p>
                       <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -811,13 +811,13 @@ export default function CartPage() {
                     onChange={(e) => setVoucherCodeInput(e.target.value.toUpperCase())}
                     placeholder="Nhập mã giảm giá"
                     disabled={!isLoggedIn || voucherActionLoading}
-                    className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold uppercase outline-none transition focus:border-[#ec5b13] focus:ring-4 focus:ring-[#ec5b13]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold uppercase outline-none transition focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
                   />
                   <button
                     type="button"
                     onClick={applyVoucher}
                     disabled={!isLoggedIn || voucherActionLoading || !voucherCodeInput.trim()}
-                    className="rounded-xl bg-[#ec5b13] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#d95210] disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className="rounded-xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#005587] disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
                     {voucherActionLoading ? 'Đang áp...' : 'Áp mã'}
                   </button>
@@ -836,7 +836,7 @@ export default function CartPage() {
 
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-[22px] text-[#ec5b13]">info</span>
+                  <span className="material-symbols-outlined text-[22px] text-[#0066A2]">info</span>
                   <p className="text-sm leading-6 text-slate-600">
                     {isLoggedIn
                       ? 'Số lượng và tổng tiền được cập nhật trực tiếp với cơ sở dữ liệu.'
@@ -849,7 +849,7 @@ export default function CartPage() {
                 type="button"
                 onClick={() => navigate(isLoggedIn ? '/checkout' : '/auth')}
                 disabled={checkoutDisabled}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ec5b13] px-5 py-4 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#d95210] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-5 py-4 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
               >
                 <span className="material-symbols-outlined text-[18px]">shopping_bag</span>
                 Tiếp tục thanh toán

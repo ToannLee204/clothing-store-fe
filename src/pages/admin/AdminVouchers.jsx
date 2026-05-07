@@ -175,7 +175,7 @@ const AdminVouchers = () => {
                 </div>
                 <button
                     onClick={handleOpenAdd}
-                    className="flex items-center gap-2 bg-[#ec5b13] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#d95210] transition-all shadow-lg shadow-[#ec5b13]/20"
+                    className="flex items-center gap-2 bg-[#0066A2] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#005587] transition-all shadow-lg shadow-[#0066A2]/20"
                 >
                     <span className="material-symbols-outlined">add_circle</span>
                     Tạo mã mới
@@ -204,7 +204,7 @@ const AdminVouchers = () => {
                 </div>
                 <div className="bg-white p-6 rounded-xl border border-slate-200">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-700">
                             <span className="material-symbols-outlined">timer_off</span>
                         </div>
                     </div>
@@ -213,7 +213,7 @@ const AdminVouchers = () => {
                 </div>
                 <div className="bg-white p-6 rounded-xl border border-slate-200">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-[#ec5b13]/10 rounded-xl flex items-center justify-center text-[#ec5b13]">
+                        <div className="w-12 h-12 bg-[#0066A2]/10 rounded-xl flex items-center justify-center text-[#0066A2]">
                             <span className="material-symbols-outlined">group_add</span>
                         </div>
                     </div>
@@ -230,25 +230,25 @@ const AdminVouchers = () => {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => changeFilterStatus('all')}
-                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${filterStatus === 'all' ? 'bg-[#ec5b13]/10 text-[#ec5b13] border border-[#ec5b13]/20' : 'text-slate-500 hover:bg-slate-100'}`}
+                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${filterStatus === 'all' ? 'bg-[#0066A2]/10 text-[#0066A2] border border-[#0066A2]/20' : 'text-slate-500 hover:bg-slate-100'}`}
                         >
                             Tất cả
                         </button>
                         <button
                             onClick={() => changeFilterStatus('active')}
-                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${filterStatus === 'active' ? 'bg-[#ec5b13]/10 text-[#ec5b13] border border-[#ec5b13]/20' : 'text-slate-500 hover:bg-slate-100'}`}
+                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${filterStatus === 'active' ? 'bg-[#0066A2]/10 text-[#0066A2] border border-[#0066A2]/20' : 'text-slate-500 hover:bg-slate-100'}`}
                         >
                             Đang hoạt động
                         </button>
                         <button
                             onClick={() => changeFilterStatus('inactive')}
-                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${filterStatus === 'inactive' ? 'bg-[#ec5b13]/10 text-[#ec5b13] border border-[#ec5b13]/20' : 'text-slate-500 hover:bg-slate-100'}`}
+                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${filterStatus === 'inactive' ? 'bg-[#0066A2]/10 text-[#0066A2] border border-[#0066A2]/20' : 'text-slate-500 hover:bg-slate-100'}`}
                         >
                             Đã tạm dừng
                         </button>
                         <button
                             onClick={() => changeFilterStatus('expired')}
-                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${filterStatus === 'expired' ? 'bg-[#ec5b13]/10 text-[#ec5b13] border border-[#ec5b13]/20' : 'text-slate-500 hover:bg-slate-100'}`}
+                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${filterStatus === 'expired' ? 'bg-[#0066A2]/10 text-[#0066A2] border border-[#0066A2]/20' : 'text-slate-500 hover:bg-slate-100'}`}
                         >
                             Đã hết hạn
                         </button>
@@ -260,7 +260,7 @@ const AdminVouchers = () => {
                         <select
                             value={filterType}
                             onChange={changeFilterType}
-                            className="bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-[#ec5b13] focus:border-[#ec5b13] font-bold text-slate-700 outline-none px-3 py-2 cursor-pointer"
+                            className="bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-[#0066A2] focus:border-[#0066A2] font-bold text-slate-700 outline-none px-3 py-2 cursor-pointer"
                         >
                             <option value="all">Tất cả loại mã</option>
                             <option value="fixed">Giảm giá trực tiếp</option>
@@ -311,7 +311,7 @@ const AdminVouchers = () => {
                                                     <span className="px-2 py-1 bg-purple-50 text-purple-600 text-xs font-bold rounded">Trực tiếp</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 font-bold text-[#ec5b13]">
+                                            <td className="px-6 py-4 font-bold text-[#0066A2]">
                                                 {isPercent ? `${v.discountValue}%` : formatCurrency(v.discountValue)}
                                             </td>
                                             <td className="px-6 py-4">
@@ -327,7 +327,7 @@ const AdminVouchers = () => {
                                                         <span>{Math.round(progress)}%</span>
                                                     </div>
                                                     <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-[#ec5b13] rounded-full" style={{ width: `${progress}%` }}></div>
+                                                        <div className="h-full bg-[#0066A2] rounded-full" style={{ width: `${progress}%` }}></div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -429,7 +429,7 @@ const AdminVouchers = () => {
                     <div className="bg-white relative z-10 w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
                         <div className="flex justify-between items-center px-8 py-5 border-b border-slate-100 shrink-0">
                             <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[#ec5b13]">sell</span>
+                                <span className="material-symbols-outlined text-[#0066A2]">sell</span>
                                 {editingCode ? `Cập nhật mã ${editingCode}` : 'Tạo mã giảm giá mới'}
                             </h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 p-2 rounded-xl transition-colors">
@@ -446,7 +446,7 @@ const AdminVouchers = () => {
                                         <input
                                             required
                                             disabled={!!editingCode}
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all font-mono font-bold uppercase disabled:opacity-60 disabled:cursor-not-allowed outline-none"
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all font-mono font-bold uppercase disabled:opacity-60 disabled:cursor-not-allowed outline-none"
                                             type="text"
                                             placeholder="VD: FREESHIP, TET2026..."
                                             value={formData.voucherCode}
@@ -456,7 +456,7 @@ const AdminVouchers = () => {
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Loại giảm giá <span className="text-red-500">*</span></label>
                                         <select
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all font-bold text-slate-700 outline-none"
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all font-bold text-slate-700 outline-none"
                                             value={formData.type}
                                             onChange={e => setFormData({ ...formData, type: e.target.value, maxDiscountCap: '' })}
                                         >
@@ -475,7 +475,7 @@ const AdminVouchers = () => {
                                             required
                                             type="number"
                                             min="1"
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all font-bold outline-none"
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all font-bold outline-none"
                                             placeholder={formData.type === 'percent' ? "VD: 10" : "VD: 50000"}
                                             value={formData.discountValue}
                                             onChange={e => setFormData({ ...formData, discountValue: e.target.value })}
@@ -487,7 +487,7 @@ const AdminVouchers = () => {
                                             <input
                                                 type="number"
                                                 min="1"
-                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all font-bold outline-none"
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all font-bold outline-none"
                                                 placeholder="VD: 100000 (Để trống nếu ko giới hạn)"
                                                 value={formData.maxDiscountCap}
                                                 onChange={e => setFormData({ ...formData, maxDiscountCap: e.target.value })}
@@ -504,7 +504,7 @@ const AdminVouchers = () => {
                                         <input
                                             type="number"
                                             min="0"
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all font-bold outline-none"
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all font-bold outline-none"
                                             placeholder="VD: 200000"
                                             value={formData.minOrderValue}
                                             onChange={e => setFormData({ ...formData, minOrderValue: e.target.value })}
@@ -516,7 +516,7 @@ const AdminVouchers = () => {
                                             required
                                             type="number"
                                             min="1"
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all font-bold outline-none"
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all font-bold outline-none"
                                             placeholder="VD: 100"
                                             value={formData.maxUsage}
                                             onChange={e => setFormData({ ...formData, maxUsage: e.target.value })}
@@ -530,7 +530,7 @@ const AdminVouchers = () => {
                                         <input
                                             required
                                             type="date"
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all font-bold outline-none"
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all font-bold outline-none"
                                             value={formData.startDate}
                                             onChange={e => setFormData({ ...formData, startDate: e.target.value })}
                                         />
@@ -540,7 +540,7 @@ const AdminVouchers = () => {
                                         <input
                                             required
                                             type="date"
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all font-bold outline-none"
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all font-bold outline-none"
                                             value={formData.expiryDate}
                                             onChange={e => setFormData({ ...formData, expiryDate: e.target.value })}
                                         />
@@ -554,7 +554,7 @@ const AdminVouchers = () => {
                             <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors">
                                 Hủy bỏ
                             </button>
-                            <button type="submit" form="voucherForm" disabled={loading} className="bg-[#ec5b13] text-white px-8 py-3 font-bold rounded-xl hover:bg-[#d95210] shadow-lg shadow-[#ec5b13]/20 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                            <button type="submit" form="voucherForm" disabled={loading} className="bg-[#0066A2] text-white px-8 py-3 font-bold rounded-xl hover:bg-[#005587] shadow-lg shadow-[#0066A2]/20 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
                                 {loading ? <span className="material-symbols-outlined animate-spin">sync</span> : <span className="material-symbols-outlined">save</span>}
                                 {editingCode ? 'Lưu thay đổi' : 'Tạo mã Voucher'}
                             </button>

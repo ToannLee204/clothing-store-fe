@@ -213,7 +213,7 @@ export default function AdminCustomers() {
                 value={filters.keyword}
                 onChange={(e) => setFilters((prev) => ({ ...prev, keyword: e.target.value }))}
                 placeholder="Nhập tên hoặc email..."
-                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#ec5b13] focus:ring-4 focus:ring-[#ec5b13]/10"
+                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10"
               />
             </div>
 
@@ -222,7 +222,7 @@ export default function AdminCustomers() {
               <select
                 value={filters.status}
                 onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#ec5b13] focus:ring-4 focus:ring-[#ec5b13]/10"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10"
               >
                 <option value="">Tất cả</option>
                 <option value="true">Đang hoạt động</option>
@@ -244,7 +244,7 @@ export default function AdminCustomers() {
             <button
               type="button"
               onClick={() => fetchCustomers(1)}
-              className="rounded-xl bg-[#ec5b13] px-4 py-2 text-sm font-black text-white hover:bg-[#d95210]"
+              className="rounded-xl bg-[#0066A2] px-4 py-2 text-sm font-black text-white hover:bg-[#005587]"
             >
               Áp dụng
             </button>
@@ -368,7 +368,7 @@ export default function AdminCustomers() {
                 <span className="material-symbols-outlined text-[20px]">chevron_left</span>
               </button>
 
-              <button className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl bg-[#ec5b13] px-3 text-sm font-bold text-white shadow-[0_10px_20px_rgba(236,91,19,0.2)]">
+              <button className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl bg-[#0066A2] px-3 text-sm font-bold text-white shadow-[0_10px_20px_rgba(236,91,19,0.2)]">
                 {pagination.current}
               </button>
 

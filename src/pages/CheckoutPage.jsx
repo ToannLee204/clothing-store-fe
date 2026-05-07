@@ -272,7 +272,7 @@ export default function CheckoutPage() {
                       type="button"
                       onClick={() => setSelectedAddressId(addrId)}
                       className={`w-full text-left rounded-2xl border p-4 transition ${
-                        active ? 'border-[#ec5b13]/40 bg-orange-50/50' : 'border-slate-200 bg-white hover:border-slate-300'
+                        active ? 'border-[#0066A2]/40 bg-blue-50/50' : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -285,7 +285,7 @@ export default function CheckoutPage() {
                         </div>
 
                         {(addr.isDefault || addr.default) && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-[#ec5b13]/10 text-[#ec5b13] px-2 py-1 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-[#0066A2]/10 text-[#0066A2] px-2 py-1 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
                             <span className="material-symbols-outlined text-[12px]">verified</span>
                             Mặc định
                           </span>
@@ -306,7 +306,7 @@ export default function CheckoutPage() {
                   onClick={() => setPaymentMethod('cod')}
                   className={`rounded-2xl border p-4 text-left transition ${
                     paymentMethod === 'cod'
-                      ? 'border-[#ec5b13]/40 bg-orange-50/50'
+                      ? 'border-[#0066A2]/40 bg-blue-50/50'
                       : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
                 >
@@ -315,7 +315,7 @@ export default function CheckoutPage() {
                       <div className="font-black text-slate-900">COD (Thanh toán khi nhận hàng)</div>
                       <div className="text-sm text-slate-600 mt-1">PaymentStatus: unpaid</div>
                     </div>
-                    <span className="material-symbols-outlined text-[#ec5b13]">payments</span>
+                    <span className="material-symbols-outlined text-[#0066A2]">payments</span>
                   </div>
                 </button>
 
@@ -324,7 +324,7 @@ export default function CheckoutPage() {
                   onClick={() => setPaymentMethod('vnpay')}
                   className={`rounded-2xl border p-4 text-left transition ${
                     paymentMethod === 'vnpay'
-                      ? 'border-[#ec5b13]/40 bg-orange-50/50'
+                      ? 'border-[#0066A2]/40 bg-blue-50/50'
                       : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
                 >
@@ -333,7 +333,7 @@ export default function CheckoutPage() {
                       <div className="font-black text-slate-900">VNPAY (Thanh toán online)</div>
                       <div className="text-sm text-slate-600 mt-1">Tạo paymentUrl & redirect</div>
                     </div>
-                    <span className="material-symbols-outlined text-[#ec5b13]">account_balance_wallet</span>
+                    <span className="material-symbols-outlined text-[#0066A2]">account_balance_wallet</span>
                   </div>
                 </button>
               </div>
@@ -346,7 +346,7 @@ export default function CheckoutPage() {
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={3}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#ec5b13] focus:ring-4 focus:ring-[#ec5b13]/10"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10"
                   placeholder="VD: Gọi trước khi giao hàng..."
                 />
               </div>
@@ -387,7 +387,7 @@ export default function CheckoutPage() {
               type="button"
               onClick={placeOrder}
               disabled={checkoutDisabled}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ec5b13] px-5 py-4 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#d95210] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-5 py-4 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
             >
               {submitting
                 ? 'Đang tạo đơn...'

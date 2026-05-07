@@ -196,7 +196,7 @@ const AdminAddProduct = () => {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="px-6 py-2.5 bg-[#ec5b13] text-white rounded-xl text-sm font-bold hover:bg-[#d95210] transition-all shadow-lg shadow-[#ec5b13]/20 disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-2.5 bg-[#0066A2] text-white rounded-xl text-sm font-bold hover:bg-[#005587] transition-all shadow-lg shadow-[#0066A2]/20 disabled:opacity-50 flex items-center gap-2"
           >
             {loading ? (
                <><span className="material-symbols-outlined animate-spin text-[18px]">sync</span> Đang lưu...</>
@@ -227,7 +227,7 @@ const AdminAddProduct = () => {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tên sản phẩm <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all"
                   value={productData.name}
                   onChange={(e) => setProductData({...productData, name: e.target.value})}
                   placeholder="Vd: Áo khoác Bomber Minimalist..."
@@ -239,7 +239,7 @@ const AdminAddProduct = () => {
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Danh mục <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <select
-                      className="w-full appearance-none px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all cursor-pointer"
+                      className="w-full appearance-none px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all cursor-pointer"
                       value={productData.categoryId}
                       onChange={(e) => setProductData({...productData, categoryId: e.target.value})}
                     >
@@ -256,7 +256,7 @@ const AdminAddProduct = () => {
                   <div className="relative">
                     <input
                       type="number"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all font-bold text-slate-900 pr-10"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all font-bold text-slate-900 pr-10"
                       value={productData.basePrice}
                       onChange={(e) => setProductData({...productData, basePrice: e.target.value})}
                       placeholder="0"
@@ -270,7 +270,7 @@ const AdminAddProduct = () => {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mô tả sản phẩm</label>
                 <textarea
                   rows="4"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all resize-none"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all resize-none"
                   value={productData.description}
                   onChange={(e) => setProductData({...productData, description: e.target.value})}
                   placeholder="Chất liệu, kiểu dáng, xuất xứ..."
@@ -296,7 +296,7 @@ const AdminAddProduct = () => {
                   onChange={handleThumbnailSelect}
                 />
                 {thumbnailPreview ? (
-                  <div className="relative group w-40 h-40 rounded-xl overflow-hidden border-2 border-[#ec5b13]/30 shadow-md">
+                  <div className="relative group w-40 h-40 rounded-xl overflow-hidden border-2 border-[#0066A2]/30 shadow-md">
                     <img src={thumbnailPreview} alt="Thumbnail" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <button
@@ -324,10 +324,10 @@ const AdminAddProduct = () => {
                   <button
                     type="button"
                     onClick={() => thumbnailInputRef.current?.click()}
-                    className="w-40 h-40 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center gap-2 hover:border-[#ec5b13] hover:bg-[#ec5b13]/5 transition-all cursor-pointer group"
+                    className="w-40 h-40 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center gap-2 hover:border-[#0066A2] hover:bg-[#0066A2]/5 transition-all cursor-pointer group"
                   >
-                    <span className="material-symbols-outlined text-3xl text-slate-400 group-hover:text-[#ec5b13] transition-colors">cloud_upload</span>
-                    <span className="text-xs font-semibold text-slate-500 group-hover:text-[#ec5b13] transition-colors">Chọn ảnh</span>
+                    <span className="material-symbols-outlined text-3xl text-slate-400 group-hover:text-[#0066A2] transition-colors">cloud_upload</span>
+                    <span className="text-xs font-semibold text-slate-500 group-hover:text-[#0066A2] transition-colors">Chọn ảnh</span>
                     <span className="text-[10px] text-slate-400">JPG, PNG, WEBP</span>
                   </button>
                 )}
@@ -340,7 +340,7 @@ const AdminAddProduct = () => {
                   <button
                     type="button"
                     onClick={() => galleryInputRef.current?.click()}
-                    className="text-[#ec5b13] font-bold text-xs hover:underline flex items-center gap-1"
+                    className="text-[#0066A2] font-bold text-xs hover:underline flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-sm">add_circle</span> Thêm ảnh
                   </button>
@@ -376,20 +376,20 @@ const AdminAddProduct = () => {
                     <button
                       type="button"
                       onClick={() => galleryInputRef.current?.click()}
-                      className="aspect-square rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center gap-1 hover:border-[#ec5b13] hover:bg-[#ec5b13]/5 transition-all cursor-pointer group"
+                      className="aspect-square rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center gap-1 hover:border-[#0066A2] hover:bg-[#0066A2]/5 transition-all cursor-pointer group"
                     >
-                      <span className="material-symbols-outlined text-2xl text-slate-400 group-hover:text-[#ec5b13]">add_photo_alternate</span>
-                      <span className="text-[10px] font-semibold text-slate-400 group-hover:text-[#ec5b13]">Thêm ảnh</span>
+                      <span className="material-symbols-outlined text-2xl text-slate-400 group-hover:text-[#0066A2]">add_photo_alternate</span>
+                      <span className="text-[10px] font-semibold text-slate-400 group-hover:text-[#0066A2]">Thêm ảnh</span>
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
                     onClick={() => galleryInputRef.current?.click()}
-                    className="w-full py-8 border-2 border-dashed border-slate-300 bg-slate-50 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-[#ec5b13] hover:bg-[#ec5b13]/5 transition-all cursor-pointer group"
+                    className="w-full py-8 border-2 border-dashed border-slate-300 bg-slate-50 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-[#0066A2] hover:bg-[#0066A2]/5 transition-all cursor-pointer group"
                   >
-                    <span className="material-symbols-outlined text-3xl text-slate-400 group-hover:text-[#ec5b13] transition-colors">add_photo_alternate</span>
-                    <span className="text-xs font-semibold text-slate-500 group-hover:text-[#ec5b13] transition-colors">Bấm để chọn ảnh từ máy tính</span>
+                    <span className="material-symbols-outlined text-3xl text-slate-400 group-hover:text-[#0066A2] transition-colors">add_photo_alternate</span>
+                    <span className="text-xs font-semibold text-slate-500 group-hover:text-[#0066A2] transition-colors">Bấm để chọn ảnh từ máy tính</span>
                     <span className="text-[10px] text-slate-400">Có thể chọn nhiều ảnh cùng lúc</span>
                   </button>
                 )}
@@ -405,7 +405,7 @@ const AdminAddProduct = () => {
                <h3 className="font-bold text-lg text-slate-900 border-b border-slate-100 pb-3">Trạng thái</h3>
                <div className="relative">
                  <select
-                    className="w-full appearance-none px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all cursor-pointer font-bold text-slate-700"
+                    className="w-full appearance-none px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all cursor-pointer font-bold text-slate-700"
                     value={productData.status}
                     onChange={(e) => setProductData({...productData, status: Number(e.target.value)})}
                   >
@@ -440,27 +440,27 @@ const AdminAddProduct = () => {
                     <div className="grid grid-cols-2 gap-3 mb-3">
                       <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Màu sắc</label>
-                        <input type="text" className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#ec5b13]" value={variant.color} onChange={(e) => handleVariantChange(index, 'color', e.target.value)} placeholder="Trắng, Đen..." />
+                        <input type="text" className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0066A2]" value={variant.color} onChange={(e) => handleVariantChange(index, 'color', e.target.value)} placeholder="Trắng, Đen..." />
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Kích cỡ</label>
-                        <input type="text" className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#ec5b13]" value={variant.size} onChange={(e) => handleVariantChange(index, 'size', e.target.value)} placeholder="S, M, L..." />
+                        <input type="text" className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0066A2]" value={variant.size} onChange={(e) => handleVariantChange(index, 'size', e.target.value)} placeholder="S, M, L..." />
                       </div>
                     </div>
 
                     <div className="mb-3">
                       <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Mã SKU (Bắt buộc)</label>
-                      <input type="text" className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#ec5b13]" value={variant.sku} onChange={(e) => handleVariantChange(index, 'sku', e.target.value)} placeholder="SKU-XXXX" required/>
+                      <input type="text" className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0066A2]" value={variant.sku} onChange={(e) => handleVariantChange(index, 'sku', e.target.value)} placeholder="SKU-XXXX" required/>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Tồn kho</label>
-                        <input type="number" min="0" className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#ec5b13] font-bold" value={variant.stockQty} onChange={(e) => handleVariantChange(index, 'stockQty', e.target.value)} placeholder="0" />
+                        <input type="number" min="0" className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0066A2] font-bold" value={variant.stockQty} onChange={(e) => handleVariantChange(index, 'stockQty', e.target.value)} placeholder="0" />
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Giá Sale</label>
-                        <input type="number" min="0" className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#ec5b13]" value={variant.salePrice} onChange={(e) => handleVariantChange(index, 'salePrice', e.target.value)} placeholder="Trống = ko sale" />
+                        <input type="number" min="0" className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0066A2]" value={variant.salePrice} onChange={(e) => handleVariantChange(index, 'salePrice', e.target.value)} placeholder="Trống = ko sale" />
                       </div>
                     </div>
                   </div>
@@ -470,7 +470,7 @@ const AdminAddProduct = () => {
               <button
                 type="button"
                 onClick={addVariant}
-                className="w-full py-3 border border-dashed border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:border-[#ec5b13] hover:text-[#ec5b13] hover:bg-[#ec5b13]/5 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 border border-dashed border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:border-[#0066A2] hover:text-[#0066A2] hover:bg-[#0066A2]/5 transition-all flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span> Thêm biến thể khác
               </button>

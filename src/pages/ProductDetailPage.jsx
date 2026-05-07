@@ -101,7 +101,7 @@ function StarRow({ value, size = 16 }) {
     const starIndex = idx + 1;
     const filled = fullStars >= starIndex;
     const half = fullStars >= starIndex - 0.5 && fullStars < starIndex;
-    const color = filled || half ? '#ec5b13' : '#cbd5e1';
+    const color = filled || half ? '#0066A2' : '#cbd5e1';
 
     if (half) {
       return (
@@ -551,7 +551,7 @@ export default function ProductDetailPage() {
             <button
               type="button"
               onClick={() => navigate('/products')}
-              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#ec5b13] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#d95210]"
+              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#0066A2] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587]"
             >
               <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               Quay lại danh sách sản phẩm
@@ -566,8 +566,8 @@ export default function ProductDetailPage() {
     <main className="min-h-screen bg-[#f8f6f6] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ec5b13] via-[#ff8a4c] to-[#ffd0b0]" />
-          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#ec5b13]/8 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0066A2] via-[#3385b5] to-[#66a3c7]" />
+          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#0066A2]/8 blur-3xl" />
           <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-slate-200/60 blur-3xl" />
 
           <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
@@ -581,7 +581,7 @@ export default function ProductDetailPage() {
                 Quay lại danh sách
               </button>
 
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#ec5b13]/15 bg-[#ec5b13]/8 px-3 py-1 text-xs font-semibold text-[#c84c10]">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#0066A2]/15 bg-[#0066A2]/8 px-3 py-1 text-xs font-semibold text-[#004b76]">
                 <span className="material-symbols-outlined text-[16px]">shopping_bag</span>
                 Chi tiết sản phẩm
               </div>
@@ -625,7 +625,7 @@ export default function ProductDetailPage() {
                 type="button"
                 onClick={handleAddToCart}
                 disabled={addButtonDisabled}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-[#ec5b13] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:-translate-y-0.5 hover:bg-[#d95210] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:-translate-y-0.5 hover:bg-[#005587] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
               >
                 <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
                 Thêm vào giỏ hàng
@@ -728,7 +728,7 @@ export default function ProductDetailPage() {
                           onClick={() => setSelectedImage(image)}
                           className={`group overflow-hidden rounded-2xl border-2 transition ${
                             isActive
-                              ? 'border-[#ec5b13] shadow-[0_10px_24px_rgba(236,91,19,0.14)]'
+                              ? 'border-[#0066A2] shadow-[0_10px_24px_rgba(236,91,19,0.14)]'
                               : 'border-slate-200 hover:border-slate-300'
                           }`}
                         >
@@ -753,13 +753,13 @@ export default function ProductDetailPage() {
             <div className="rounded-3xl border border-white/70 bg-white/95 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
               <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ec5b13]">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0066A2]">
                     Mô tả sản phẩm
                   </p>
                   <h2 className="mt-2 text-xl font-black text-slate-900">Thông tin chi tiết</h2>
                 </div>
                 <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                  <span className="size-2 rounded-full bg-[#ec5b13]" />
+                  <span className="size-2 rounded-full bg-[#0066A2]" />
                   Mã sản phẩm #{product.id}
                 </span>
               </div>
@@ -774,7 +774,7 @@ export default function ProductDetailPage() {
             <div className="rounded-3xl border border-white/70 bg-white/95 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
               <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ec5b13]">Đánh giá</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0066A2]">Đánh giá</p>
                   <h2 className="mt-2 text-xl font-black text-slate-900">Đánh giá sản phẩm</h2>
                 </div>
 
@@ -954,7 +954,7 @@ export default function ProductDetailPage() {
                       type="button"
                       onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
                       disabled={quantity <= 1}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-[#ec5b13] hover:text-[#ec5b13] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-[#0066A2] hover:text-[#0066A2] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <span className="material-symbols-outlined text-[18px]">remove</span>
                     </button>
@@ -967,7 +967,7 @@ export default function ProductDetailPage() {
                         const nextValue = Math.max(1, Number(e.target.value) || 1);
                         setQuantity(selectedVariantStock > 0 ? Math.min(nextValue, selectedVariantStock) : nextValue);
                       }}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold outline-none focus:border-[#ec5b13] focus:ring-4 focus:ring-[#ec5b13]/10"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold outline-none focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10"
                     />
                     <button
                       type="button"
@@ -976,7 +976,7 @@ export default function ProductDetailPage() {
                         setQuantity((prev) => Math.min(prev + 1, selectedVariantStock));
                       }}
                       disabled={!selectedVariant || selectedVariantStock <= 0 || quantityAtMax}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-[#ec5b13] hover:text-[#ec5b13] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-[#0066A2] hover:text-[#0066A2] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <span className="material-symbols-outlined text-[18px]">add</span>
                     </button>
@@ -1001,7 +1001,7 @@ export default function ProductDetailPage() {
             <div className="rounded-3xl border border-white/70 bg-white/95 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
               <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ec5b13]">Biến thể</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0066A2]">Biến thể</p>
                   <h2 className="mt-2 text-xl font-black text-slate-900">Chọn màu sắc và size</h2>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
@@ -1032,7 +1032,7 @@ export default function ProductDetailPage() {
                             disabled={disabled}
                             className={`rounded-xl border px-4 py-3 text-left transition ${
                               active
-                                ? 'border-[#ec5b13] bg-[#ec5b13]/5 text-[#c84c10] shadow-[0_10px_24px_rgba(236,91,19,0.12)]'
+                                ? 'border-[#0066A2] bg-[#0066A2]/5 text-[#004b76] shadow-[0_10px_24px_rgba(236,91,19,0.12)]'
                                 : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                             } disabled:cursor-not-allowed disabled:opacity-40`}
                           >
@@ -1072,7 +1072,7 @@ export default function ProductDetailPage() {
                             disabled={disabled}
                             className={`rounded-xl border px-3 py-3 text-center transition ${
                               active
-                                ? 'border-[#ec5b13] bg-[#ec5b13]/5 text-[#c84c10] shadow-[0_10px_24px_rgba(236,91,19,0.12)]'
+                                ? 'border-[#0066A2] bg-[#0066A2]/5 text-[#004b76] shadow-[0_10px_24px_rgba(236,91,19,0.12)]'
                                 : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                             } disabled:cursor-not-allowed disabled:opacity-40`}
                           >
@@ -1118,7 +1118,7 @@ export default function ProductDetailPage() {
                     type="button"
                     onClick={handleAddToCart}
                     disabled={addButtonDisabled}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#ec5b13] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#d95210] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
                   >
                     <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
                     Thêm vào giỏ hàng
@@ -1170,7 +1170,7 @@ export default function ProductDetailPage() {
             <button
               type="button"
               onClick={() => navigate('/cart')}
-              className="flex-1 rounded-2xl bg-[#ec5b13] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#d95210]"
+              className="flex-1 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#005587]"
             >
               Xem giỏ hàng
             </button>

@@ -104,7 +104,7 @@ const AdminProductEdit = () => {
     return (
       <main className="flex-1 flex items-center justify-center min-h-screen bg-slate-50">
         <div className="flex flex-col items-center gap-3 text-slate-400">
-          <span className="material-symbols-outlined animate-spin text-4xl text-[#ec5b13]">progress_activity</span>
+          <span className="material-symbols-outlined animate-spin text-4xl text-[#0066A2]">progress_activity</span>
           <p className="font-medium">Đang tải dữ liệu sản phẩm...</p>
         </div>
       </main>
@@ -139,7 +139,7 @@ const AdminProductEdit = () => {
           <button 
             onClick={handleSubmit}
             disabled={loading}
-            className="px-6 py-2.5 bg-[#ec5b13] text-white rounded-xl text-sm font-bold hover:bg-[#d95210] transition-all shadow-lg shadow-[#ec5b13]/20 disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-2.5 bg-[#0066A2] text-white rounded-xl text-sm font-bold hover:bg-[#005587] transition-all shadow-lg shadow-[#0066A2]/20 disabled:opacity-50 flex items-center gap-2"
           >
             {loading ? (
                <><span className="material-symbols-outlined animate-spin text-[18px]">sync</span> Đang lưu...</>
@@ -169,7 +169,7 @@ const AdminProductEdit = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all"
                   placeholder="Nhập tên sản phẩm..."
                 />
               </div>
@@ -181,7 +181,7 @@ const AdminProductEdit = () => {
                   value={formData.description}
                   onChange={handleChange}
                   rows="6"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all"
                   placeholder="Viết mô tả chi tiết cho sản phẩm này..."
                 ></textarea>
               </div>
@@ -198,7 +198,7 @@ const AdminProductEdit = () => {
                     value={formData.categoryId}
                     onChange={handleChange}
                     required
-                    className="w-full appearance-none px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all cursor-pointer"
+                    className="w-full appearance-none px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all cursor-pointer"
                   >
                     <option value="" disabled>-- Chọn danh mục --</option>
                     {categories.map(cat => (
@@ -223,7 +223,7 @@ const AdminProductEdit = () => {
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="w-full appearance-none px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all cursor-pointer font-medium"
+                  className="w-full appearance-none px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all cursor-pointer font-medium"
                 >
                   <option value={1}>🟢 Hoạt động (Hiển thị)</option>
                   <option value={0}>⚪ Bản nháp (Đang ẩn)</option>
@@ -262,7 +262,7 @@ const AdminProductEdit = () => {
                   name="thumbnailUrl"
                   value={formData.thumbnailUrl}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all"
                   placeholder="https://example.com/image.jpg"
                 />
                 <p className="text-[11px] text-slate-400 mt-2 italic">* Tạm thời hỗ trợ nhập URL ảnh. Tính năng Upload File sẽ tích hợp sau.</p>
@@ -282,7 +282,7 @@ const AdminProductEdit = () => {
                     onChange={handleChange}
                     required
                     min="0"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20 focus:border-[#ec5b13] transition-all font-bold text-slate-900 pr-12"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20 focus:border-[#0066A2] transition-all font-bold text-slate-900 pr-12"
                     placeholder="0"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₫</span>

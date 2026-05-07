@@ -33,7 +33,7 @@ export default function CategorySpotlight({ spotlightCategories }) {
             <div className="p-6">
               <div className="flex items-center justify-between gap-4">
                 <h3 className="font-headline text-3xl font-black text-slate-900">{item.title}</h3>
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#ec5b13] shadow-sm transition-all group-hover:bg-[#ec5b13] group-hover:text-white">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#0066A2] shadow-sm transition-all group-hover:bg-[#0066A2] group-hover:text-white">
                   <ArrowIcon />
                 </span>
               </div>

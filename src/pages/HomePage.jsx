@@ -177,7 +177,7 @@ export default function HomePage() {
                   'Ảnh lớn, card bo tròn và khoảng thở tốt hơn'
                 ].map((text) => (
                   <div key={text} className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
-                    <div className="mt-0.5 h-2.5 w-2.5 rounded-full bg-[#ec5b13]" />
+                    <div className="mt-0.5 h-2.5 w-2.5 rounded-full bg-[#0ea5e9]" />
                     <p className="text-sm leading-6 text-slate-600">{text}</p>
                   </div>
                 ))}
@@ -201,7 +201,7 @@ export default function HomePage() {
 
             <div className="rounded-[2rem] bg-white p-8 shadow-sm ring-1 ring-slate-100 md:p-10">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#ec5b13] text-white">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#0ea5e9] text-white">
                   <SparkIcon />
                 </div>
                 <div>
@@ -248,7 +248,7 @@ export default function HomePage() {
             return (
               <div
                 key={catId}
-                className={`rounded-[1.8rem] border border-slate-200 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#ec5b13] hover:shadow-lg cursor-pointer ${
+                className={`rounded-[1.8rem] border border-slate-200 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#0ea5e9] hover:shadow-lg cursor-pointer ${
                   index === 0 ? 'bg-slate-950 text-white' : 'bg-white'
                 }`}
               >

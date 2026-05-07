@@ -148,7 +148,7 @@ const AdminCategories = () => {
         label: 'Tổng danh mục',
         value: categories.length,
         icon: 'category',
-        accent: 'from-[#ec5b13] to-[#ff8a4c]',
+        accent: 'from-[#0066A2] to-[#3385b5]',
         detail: 'Tất cả danh mục đã được đồng bộ từ hệ thống',
       },
       {
@@ -181,13 +181,13 @@ const AdminCategories = () => {
     <main className="min-h-screen flex-1 overflow-auto bg-[#f8f6f6] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ec5b13] via-[#ff8a4c] to-[#ffd0b0]" />
-          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#ec5b13]/8 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0066A2] via-[#3385b5] to-[#66a3c7]" />
+          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#0066A2]/8 blur-3xl" />
           <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-slate-200/60 blur-3xl" />
 
           <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-2xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#ec5b13]/15 bg-[#ec5b13]/8 px-3 py-1 text-xs font-semibold text-[#c84c10]">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#0066A2]/15 bg-[#0066A2]/8 px-3 py-1 text-xs font-semibold text-[#004b76]">
                 <span className="material-symbols-outlined text-[16px]">category</span>
                 Admin / Danh mục
               </div>
@@ -225,7 +225,7 @@ const AdminCategories = () => {
                   setEditingId(null);
                   setFormData({ name: '', parentId: '' });
                 }}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-[#ec5b13] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:-translate-y-0.5 hover:bg-[#d95210]"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:-translate-y-0.5 hover:bg-[#005587]"
               >
                 <span className="material-symbols-outlined text-[20px]">add</span>
                 Thêm danh mục mới
@@ -266,7 +266,7 @@ const AdminCategories = () => {
           <section className="rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
             <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-5">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#ec5b13]/15 bg-[#ec5b13]/8 px-3 py-1 text-xs font-semibold text-[#c84c10]">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#0066A2]/15 bg-[#0066A2]/8 px-3 py-1 text-xs font-semibold text-[#004b76]">
                   <span className="material-symbols-outlined text-[16px]">
                     {editingId ? 'edit' : 'add_circle'}
                   </span>
@@ -297,7 +297,7 @@ const AdminCategories = () => {
                   <input
                     type="text"
                     required
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-[#ec5b13]/30 focus:bg-white focus:ring-4 focus:ring-[#ec5b13]/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="VD: Áo sơ mi, Váy dạ hội..."
@@ -310,7 +310,7 @@ const AdminCategories = () => {
                   </label>
                   <div className="relative">
                     <select
-                      className="w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-sm font-medium text-slate-700 outline-none transition focus:border-[#ec5b13]/30 focus:bg-white focus:ring-4 focus:ring-[#ec5b13]/10"
+                      className="w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-sm font-medium text-slate-700 outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                       value={formData.parentId}
                       onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
                     >
@@ -346,7 +346,7 @@ const AdminCategories = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex items-center gap-2 rounded-2xl bg-[#ec5b13] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#d95210] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex items-center gap-2 rounded-2xl bg-[#0066A2] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? (
                       <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
@@ -371,7 +371,7 @@ const AdminCategories = () => {
             </div>
 
             <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-600">
-              <span className="size-2 rounded-full bg-[#ec5b13]" />
+              <span className="size-2 rounded-full bg-[#0066A2]" />
               {categories.length} mục
             </span>
           </div>
@@ -403,7 +403,7 @@ const AdminCategories = () => {
                   <tr>
                     <td colSpan="5" className="px-6 py-20 text-center">
                       <div className="mx-auto flex max-w-md flex-col items-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ec5b13]/10 text-[#ec5b13]">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0066A2]/10 text-[#0066A2]">
                           <span className="material-symbols-outlined text-[30px]">category_off</span>
                         </div>
                         <h4 className="mt-4 text-lg font-bold text-slate-900">Chưa có danh mục nào</h4>
@@ -476,7 +476,7 @@ const AdminCategories = () => {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => handleEdit(cat)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#ec5b13]/15 bg-[#ec5b13]/10 px-3 py-2 text-xs font-semibold text-[#c84c10] transition hover:bg-[#ec5b13]/15"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-[#0066A2]/15 bg-[#0066A2]/10 px-3 py-2 text-xs font-semibold text-[#004b76] transition hover:bg-[#0066A2]/15"
                               title="Sửa danh mục"
                             >
                               <span className="material-symbols-outlined text-[16px]">edit</span>

@@ -31,7 +31,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed, currentUser 
       <div className={`p-4 flex items-center h-20 border-b border-slate-50 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed && (
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="size-8 bg-[#ec5b13] flex items-center justify-center rounded-xl text-white shadow-md shadow-[#ec5b13]/20 flex-shrink-0">
+            <div className="size-8 bg-[#0066A2] flex items-center justify-center rounded-xl text-white shadow-md shadow-[#0066A2]/20 flex-shrink-0">
               <span className="material-symbols-outlined text-xl font-light">diamond</span>
             </div>
             <h1 className="text-xl font-black tracking-tight text-slate-900 uppercase">Lumina</h1>
@@ -63,8 +63,8 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed, currentUser 
                 isCollapsed ? 'justify-center px-0' : 'gap-3 px-4'
               } ${
                 isActive
-                  ? 'bg-[#ec5b13]/10 text-[#ec5b13] font-bold'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-[#ec5b13] font-medium'
+                  ? 'bg-[#0066A2]/10 text-[#0066A2] font-bold'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-[#0066A2] font-medium'
               }`}
             >
               <span className="material-symbols-outlined text-[22px] flex-shrink-0">{item.icon}</span>

@@ -8,7 +8,7 @@ export default function StarRow({ value, size = 16 }) {
     const starIndex = idx + 1;
     const filled = fullStars >= starIndex;
     const half = fullStars >= starIndex - 0.5 && fullStars < starIndex;
-    const color = filled || half ? '#ec5b13' : '#cbd5e1';
+    const color = filled || half ? '#0066A2' : '#cbd5e1';
 
     if (half) {
       return (

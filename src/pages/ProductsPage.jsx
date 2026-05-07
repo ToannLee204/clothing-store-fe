@@ -231,10 +231,10 @@ export default function ProductsPage() {
                     name="category"
                     checked={isSelected}
                     onChange={() => handleSelectCategory(catId)}
-                    className="h-4 w-4 border-slate-300 text-[#ec5b13] focus:ring-[#ec5b13]"
+                    className="h-4 w-4 border-slate-300 text-[#0066A2] focus:ring-[#0066A2]"
                   />
                   <span
-                    className={`text-sm transition-colors group-hover:text-[#ec5b13] ${
+                    className={`text-sm transition-colors group-hover:text-[#0066A2] ${
                       level === 0 ? 'font-bold text-slate-800' : 'font-medium text-slate-500'
                     }`}
                   >
@@ -246,7 +246,7 @@ export default function ProductsPage() {
                   <button
                     type="button"
                     onClick={() => toggleCategory(String(catId))}
-                    className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-50 hover:text-[#ec5b13]"
+                    className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-50 hover:text-[#0066A2]"
                     aria-label="Expand category"
                   >
                     <span
@@ -299,11 +299,11 @@ export default function ProductsPage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Tìm theo tên sản phẩm..."
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-[#ec5b13] focus:ring-4 focus:ring-[#ec5b13]/10"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10"
             />
             <button
               type="submit"
-              className="inline-flex items-center justify-center rounded-2xl bg-[#ec5b13] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#d95210]"
+              className="inline-flex items-center justify-center rounded-2xl bg-[#0066A2] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#005587]"
             >
               Tìm
             </button>
@@ -315,7 +315,7 @@ export default function ProductsPage() {
               setSortBy(e.target.value);
               setCurrentPage(1);
             }}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-[#ec5b13] focus:ring-4 focus:ring-[#ec5b13]/10"
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10"
           >
             <option value="newest">Mới nhất</option>
             <option value="price_asc">Giá tăng dần</option>
@@ -326,7 +326,7 @@ export default function ProductsPage() {
           <button
             type="button"
             onClick={handleResetFilters}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 transition-colors hover:border-[#ec5b13] hover:text-[#ec5b13]"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 transition-colors hover:border-[#0066A2] hover:text-[#0066A2]"
           >
             <ResetIcon />
             Xoá lọc
@@ -353,7 +353,7 @@ export default function ProductsPage() {
                     className={`mb-4 rounded-full px-4 py-2 text-sm font-bold transition-colors ${
                       !selectedCategoryId
                         ? 'bg-slate-950 text-white'
-                        : 'border border-slate-200 text-slate-600 hover:border-[#ec5b13] hover:text-[#ec5b13]'
+                        : 'border border-slate-200 text-slate-600 hover:border-[#0066A2] hover:text-[#0066A2]'
                     }`}
                   >
                     Tất cả
@@ -381,9 +381,9 @@ export default function ProductsPage() {
                             setPriceRange(key);
                             setCurrentPage(1);
                           }}
-                          className="h-4 w-4 border-slate-300 text-[#ec5b13] focus:ring-[#ec5b13]"
+                          className="h-4 w-4 border-slate-300 text-[#0066A2] focus:ring-[#0066A2]"
                         />
-                        <span className="text-sm font-medium text-slate-600 transition-colors group-hover:text-[#ec5b13]">
+                        <span className="text-sm font-medium text-slate-600 transition-colors group-hover:text-[#0066A2]">
                           {item.label}
                         </span>
                       </label>
@@ -427,7 +427,7 @@ export default function ProductsPage() {
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#ec5b13]"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#0066A2]"
                 >
                   <ResetIcon />
                   Xoá bộ lọc
@@ -456,7 +456,7 @@ export default function ProductsPage() {
                             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                             alt={name}
                           />
-                          <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18rem] text-[#ec5b13] shadow-sm">
+                          <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18rem] text-[#0066A2] shadow-sm">
                             {product?.status === 1 ? 'Đang bán' : 'Mới về'}
                           </div>
                           <div className="absolute inset-x-0 bottom-0 translate-y-full p-4 transition-transform group-hover:translate-y-0">
@@ -467,10 +467,10 @@ export default function ProductsPage() {
                         </div>
 
                         <div className="p-5">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.18rem] text-[#ec5b13]">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18rem] text-[#0066A2]">
                             {categoryName || 'Danh mục'}
                           </p>
-                          <h3 className="mt-2 line-clamp-1 text-base font-bold text-slate-950 transition-colors group-hover:text-[#ec5b13]">
+                          <h3 className="mt-2 line-clamp-1 text-base font-bold text-slate-950 transition-colors group-hover:text-[#0066A2]">
                             {name}
                           </h3>
                           {description ? (
@@ -480,7 +480,7 @@ export default function ProductsPage() {
                           ) : null}
                           <div className="mt-4 flex items-center justify-between gap-4">
                             <p className="text-lg font-black text-slate-950">{formatPrice(price)}</p>
-                            <span className="inline-flex items-center gap-2 text-sm font-bold text-[#ec5b13]">
+                            <span className="inline-flex items-center gap-2 text-sm font-bold text-[#0066A2]">
                               Chi tiết
                               <ArrowIcon />
                             </span>
@@ -497,7 +497,7 @@ export default function ProductsPage() {
                       type="button"
                       disabled={currentPage <= 1 || pageLoading}
                       onClick={() => goToPage(currentPage - 1)}
-                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:border-[#ec5b13] hover:text-[#ec5b13]"
+                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:border-[#0066A2] hover:text-[#0066A2]"
                     >
                       Trang trước
                     </button>
@@ -510,7 +510,7 @@ export default function ProductsPage() {
                       type="button"
                       disabled={currentPage >= totalPages || pageLoading}
                       onClick={() => goToPage(currentPage + 1)}
-                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:border-[#ec5b13] hover:text-[#ec5b13]"
+                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:border-[#0066A2] hover:text-[#0066A2]"
                     >
                       Trang sau
                     </button>

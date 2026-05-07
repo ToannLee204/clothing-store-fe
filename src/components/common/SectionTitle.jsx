@@ -5,7 +5,7 @@ export default function SectionTitle({ kicker, title, description, align = 'left
   return (
     <div className={align === 'center' ? 'mx-auto text-center max-w-3xl' : 'max-w-3xl'}>
       {kicker ? (
-        <span className="mb-4 block text-[0.72rem] font-bold uppercase tracking-[0.22rem] text-[#ec5b13]">
+        <span className="mb-4 block text-[0.72rem] font-bold uppercase tracking-[0.22rem] text-[#0066A2]">
           {kicker}
         </span>
       ) : null}

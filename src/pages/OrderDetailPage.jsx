@@ -35,7 +35,7 @@ function StarRow({ value, size = 16 }) {
     const starIndex = idx + 1;
     const filled = fullStars >= starIndex;
     const half = fullStars >= starIndex - 0.5 && fullStars < starIndex;
-    const color = filled || half ? "#ec5b13" : "#cbd5e1";
+    const color = filled || half ? "#0066A2" : "#cbd5e1";
 
     if (half) {
       return (
@@ -404,7 +404,7 @@ export default function OrderDetailPage() {
             {order?.paymentUrl ? (
               <a
                 href={order.paymentUrl}
-                className="rounded-xl bg-[#ec5b13] px-4 py-2 text-xs font-black text-white hover:bg-[#d95210]"
+                className="rounded-xl bg-[#0066A2] px-4 py-2 text-xs font-black text-white hover:bg-[#005587]"
               >
                 Thanh toán ngay
               </a>
@@ -539,7 +539,7 @@ export default function OrderDetailPage() {
                                                 onClick={() => setEditDraftStar(star)}
                                                 className={`flex items-center justify-center rounded-xl border px-3 py-2 transition ${
                                                   active
-                                                    ? "border-[#ec5b13] bg-[#ec5b13]/10 text-[#c84c10]"
+                                                    ? "border-[#0066A2] bg-[#0066A2]/10 text-[#004b76]"
                                                     : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                                                 }`}
                                                 disabled={editBusy}
@@ -559,7 +559,7 @@ export default function OrderDetailPage() {
                                             value={editDraftContent}
                                             onChange={(e) => setEditDraftContent(e.target.value)}
                                             rows={3}
-                                            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#ec5b13] focus:ring-4 focus:ring-[#ec5b13]/10 disabled:opacity-50"
+                                            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10 disabled:opacity-50"
                                             placeholder="Chia sẻ trải nghiệm của bạn..."
                                             disabled={editBusy}
                                           />
@@ -584,7 +584,7 @@ export default function OrderDetailPage() {
                                             type="button"
                                             onClick={() => saveEditReview(review)}
                                             disabled={editBusy}
-                                            className="rounded-xl bg-[#ec5b13] px-3 py-2 text-xs font-black text-white hover:bg-[#d95210] disabled:opacity-50"
+                                            className="rounded-xl bg-[#0066A2] px-3 py-2 text-xs font-black text-white hover:bg-[#005587] disabled:opacity-50"
                                           >
                                             {editBusy ? "Đang lưu..." : "Lưu"}
                                           </button>
@@ -668,7 +668,7 @@ export default function OrderDetailPage() {
                                         <button
                                           type="button"
                                           onClick={() => openDraftFor(item)}
-                                          className="rounded-xl border border-[#ec5b13]/30 bg-[#ec5b13]/5 px-3 py-2 text-xs font-black text-[#c84c10] hover:bg-[#ec5b13]/10 transition"
+                                          className="rounded-xl border border-[#0066A2]/30 bg-[#0066A2]/5 px-3 py-2 text-xs font-black text-[#004b76] hover:bg-[#0066A2]/10 transition"
                                         >
                                           Đánh giá sản phẩm
                                         </button>
@@ -692,7 +692,7 @@ export default function OrderDetailPage() {
                                                   onClick={() => setDraftStar(star)}
                                                   className={`flex items-center justify-center rounded-xl border px-3 py-2 transition ${
                                                     active
-                                                      ? "border-[#ec5b13] bg-[#ec5b13]/10 text-[#c84c10]"
+                                                      ? "border-[#0066A2] bg-[#0066A2]/10 text-[#004b76]"
                                                       : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                                                   }`}
                                                 >
@@ -711,7 +711,7 @@ export default function OrderDetailPage() {
                                               value={draftContent}
                                               onChange={(e) => setDraftContent(e.target.value)}
                                               rows={3}
-                                              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#ec5b13] focus:ring-4 focus:ring-[#ec5b13]/10"
+                                              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10"
                                               placeholder="Chia sẻ trải nghiệm của bạn..."
                                             />
                                           </div>
@@ -762,7 +762,7 @@ export default function OrderDetailPage() {
                                               type="button"
                                               onClick={() => submitReview(item)}
                                               disabled={reviewBusy || draftStar < 1 || draftStar > 5}
-                                              className="rounded-xl bg-[#ec5b13] px-3 py-2 text-xs font-black text-white hover:bg-[#d95210] disabled:opacity-50"
+                                              className="rounded-xl bg-[#0066A2] px-3 py-2 text-xs font-black text-white hover:bg-[#005587] disabled:opacity-50"
                                             >
                                               {reviewBusy ? "Đang gửi..." : "Gửi đánh giá"}
                                             </button>

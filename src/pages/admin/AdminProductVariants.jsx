@@ -197,7 +197,7 @@ const AdminProductVariants = () => {
         label: 'Tổng biến thể',
         value: totalVariants,
         icon: 'layers',
-        accent: 'from-[#ec5b13] to-[#ff8a4c]',
+        accent: 'from-[#0066A2] to-[#3385b5]',
       },
       {
         label: 'Tồn kho cộng dồn',
@@ -224,7 +224,7 @@ const AdminProductVariants = () => {
     return (
       <main className="flex min-h-screen flex-1 items-center justify-center bg-[#f8f6f6]">
         <div className="flex flex-col items-center gap-3 rounded-3xl border border-white/70 bg-white/90 px-8 py-10 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <span className="material-symbols-outlined animate-spin text-4xl text-[#ec5b13]">
+          <span className="material-symbols-outlined animate-spin text-4xl text-[#0066A2]">
             progress_activity
           </span>
           <p className="text-sm font-medium text-slate-500">Đang tải dữ liệu...</p>
@@ -240,7 +240,7 @@ const AdminProductVariants = () => {
           <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
             <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-slate-50/90 px-6 py-5">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#ec5b13]/15 bg-[#ec5b13]/8 px-3 py-1 text-xs font-semibold text-[#c84c10]">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#0066A2]/15 bg-[#0066A2]/8 px-3 py-1 text-xs font-semibold text-[#004b76]">
                   <span className="material-symbols-outlined text-[16px]">layers</span>
                   {modalMode === 'add' ? 'Thêm biến thể' : 'Chỉnh sửa biến thể'}
                 </div>
@@ -268,7 +268,7 @@ const AdminProductVariants = () => {
                   </label>
                   <input
                     type="text"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#ec5b13]/30 focus:bg-white focus:ring-4 focus:ring-[#ec5b13]/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                     value={formData.color}
                     onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                     placeholder="Đen, Trắng..."
@@ -281,7 +281,7 @@ const AdminProductVariants = () => {
                   </label>
                   <input
                     type="text"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#ec5b13]/30 focus:bg-white focus:ring-4 focus:ring-[#ec5b13]/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                     value={formData.size}
                     onChange={(e) => setFormData({ ...formData, size: e.target.value })}
                     placeholder="S, M, L..."
@@ -296,7 +296,7 @@ const AdminProductVariants = () => {
                 <input
                   type="text"
                   required
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm outline-none transition focus:border-[#ec5b13]/30 focus:bg-white focus:ring-4 focus:ring-[#ec5b13]/10"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                   value={formData.sku}
                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                   placeholder="VD: SKU-12345"
@@ -311,7 +311,7 @@ const AdminProductVariants = () => {
                   <input
                     type="number"
                     min="0"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#ec5b13]/30 focus:bg-white focus:ring-4 focus:ring-[#ec5b13]/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                     value={formData.stockQty}
                     onChange={(e) => setFormData({ ...formData, stockQty: e.target.value })}
                   />
@@ -324,7 +324,7 @@ const AdminProductVariants = () => {
                   <input
                     type="number"
                     min="0"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#ec5b13]/30 focus:bg-white focus:ring-4 focus:ring-[#ec5b13]/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066A2]/30 focus:bg-white focus:ring-4 focus:ring-[#0066A2]/10"
                     value={formData.salePrice}
                     onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
                     placeholder="Bỏ trống nếu không giảm"
@@ -343,7 +343,7 @@ const AdminProductVariants = () => {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#ec5b13] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#d95210] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSaving ? (
                     <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
@@ -359,8 +359,8 @@ const AdminProductVariants = () => {
       )}
 
       <section className="relative mx-auto max-w-7xl overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ec5b13] via-[#ff8a4c] to-[#ffd0b0]" />
-        <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#ec5b13]/8 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0066A2] via-[#3385b5] to-[#66a3c7]" />
+        <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#0066A2]/8 blur-3xl" />
         <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-slate-200/60 blur-3xl" />
 
         <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
@@ -373,7 +373,7 @@ const AdminProductVariants = () => {
               Quay lại danh sách sản phẩm
             </button>
 
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#ec5b13]/15 bg-[#ec5b13]/8 px-3 py-1 text-xs font-semibold text-[#c84c10]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#0066A2]/15 bg-[#0066A2]/8 px-3 py-1 text-xs font-semibold text-[#004b76]">
               <span className="material-symbols-outlined text-[16px]">layers</span>
               Admin / Biến thể sản phẩm
             </div>
@@ -398,7 +398,7 @@ const AdminProductVariants = () => {
             </button>
             <button
               onClick={openAddModal}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-[#ec5b13] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:-translate-y-0.5 hover:bg-[#d95210]"
+              className="flex items-center justify-center gap-2 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:-translate-y-0.5 hover:bg-[#005587]"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
               Thêm biến thể mới
@@ -439,7 +439,7 @@ const AdminProductVariants = () => {
 
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
             <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-600">
-              <span className="size-2 rounded-full bg-[#ec5b13]" />
+              <span className="size-2 rounded-full bg-[#0066A2]" />
               {variants.length} biến thể
             </span>
             <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-600">
@@ -481,7 +481,7 @@ const AdminProductVariants = () => {
                 <tr>
                   <td colSpan="6" className="px-6 py-20 text-center">
                     <div className="mx-auto flex max-w-md flex-col items-center">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ec5b13]/10 text-[#ec5b13]">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0066A2]/10 text-[#0066A2]">
                         <span className="material-symbols-outlined text-[30px]">inventory_2_off</span>
                       </div>
                       <h4 className="mt-4 text-lg font-bold text-slate-900">
@@ -492,7 +492,7 @@ const AdminProductVariants = () => {
                       </p>
                       <button
                         onClick={openAddModal}
-                        className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-[#ec5b13] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#d95210]"
+                        className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-[#0066A2] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(236,91,19,0.22)] transition hover:bg-[#005587]"
                       >
                         <span className="material-symbols-outlined text-[18px]">add</span>
                         Thêm biến thể
@@ -554,7 +554,7 @@ const AdminProductVariants = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => openEditModal(v, index)}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#ec5b13]/15 bg-[#ec5b13]/10 px-3 py-2 text-xs font-semibold text-[#c84c10] transition hover:bg-[#ec5b13]/15"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#0066A2]/15 bg-[#0066A2]/10 px-3 py-2 text-xs font-semibold text-[#004b76] transition hover:bg-[#0066A2]/15"
                           >
                             <span className="material-symbols-outlined text-[16px]">edit</span>
                             Sửa

@@ -28,7 +28,7 @@ export default function FeaturedProducts({ products }) {
             description="Những thiết kế mới nhất vừa được đưa lên kệ, lấy trực tiếp từ hệ thống dữ liệu."
           />
           <a
-            className="inline-flex items-center gap-2 self-start text-[0.72rem] font-bold uppercase tracking-[0.18rem] text-slate-500 transition-colors hover:text-[#ec5b13] sm:self-auto"
+            className="inline-flex items-center gap-2 self-start text-[0.72rem] font-bold uppercase tracking-[0.18rem] text-slate-500 transition-colors hover:text-[#0066A2] sm:self-auto"
             href="/products"
           >
             Xem toàn bộ
@@ -55,10 +55,10 @@ export default function FeaturedProducts({ products }) {
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     src={image}
                   />
-                  <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18rem] text-[#ec5b13] shadow-sm">
+                  <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18rem] text-[#0066A2] shadow-sm">
                     Mới về
                   </div>
-                  <button className="absolute bottom-4 right-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg transition-all duration-300 hover:bg-[#ec5b13] hover:text-white">
+                  <button className="absolute bottom-4 right-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg transition-all duration-300 hover:bg-[#0066A2] hover:text-white">
                     <SparkIcon />
                   </button>
                 </div>
@@ -66,14 +66,14 @@ export default function FeaturedProducts({ products }) {
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h3 className="text-base font-bold text-slate-900 transition-colors group-hover:text-[#ec5b13]">
+                      <h3 className="text-base font-bold text-slate-900 transition-colors group-hover:text-[#0066A2]">
                         {name}
                       </h3>
                       <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">
                         {desc}
                       </p>
                     </div>
-                    <span className="shrink-0 text-sm font-bold text-[#ec5b13]">
+                    <span className="shrink-0 text-sm font-bold text-[#0066A2]">
                       {formatPrice(price)}
                     </span>
                   </div>

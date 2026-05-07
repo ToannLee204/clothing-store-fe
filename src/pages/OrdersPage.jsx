@@ -190,7 +190,7 @@ export default function OrdersPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <Link
                           to={`/orders/${orderId}`}
-                          className="font-black text-slate-900 hover:text-[#ec5b13] truncate max-w-[240px]"
+                          className="font-black text-slate-900 hover:text-[#0066A2] truncate max-w-[240px]"
                         >
                           {o.orderCode}
                         </Link>
@@ -214,7 +214,7 @@ export default function OrdersPage() {
                             type="button"
                             disabled={actionBusyId === orderId}
                             onClick={() => retryVnpay(orderId)}
-                            className="rounded-xl bg-[#ec5b13] px-4 py-2 text-xs font-black text-white hover:bg-[#d95210] disabled:opacity-50"
+                            className="rounded-xl bg-[#0066A2] px-4 py-2 text-xs font-black text-white hover:bg-[#005587] disabled:opacity-50"
                           >
                             {actionBusyId === orderId ? 'Đang tạo...' : 'Thanh toán lại (VNPAY)'}
                           </button>
@@ -227,7 +227,7 @@ export default function OrdersPage() {
                               value={cancelReasonById[orderId] ?? ''}
                               onChange={(e) => setCancelReasonById((prev) => ({ ...prev, [orderId]: e.target.value }))}
                               placeholder="Lý do hủy (tuỳ chọn)"
-                              className="w-full sm:w-56 rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-[#ec5b13] focus:ring-4 focus:ring-[#ec5b13]/10"
+                              className="w-full sm:w-56 rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10"
                               disabled={actionBusyId === orderId}
                             />
                             <button

@@ -46,7 +46,7 @@ export default function HeroSection({ heroImage }) {
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
             <a
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ec5b13] px-8 py-4 text-sm font-bold uppercase tracking-[0.14rem] text-white transition-all duration-300 hover:bg-[#d95210] hover:shadow-lg hover:shadow-[#ec5b13]/30"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0066A2] px-8 py-4 text-sm font-bold uppercase tracking-[0.14rem] text-white transition-all duration-300 hover:bg-[#005587] hover:shadow-lg hover:shadow-[#0066A2]/30"
               href="#featured-products"
             >
               Khám phá ngay

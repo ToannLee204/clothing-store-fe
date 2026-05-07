@@ -192,7 +192,7 @@ export default function AuthPage() {
       <div className="absolute top-6 left-6 z-50">
         <Link
           to="/"
-          className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-[#ec5b13] transition-colors bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-sm border border-slate-100"
+          className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-[#0066A2] transition-colors bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-sm border border-slate-100"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           Trở lại cửa hàng

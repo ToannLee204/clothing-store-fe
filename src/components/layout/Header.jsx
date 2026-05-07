@@ -114,25 +114,25 @@ export default function Header() {
           <nav className="hidden items-center gap-8 lg:flex">
             <Link
               to="/products"
-              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#ec5b13]"
+              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#0066A2]"
             >
               Tất cả
             </Link>
             <Link
               to="/products?category=ao"
-              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#ec5b13]"
+              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#0066A2]"
             >
               Áo
             </Link>
             <Link
               to="/products?category=quan"
-              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#ec5b13]"
+              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#0066A2]"
             >
               Quần
             </Link>
             <Link
               to="/products?category=phu-kien"
-              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#ec5b13]"
+              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#0066A2]"
             >
               Phụ kiện
             </Link>
@@ -142,11 +142,11 @@ export default function Header() {
         <div className="hidden flex-1 max-w-md md:flex">
           <div className="group relative w-full">
             <input
-              className="w-full rounded-full border border-transparent bg-slate-50 py-2 pl-10 pr-4 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:border-[#ec5b13] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ec5b13]/20"
+              className="w-full rounded-full border border-transparent bg-slate-50 py-2 pl-10 pr-4 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:border-[#0066A2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20"
               placeholder="Tìm kiếm sản phẩm..."
               type="text"
             />
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-[#ec5b13]">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-[#0066A2]">
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
@@ -159,7 +159,7 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className="flex items-center gap-2 rounded-full p-2 text-slate-600 transition-all hover:bg-orange-50 hover:text-[#ec5b13]"
+              className="flex items-center gap-2 rounded-full p-2 text-slate-600 transition-all hover:bg-blue-50 hover:text-[#0066A2]"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
@@ -181,14 +181,14 @@ export default function Header() {
                   <>
                     <Link
                       to="/profile"
-                      className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#ec5b13]"
+                      className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#0066A2]"
                       onClick={() => setIsUserDropdownOpen(false)}
                     >
                       Thông tin cá nhân
                     </Link>
                     <Link
                       to="/orders"
-                      className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#ec5b13]"
+                      className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#0066A2]"
                       onClick={() => setIsUserDropdownOpen(false)}
                     >
                       Đơn hàng của tôi
@@ -205,7 +205,7 @@ export default function Header() {
                 ) : (
                   <Link
                     to="/auth"
-                    className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#ec5b13]"
+                    className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#0066A2]"
                     onClick={() => setIsUserDropdownOpen(false)}
                   >
                     Đăng nhập / Đăng ký
@@ -215,18 +215,18 @@ export default function Header() {
             </div>
           </div>
 
-          <Link to="/cart" className="relative rounded-full p-2 text-slate-600 transition-all hover:bg-orange-50 hover:text-[#ec5b13]">
+          <Link to="/cart" className="relative rounded-full p-2 text-slate-600 transition-all hover:bg-blue-50 hover:text-[#0066A2]">
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
             </svg>
             {cartCount > 0 && (
-              <span className="absolute right-0 top-0 rounded-full border-2 border-white bg-[#ec5b13] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+              <span className="absolute right-0 top-0 rounded-full border-2 border-white bg-[#0066A2] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
                 {cartCount}
               </span>
             )}
           </Link>
 
-          <button type="button" className="rounded-full p-2 text-slate-600 transition-all hover:bg-orange-50 hover:text-[#ec5b13] lg:hidden">
+          <button type="button" className="rounded-full p-2 text-slate-600 transition-all hover:bg-blue-50 hover:text-[#0066A2] lg:hidden">
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
             </svg>

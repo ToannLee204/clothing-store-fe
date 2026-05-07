@@ -9,10 +9,10 @@ function EyeIcon({ hidden = false }) {
 }
 
 const inputBase =
-  'w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:border-[#ec5b13] focus:ring-2 focus:ring-[#ec5b13]/20 font-medium';
+  'w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:border-[#0066A2] focus:ring-2 focus:ring-[#0066A2]/20 font-medium';
 const labelBase = 'mb-1.5 block text-sm font-bold text-slate-700';
 const formButtonBase =
-  'w-full rounded-xl bg-[#ec5b13] px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#ec5b13]/20 transition-all hover:bg-[#d95210] hover:-translate-y-0.5';
+  'w-full rounded-xl bg-[#0066A2] px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#0066A2]/20 transition-all hover:bg-[#005587] hover:-translate-y-0.5';
 
 export default function RegisterForm({ onSubmit, error }) {
   const [regData, setRegData] = useState({
@@ -111,7 +111,7 @@ export default function RegisterForm({ onSubmit, error }) {
             <button
               type="button"
               onClick={() => setShowRegPassword(!showRegPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#ec5b13] p-1"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0066A2] p-1"
             >
               <EyeIcon hidden={showRegPassword} />
             </button>
@@ -131,7 +131,7 @@ export default function RegisterForm({ onSubmit, error }) {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#ec5b13] p-1"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0066A2] p-1"
             >
               <EyeIcon hidden={showConfirmPassword} />
             </button>
