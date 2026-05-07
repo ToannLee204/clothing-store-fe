@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import './AdminProducts.css';
 
 const API_ADMIN_CUSTOMERS_URL = '/api/v1/admin/customers';
 
@@ -21,11 +22,9 @@ function safeParseJson(res) {
 }
 
 function extractListMetaAndItems(payload) {
-  // Backend trả về ResultPaginationDTO(meta, content) => { meta, result }
   if (!payload) return { meta: null, items: [] };
 
   const meta = payload.meta || payload.data?.meta || null;
-
   const rawItems =
     payload.result ||
     payload.data?.result ||
@@ -33,8 +32,8 @@ function extractListMetaAndItems(payload) {
     payload.content ||
     payload.data ||
     [];
-  const items = Array.isArray(rawItems) ? rawItems : [];
-  return { meta, items };
+
+  return { meta, items: Array.isArray(rawItems) ? rawItems : [] };
 }
 
 function extractMessage(payload, fallback) {
@@ -75,8 +74,10 @@ export default function AdminCustomers() {
 
   const [filters, setFilters] = useState({
     keyword: '',
-    status: '', // '', 'true', 'false'
+    status: '',
   });
+
+  const [keywordInput, setKeywordInput] = useState('');
 
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState('');
@@ -99,13 +100,12 @@ export default function AdminCustomers() {
 
     try {
       const queryParams = new URLSearchParams({
-        page: String(page - 1), // backend expects 0-based page
+        page: String(page - 1),
         pageSize: String(pagination.pageSize || 20),
       });
 
       const keyword = (filters.keyword || '').trim();
       if (keyword) queryParams.append('keyword', keyword);
-
       if (filters.status === 'true') queryParams.append('status', 'true');
       if (filters.status === 'false') queryParams.append('status', 'false');
 
@@ -153,7 +153,7 @@ export default function AdminCustomers() {
       const payload = await safeParseJson(res);
       if (!res.ok) throw new Error(extractMessage(payload, 'Không thể tải chi tiết khách hàng.'));
 
-      setSelectedCustomer(payload?.data || payload); // tùy controller trả trực tiếp DTO hay bọc
+      setSelectedCustomer(payload?.data || payload);
       setIsModalOpen(true);
     } catch (e) {
       setDetailsError(e?.message || 'Lỗi tải chi tiết khách hàng.');
@@ -168,12 +168,10 @@ export default function AdminCustomers() {
   }, []);
 
   useEffect(() => {
-    // khi thay bộ lọc -> quay lại trang 1 và load
     setPagination((prev) => ({ ...prev, current: 1 }));
   }, [filters.keyword, filters.status]);
 
   useEffect(() => {
-    // load lại khi current thay theo bộ lọc
     fetchCustomers(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
@@ -182,218 +180,235 @@ export default function AdminCustomers() {
   const canNext = pagination.current < pagination.pages;
 
   const handleClearFilters = () => {
+    setKeywordInput('');
     setFilters({ keyword: '', status: '' });
   };
 
+  const handleKeywordKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      setFilters((prev) => ({ ...prev, keyword: keywordInput }));
+    }
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#f8f6f6] font-sans">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900">Quản lý khách hàng</h1>
-          <p className="text-sm text-slate-500 mt-1">Tìm kiếm theo tên/email, lọc trạng thái và xem chi tiết.</p>
+    <main className="flex-1 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
+      <div className="pm-wrap">
+        <div className="pm-topbar">
+          <div className="pm-title-block">
+            <div className="pm-title">Quản lý khách hàng</div>
+            <div className="pm-subtitle">Tìm kiếm theo tên hoặc email, lọc trạng thái và xem chi tiết khách hàng theo cùng giao diện với trang sản phẩm.</div>
+          </div>
+          <div className="pm-actions">
+            <span className="badge badge-green">Đang hoạt động: {activeCount}</span>
+            <span className="badge badge-red">Bị khóa: {lockedCount}</span>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-700">
-            Đang hoạt động: {activeCount}
-          </span>
-          <span className="rounded-full bg-rose-50 border border-rose-200 px-3 py-1 text-xs font-bold text-rose-700">
-            Bị khóa: {lockedCount}
-          </span>
+        <div className="stats-grid">
+          {[
+            { label: 'Tổng khách hàng', value: pagination.total, icon: 'group', tone: 'si-blue', detail: 'Toàn bộ khách hàng theo bộ lọc hiện tại' },
+            { label: 'Đang hoạt động', value: activeCount, icon: 'verified_user', tone: 'si-teal', detail: 'Tài khoản đang có thể sử dụng' },
+            { label: 'Bị khóa', value: lockedCount, icon: 'block', tone: 'si-amber', detail: 'Tài khoản đã bị hạn chế truy cập' },
+            { label: 'Trang hiện tại', value: pagination.current, icon: 'format_list_numbered', tone: 'si-gray', detail: `Tổng ${pagination.pages} trang dữ liệu` },
+          ].map((stat, idx) => (
+            <div key={stat.label} className={`stat-card ${idx === 2 ? 'warn' : ''}`}>
+              <div className={`stat-icon ${stat.tone}`}>
+                <span className="material-symbols-outlined">{stat.icon}</span>
+              </div>
+              <div className="stat-label">{stat.label}</div>
+              <div className="stat-value">{stat.value}</div>
+              <div className="stat-desc">{stat.detail}</div>
+            </div>
+          ))}
         </div>
-      </div>
 
-      <section className="rounded-2xl bg-white border border-slate-100 p-5 space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
-            <div className="w-full sm:w-[340px]">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Tìm kiếm</label>
+        <div className="filter-bar">
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: '1 1 260px', minWidth: '220px' }}>
+              <span
+                className="material-symbols-outlined"
+                style={{
+                  position: 'absolute',
+                  left: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  fontSize: '17px',
+                  color: '#94a3b8',
+                  pointerEvents: 'none',
+                }}
+              >
+                search
+              </span>
               <input
                 type="text"
-                value={filters.keyword}
-                onChange={(e) => setFilters((prev) => ({ ...prev, keyword: e.target.value }))}
-                placeholder="Nhập tên hoặc email..."
-                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+                onKeyDown={handleKeywordKeyDown}
+                placeholder="Nhập tên hoặc email... (Enter để tìm)"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px 8px 34px',
+                  borderRadius: '6px',
+                  border: '1px solid #e2e8f0',
+                  background: '#f8fafc',
+                  fontSize: '13px',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
               />
             </div>
 
-            <div className="w-full sm:w-[220px]">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Trạng thái</label>
-              <select
-                value={filters.status}
-                onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10"
-              >
-                <option value="">Tất cả</option>
-                <option value="true">Đang hoạt động</option>
-                <option value="false">Bị khóa</option>
-              </select>
-            </div>
-          </div>
+            <select
+              className="fselect"
+              value={filters.status}
+              onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="true">Đang hoạt động</option>
+              <option value="false">Bị khóa</option>
+            </select>
 
-          <div className="flex flex-wrap gap-2 justify-start lg:justify-end">
-            {(filters.keyword || filters.status) && (
-              <button
-                type="button"
-                onClick={handleClearFilters}
-                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-black text-rose-700 hover:bg-rose-100"
-              >
-                Xóa lọc
+            {(keywordInput || filters.status) && (
+              <button type="button" onClick={handleClearFilters} className="btn-ghost">
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>Xóa lọc
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => fetchCustomers(1)}
-              className="rounded-xl bg-[#0066A2] px-4 py-2 text-sm font-black text-white hover:bg-[#005587]"
+          </div>
+
+          {error && (
+            <div style={{ padding: '12px', background: '#fef2f2', color: '#dc2626', borderRadius: '8px', marginBottom: '12px', fontSize: '13px', border: '1px solid #fecaca' }}>
+              {error}
+            </div>
+          )}
+
+          <div className="filter-counts">
+            <span className="dot-count"><span className="dot dot-teal" />Trang {pagination.current} / {pagination.pages}</span>
+            <span className="dot-count"><span className="dot dot-gray" />Tổng: {pagination.total} khách hàng</span>
+            {loading && (
+              <span style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px', animation: 'spin 1s linear infinite' }}>progress_activity</span>Đang tải...
+              </span>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="table-wrap">
+            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>Đang tải...</div>
+          </div>
+        ) : customers.length === 0 ? (
+          <div className="table-wrap">
+            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>Chưa tìm thấy khách hàng.</div>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <div
+              className="tbl-header"
+              style={{ gridTemplateColumns: '1.2fr 1.2fr 0.7fr 0.9fr 0.9fr 0.7fr 0.9fr' }}
             >
-              Áp dụng
-            </button>
-          </div>
-        </div>
+              <div className="th">Khách hàng</div>
+              <div className="th">Email / SĐT</div>
+              <div className="th center">Giới tính</div>
+              <div className="th center">Trạng thái</div>
+              <div className="th center">Xác thực</div>
+              <div className="th right"># Đơn hàng</div>
+              <div className="th right">Thao tác</div>
+            </div>
 
-        {error && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
-            {error}
-          </div>
-        )}
-
-        <div className="text-sm text-slate-500">
-          Hiển thị trang <span className="font-bold text-slate-900">{pagination.current}</span> /{' '}
-          <span className="font-bold text-slate-900">{pagination.pages}</span> · Tổng:{' '}
-          <span className="font-bold text-slate-900">{pagination.total}</span>
-        </div>
-      </section>
-
-      {loading ? (
-        <div className="rounded-2xl bg-white border border-slate-100 p-6">Đang tải...</div>
-      ) : customers.length === 0 ? (
-        <div className="rounded-2xl bg-white border border-slate-100 p-10 text-center text-slate-500 font-bold">
-          Chưa tìm thấy khách hàng.
-        </div>
-      ) : (
-        <section className="rounded-3xl border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
-                <tr className="border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Khách hàng</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Email / SĐT</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-center">Giới tính</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-center">Trạng thái</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-center">Xác thực</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-right"># Đơn hàng</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-right">Thao tác</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100">
-                {customers.map((c) => (
-                  <tr key={String(c.userId)} className="group transition hover:bg-[#fdf7f3]">
-                    <td className="px-6 py-5 align-middle">
-                      <div className="max-w-[260px]">
-                        <div className="text-sm font-bold text-slate-900 truncate">{c.fullName || '—'}</div>
-                        <div className="mt-2 text-xs text-slate-500">
-                          userId: <span className="font-mono text-slate-600">{c.userId}</span>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-5 align-middle">
-                      <div className="text-sm text-slate-700">
-                        <div className="truncate">{c.email || '—'}</div>
-                        <div className="mt-1 text-xs text-slate-500 truncate">{c.phoneNumber || '—'}</div>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-5 align-middle text-center text-sm font-semibold text-slate-700">
-                      {genderLabel(c.gender)}
-                    </td>
-
-                    <td className="px-6 py-5 align-middle text-center">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase ${
-                          c.status
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                            : 'bg-rose-50 border-rose-200 text-rose-700'
-                        }`}
-                      >
-                        {statusLabel(c.status)}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5 align-middle text-center">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase ${
-                          c.emailVerified
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                            : 'bg-slate-50 border-slate-200 text-slate-600'
-                        }`}
-                      >
-                        {verifiedLabel(c.emailVerified)}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5 align-middle text-right text-sm font-black text-slate-900">
-                      {c.totalOrders ?? 0}
-                    </td>
-
-                    <td className="px-6 py-5 align-middle text-right">
-                      <button
-                        type="button"
-                        onClick={() => fetchCustomerDetail(c.userId)}
-                        className="inline-flex items-center justify-end gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">visibility</span>
-                        Xem chi tiết
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex flex-col gap-4 border-t border-slate-200 bg-slate-50/80 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-500">
-              Trang hiện tại: <span className="font-bold text-slate-900">{pagination.current}</span> · Tổng:{' '}
-              <span className="font-bold text-slate-900">{pagination.total}</span> khách hàng
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                disabled={!canPrev}
-                onClick={() => fetchCustomers(pagination.current - 1)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            {customers.map((c) => (
+              <div
+                key={String(c.userId)}
+                className="tbl-row"
+                style={{ gridTemplateColumns: '1.2fr 1.2fr 0.7fr 0.9fr 0.9fr 0.7fr 0.9fr' }}
               >
-                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
-              </button>
+                <div>
+                  <div className="prod-name">{c.fullName || '—'}</div>
+                  <div className="prod-meta">
+                    <span className="prod-tag">
+                      <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>badge</span>
+                      userId: <span style={{ fontFamily: 'monospace' }}>{c.userId}</span>
+                    </span>
+                  </div>
+                </div>
 
-              <button className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl bg-[#0066A2] px-3 text-sm font-bold text-white shadow-[0_10px_20px_rgba(236,91,19,0.2)]">
-                {pagination.current}
-              </button>
+                <div>
+                  <div className="prod-name" style={{ fontSize: '13px', fontWeight: 500 }}>{c.email || '—'}</div>
+                  <div className="prod-meta">
+                    <span className="prod-tag">
+                      <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>call</span>
+                      {c.phoneNumber || '—'}
+                    </span>
+                  </div>
+                </div>
 
-              <button
-                disabled={!canNext}
-                onClick={() => fetchCustomers(pagination.current + 1)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-              </button>
+                <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                  {genderLabel(c.gender)}
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  <span className={`badge ${c.status ? 'badge-green' : 'badge-red'}`}>{statusLabel(c.status)}</span>
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  <span className={`badge ${c.emailVerified ? 'badge-green' : 'badge-cat'}`}>{verifiedLabel(c.emailVerified)}</span>
+                </div>
+
+                <div className="price-val">{c.totalOrders ?? 0}</div>
+
+                <div>
+                  <div className="act-row">
+                    <button
+                      type="button"
+                      onClick={() => fetchCustomerDetail(c.userId)}
+                      className="act-btn"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility</span>Xem
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <div className="tbl-footer">
+              <span className="footer-text">
+                Trang hiện tại: <strong>{pagination.current}</strong> · Tổng: <strong>{pagination.total}</strong> khách hàng
+              </span>
+
+              <div className="pager">
+                <button
+                  disabled={!canPrev}
+                  onClick={() => fetchCustomers(pagination.current - 1)}
+                  className="page-btn"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_left</span>
+                </button>
+
+                <button className="page-btn active">{pagination.current}</button>
+
+                <button
+                  disabled={!canNext}
+                  onClick={() => fetchCustomers(pagination.current + 1)}
+                  className="page-btn"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
+                </button>
+              </div>
             </div>
           </div>
-        </section>
-      )}
+        )}
+      </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setIsModalOpen(false)} />
-          <div className="relative w-full max-w-4xl rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-slate-100">
+          <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
               <div className="min-w-0">
-                <h2 className="text-lg font-black text-slate-900 truncate">
+                <h2 className="truncate text-lg font-black text-slate-900">
                   {selectedCustomer?.fullName || 'Chi tiết khách hàng'}
                 </h2>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="mt-1 text-sm text-slate-500">
                   userId: <span className="font-mono">{selectedCustomer?.userId ?? '—'}</span>
                 </p>
               </div>
@@ -401,157 +416,107 @@ export default function AdminCustomers() {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                className="btn-ghost"
               >
                 Đóng
               </button>
             </div>
 
-            <div className="p-6 space-y-4 max-h-[75vh] overflow-auto">
+            <div className="max-h-[75vh] space-y-4 overflow-auto p-6">
               {detailsLoading ? (
-                <div className="rounded-2xl bg-slate-50 border border-slate-100 p-6 text-sm font-bold text-slate-700">
-                  Đang tải chi tiết...
-                </div>
+                <div className="filter-bar" style={{ marginBottom: 0 }}>Đang tải chi tiết...</div>
               ) : detailsError ? (
-                <div className="rounded-2xl bg-rose-50 border border-rose-200 p-6 text-sm font-bold text-rose-700">
+                <div className="filter-bar" style={{ marginBottom: 0, color: '#dc2626', background: '#fef2f2', borderColor: '#fecaca' }}>
                   {detailsError}
                 </div>
               ) : !selectedCustomer ? (
-                <div className="rounded-2xl bg-white border border-slate-100 p-6 text-sm text-slate-500">
-                  Không có dữ liệu.
-                </div>
+                <div className="filter-bar" style={{ marginBottom: 0 }}>Không có dữ liệu.</div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Email</div>
-                      <div className="mt-2 text-sm font-semibold text-slate-900 break-words">
-                        {selectedCustomer.email || '—'}
-                      </div>
-                      <div className="mt-1 text-xs text-slate-500 break-words">
-                        SĐT: {selectedCustomer.phoneNumber || '—'}
-                      </div>
+                  <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: '16px' }}>
+                    <div className="stat-card">
+                      <div className="stat-label">Tổng đơn</div>
+                      <div className="stat-value">{selectedCustomer.totalOrders ?? 0}</div>
+                      <div className="stat-desc">Tất cả đơn hàng của khách</div>
                     </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Thông tin</div>
-                      <div className="mt-2 text-sm font-semibold text-slate-900">
-                        Giới tính: {genderLabel(selectedCustomer.gender)}
-                      </div>
-                      <div className="mt-1 text-xs text-slate-500">
-                        Ngày sinh:{' '}
-                        <span className="font-semibold text-slate-700">
-                          {selectedCustomer.dateOfBirth
-                            ? new Date(selectedCustomer.dateOfBirth).toLocaleDateString('vi-VN')
-                            : '—'}
-                        </span>
-                      </div>
+                    <div className="stat-card">
+                      <div className="stat-label">Completed</div>
+                      <div className="stat-value">{selectedCustomer.completedOrders ?? 0}</div>
+                      <div className="stat-desc">Đơn hoàn thành</div>
                     </div>
+                    <div className="stat-card warn">
+                      <div className="stat-label">Cancelled</div>
+                      <div className="stat-value">{selectedCustomer.cancelledOrders ?? 0}</div>
+                      <div className="stat-desc">Đơn đã hủy</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-label">Tổng chi tiêu</div>
+                      <div className="stat-value">{formatVND(selectedCustomer.totalSpent)}</div>
+                      <div className="stat-desc">Giá trị mua hàng tích lũy</div>
+                    </div>
+                  </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Trạng thái</div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase ${
-                            selectedCustomer.status
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                              : 'bg-rose-50 border-rose-200 text-rose-700'
-                          }`}
-                        >
-                          {statusLabel(selectedCustomer.status)}
-                        </span>
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase ${
-                            selectedCustomer.emailVerified
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                              : 'bg-slate-50 border-slate-200 text-slate-600'
-                          }`}
-                        >
-                          {verifiedLabel(selectedCustomer.emailVerified)}
-                        </span>
+                  <div className="filter-bar" style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <div className="filter-label" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>Email</div>
+                        <div style={{ marginTop: '8px', fontSize: '14px', fontWeight: 600, color: '#0f172a', wordBreak: 'break-word' }}>{selectedCustomer.email || '—'}</div>
+                        <div style={{ marginTop: '6px', fontSize: '12px', color: '#64748b' }}>SĐT: {selectedCustomer.phoneNumber || '—'}</div>
                       </div>
-
-                      <div className="mt-3 text-sm text-slate-700">
-                        Tổng chi tiêu:{' '}
-                        <span className="font-black text-slate-900">{formatVND(selectedCustomer.totalSpent)}</span>
+                      <div>
+                        <div className="filter-label" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>Thông tin</div>
+                        <div style={{ marginTop: '8px', fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>Giới tính: {genderLabel(selectedCustomer.gender)}</div>
+                        <div style={{ marginTop: '6px', fontSize: '12px', color: '#64748b' }}>
+                          Ngày sinh: {selectedCustomer.dateOfBirth ? new Date(selectedCustomer.dateOfBirth).toLocaleDateString('vi-VN') : '—'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="filter-label" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>Trạng thái</div>
+                        <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <span className={`badge ${selectedCustomer.status ? 'badge-green' : 'badge-red'}`}>{statusLabel(selectedCustomer.status)}</span>
+                          <span className={`badge ${selectedCustomer.emailVerified ? 'badge-green' : 'badge-cat'}`}>{verifiedLabel(selectedCustomer.emailVerified)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-xs font-bold text-slate-500 uppercase">Tổng đơn</div>
-                      <div className="mt-2 text-2xl font-black text-slate-900">
-                        {selectedCustomer.totalOrders ?? 0}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                      <div className="text-xs font-bold text-emerald-700 uppercase">Completed</div>
-                      <div className="mt-2 text-2xl font-black text-emerald-800">
-                        {selectedCustomer.completedOrders ?? 0}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                      <div className="text-xs font-bold text-amber-700 uppercase">Cancelled</div>
-                      <div className="mt-2 text-2xl font-black text-amber-800">
-                        {selectedCustomer.cancelledOrders ?? 0}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-xs font-bold text-slate-500 uppercase">Email</div>
-                      <div className="mt-2 text-sm font-semibold text-slate-700 break-words">
-                        {selectedCustomer.email || '—'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div className="px-4 py-3 border-b border-slate-100">
-                      <h3 className="text-sm font-black text-slate-900">5 đơn gần nhất</h3>
-                      <p className="text-xs text-slate-500 mt-1">Dựa theo ngày tạo đơn.</p>
+                  <div className="table-wrap">
+                    <div className="filter-bar" style={{ marginBottom: 0, borderRadius: 0, border: 'none', borderBottom: '1px solid #e2e8f0', boxShadow: 'none' }}>
+                      <div className="filter-label">5 đơn gần nhất</div>
+                      <div style={{ marginTop: '4px', fontSize: '13px', color: '#64748b' }}>Dựa theo ngày tạo đơn.</div>
                     </div>
 
                     {Array.isArray(selectedCustomer.recentOrders) && selectedCustomer.recentOrders.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-left">
-                          <thead className="bg-slate-50">
-                            <tr className="border-b border-slate-100">
-                              <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Mã đơn</th>
-                              <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Trạng thái</th>
-                              <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Thanh toán</th>
-                              <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 text-right">Tổng</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {selectedCustomer.recentOrders.map((o) => (
-                              <tr key={String(o.orderId)} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-4 py-3">
-                                  <div className="text-sm font-bold text-slate-900">{o.orderCode || `#${o.orderId}`}</div>
-                                  <div className="text-xs text-slate-500 mt-1">items: {o.itemCount ?? 0}</div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold uppercase text-slate-700">
-                                    {o.status || '—'}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <div className="text-sm text-slate-700">
-                                    {o.paymentMethod || '—'}
-                                  </div>
-                                  <div className="text-xs text-slate-500 mt-1">
-                                    {o.paymentStatus ? `Status: ${o.paymentStatus}` : '—'}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-right text-sm font-black text-slate-900">
-                                  {formatVND(o.total)}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      <>
+                        <div className="tbl-header" style={{ gridTemplateColumns: '1fr 0.8fr 1fr 0.8fr' }}>
+                          <div className="th">Mã đơn</div>
+                          <div className="th">Trạng thái</div>
+                          <div className="th">Thanh toán</div>
+                          <div className="th right">Tổng</div>
+                        </div>
+                        {selectedCustomer.recentOrders.map((o) => (
+                          <div key={String(o.orderId)} className="tbl-row" style={{ gridTemplateColumns: '1fr 0.8fr 1fr 0.8fr' }}>
+                            <div>
+                              <div className="prod-name">{o.orderCode || `#${o.orderId}`}</div>
+                              <div className="prod-meta">
+                                <span className="prod-tag">items: {o.itemCount ?? 0}</span>
+                              </div>
+                            </div>
+                            <div>
+                              <span className="badge badge-cat">{o.status || '—'}</span>
+                            </div>
+                            <div>
+                              <div className="prod-name" style={{ fontSize: '13px', fontWeight: 500 }}>{o.paymentMethod || '—'}</div>
+                              <div className="prod-meta">
+                                <span className="prod-tag">{o.paymentStatus ? `Status: ${o.paymentStatus}` : '—'}</span>
+                              </div>
+                            </div>
+                            <div className="price-val">{formatVND(o.total)}</div>
+                          </div>
+                        ))}
+                      </>
                     ) : (
-                      <div className="p-5 text-sm text-slate-500">Khách hàng chưa có đơn nào.</div>
+                      <div style={{ padding: '20px', color: '#64748b', fontSize: '14px' }}>Khách hàng chưa có đơn nào.</div>
                     )}
                   </div>
                 </>
@@ -560,6 +525,6 @@ export default function AdminCustomers() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }
