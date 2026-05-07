@@ -9,6 +9,13 @@ const formatCurrency = (value) => {
   return `${currencyFormatter.format(numericValue)}đ`;
 };
 
+const getImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('blob:') || url.startsWith('http') || url.startsWith('data:')) return url;
+  if (url.startsWith('/uploads/')) return `http://localhost:8080/api/v1${url}`;
+  return `http://localhost:8080/api/v1/uploads/products/${url}`;
+};
+
 const getProductStatusMeta = (product) => {
   const isVisible = Number(product?.status) !== 0;
   const totalStock = Number(product?.totalStock) || 0;
@@ -333,7 +340,7 @@ const AdminProducts = () => {
                     <div className="prod-thumb">
                       {product.thumbnailUrl || product.thumbnail_url ? (
                         <img 
-                          src={product.thumbnailUrl || product.thumbnail_url} 
+                          src={getImageUrl(product.thumbnailUrl || product.thumbnail_url)} 
                           alt={product.name} 
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           onError={(e) => { e.currentTarget.src = 'https://placehold.co/100x140?text=Error'; }}
