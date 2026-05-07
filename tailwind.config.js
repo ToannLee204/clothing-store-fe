@@ -18,6 +18,13 @@ export default {
           100: "#f1f5f9",
           200: "#e2e8f0",
           800: "#1e293b",
+        },
+        "brand": {
+          50:  '#f0f4ff',
+          100: '#dde6ff',
+          500: '#3b5bdb',
+          600: '#2f4ac4',
+          700: '#243aad',
         }
       },
       fontFamily: {
