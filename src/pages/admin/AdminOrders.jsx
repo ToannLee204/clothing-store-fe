@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import './AdminProducts.css';
 
 const API_ADMIN_ORDERS_URL = '/api/v1/admin/orders';
@@ -20,15 +20,6 @@ const extractMessage = (payload, fallback) => {
   if (typeof payload?.error === 'string') return payload.error;
   if (typeof payload?.data?.message === 'string') return payload.data.message;
   return fallback;
-};
-
-const normalizeOrdersPayload = (payload) => {
-  if (!payload) return [];
-  if (Array.isArray(payload.result)) return payload.result;
-  if (Array.isArray(payload.data?.result)) return payload.data.result;
-  if (Array.isArray(payload.content)) return payload.content;
-  if (Array.isArray(payload.data?.content)) return payload.data.content;
-  return [];
 };
 
 function formatVND(value) {
@@ -62,6 +53,7 @@ function getStatusBadge(status) {
     case 'shipping': return 'badge-teal';
     case 'completed': return 'badge-green';
     case 'cancelled': return 'badge-red';
+    case 'payment_failed': return 'badge-red';
     default: return 'badge-gray';
   }
 }
@@ -72,6 +64,17 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
+  
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0, pages: 1 });
+  
+  const [filters, setFilters] = useState({
+    status: '',
+    keyword: '',
+    fromDate: '',
+    toDate: '',
+  });
+
+  const [keywordInput, setKeywordInput] = useState('');
 
   // Modals state
   const [detailOrder, setDetailOrder] = useState(null);
@@ -83,26 +86,68 @@ export default function AdminOrders() {
   const [updateForm, setUpdateForm] = useState({ status: '', trackingCode: '', reason: '' });
   const [updating, setUpdating] = useState(false);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async (page = 1) => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(API_ADMIN_ORDERS_URL, {
+      const queryParams = new URLSearchParams({
+        page: page - 1,
+        size: pagination.pageSize || 20,
+      });
+
+      if (filters.status) queryParams.append('status', filters.status);
+      if (filters.keyword) queryParams.append('keyword', filters.keyword);
+      if (filters.fromDate) queryParams.append('fromDate', filters.fromDate);
+      if (filters.toDate) queryParams.append('toDate', filters.toDate);
+
+      const res = await fetch(`${API_ADMIN_ORDERS_URL}?${queryParams.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      
       const payload = await parseJson(res);
       if (!res.ok) throw new Error(extractMessage(payload, 'Không thể tải đơn hàng.'));
-      setOrders(normalizeOrdersPayload(payload));
+      
+      const data = payload?.data || payload;
+      const orderList = data.result || data.content || data || [];
+      const meta = data.meta || {};
+
+      setOrders(orderList);
+      setPagination(prev => ({
+        ...prev,
+        current: meta.page !== undefined ? meta.page + 1 : page,
+        total: meta.totals || meta.totalElements || orderList.length,
+        pages: meta.pages || meta.totalPages || 1
+      }));
     } catch (e) {
       setError(e?.message || 'Lỗi kết nối.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, pagination.pageSize, token]);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(pagination.current);
+  }, [filters, pagination.current]);
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  const handleKeywordSearch = () => {
+    setFilters(prev => ({ ...prev, keyword: keywordInput }));
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  const handleKeywordKeyDown = (e) => {
+    if (e.key === 'Enter') handleKeywordSearch();
+  };
+
+  const clearFilters = () => {
+    setKeywordInput('');
+    setFilters({ status: '', keyword: '', fromDate: '', toDate: '' });
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
 
   const openDetail = async (orderId) => {
     setDetailLoading(true);
@@ -152,7 +197,7 @@ export default function AdminOrders() {
       if (!res.ok) throw new Error(extractMessage(payload, 'Cập nhật thất bại.'));
       
       setIsUpdateOpen(false);
-      await fetchOrders();
+      fetchOrders(pagination.current);
     } catch (e) {
       alert(e.message);
     } finally {
@@ -160,6 +205,28 @@ export default function AdminOrders() {
     }
   };
 
+  const handleExportInvoice = async (orderId, orderCode) => {
+    try {
+      const res = await fetch(`/api/v1/admin/invoices/order/${orderId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Không thể xuất hóa đơn. Có thể hóa đơn chưa được tạo hoặc lỗi hệ thống.');
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${orderCode || orderId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  // Stats summary (Still using current page orders for summary, or could fetch from dashboard API)
   const summary = useMemo(() => {
     const s = { pending: 0, confirmed: 0, shipping: 0, completed: 0, cancelled: 0, payment_failed: 0 };
     for (const o of orders) {
@@ -171,12 +238,17 @@ export default function AdminOrders() {
 
   const statsCards = [
     { label: 'Chờ xác nhận', value: summary.pending, icon: 'pending_actions', tone: 'si-blue' },
-    { label: 'Đang xử lý', value: summary.confirmed, icon: 'inventory', tone: 'si-amber' },
+    { label: 'Đã xác nhận', value: summary.confirmed, icon: 'inventory', tone: 'si-amber' },
     { label: 'Đang giao', value: summary.shipping, icon: 'local_shipping', tone: 'si-teal' },
     { label: 'Hoàn tất', value: summary.completed, icon: 'check_circle', tone: 'si-green' },
     { label: 'Đã hủy', value: summary.cancelled, icon: 'cancel', tone: 'si-red' },
     { label: 'Lỗi T.Toán', value: summary.payment_failed, icon: 'error', tone: 'si-gray' },
   ];
+
+  const hasFilters = filters.status || filters.keyword || filters.fromDate || filters.toDate;
+
+  // Grid template for orders table
+  const orderGridStyle = { gridTemplateColumns: '180px 1fr 140px 140px 140px 260px' };
 
   return (
     <main className="flex-1 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
@@ -184,15 +256,16 @@ export default function AdminOrders() {
         <div className="pm-topbar">
           <div className="pm-title-block">
             <div className="pm-title">Quản lý đơn hàng</div>
-            <div className="pm-subtitle">Xử lý, cập nhật trạng thái và xem chi tiết đơn hàng khách hàng.</div>
+            <div className="pm-subtitle">Xử lý, lọc và cập nhật trạng thái đơn hàng thời gian thực.</div>
           </div>
           <div className="pm-actions">
-            <button className="btn-primary" onClick={fetchOrders} disabled={loading}>
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>sync</span> {loading ? 'Đang tải...' : 'Làm mới'}
+            <button className="btn-ghost" onClick={() => fetchOrders(pagination.current)} disabled={loading}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>sync</span> Làm mới
             </button>
           </div>
         </div>
 
+        {/* Stats */}
         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
           {statsCards.map((s) => (
             <div key={s.label} className="stat-card">
@@ -205,71 +278,164 @@ export default function AdminOrders() {
           ))}
         </div>
 
-        {loading ? (
-          <div className="table-wrap">
-            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Đang tải danh sách đơn hàng...</div>
+        {/* ── FILTER BAR ── */}
+        <div className="filter-bar">
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Search keyword */}
+            <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
+              <span className="material-symbols-outlined" style={{
+                position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)',
+                fontSize: '17px', color: '#94a3b8', pointerEvents: 'none'
+              }}>search</span>
+              <input
+                type="text"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+                onKeyDown={handleKeywordKeyDown}
+                placeholder="Tìm Mã đơn, Tên khách... (Enter)"
+                style={{
+                  width: '100%', padding: '8px 40px 8px 34px', borderRadius: '6px',
+                  border: '1px solid #e2e8f0', background: '#f8fafc',
+                  fontSize: '13px', fontFamily: 'inherit', outline: 'none'
+                }}
+              />
+              {keywordInput && (
+                <button onClick={handleKeywordSearch} style={{
+                  position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                  background: '#0f172a', border: 'none', borderRadius: '4px',
+                  width: '24px', height: '24px', color: '#fff', cursor: 'pointer'
+                }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_forward</span>
+                </button>
+              )}
+            </div>
+
+            {/* Trạng thái */}
+            <select className="fselect" value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
+              <option value="">Tất cả trạng thái</option>
+              <option value="pending">Chờ xác nhận</option>
+              <option value="confirmed">Đã xác nhận</option>
+              <option value="shipping">Đang giao</option>
+              <option value="completed">Hoàn tất</option>
+              <option value="cancelled">Đã hủy</option>
+              <option value="payment_failed">Thanh toán lỗi</option>
+            </select>
+
+            {/* Date Filters */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Từ:</span>
+              <input 
+                type="date" 
+                className="fselect" 
+                value={filters.fromDate} 
+                onChange={(e) => handleFilterChange('fromDate', e.target.value)} 
+              />
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Đến:</span>
+              <input 
+                type="date" 
+                className="fselect" 
+                value={filters.toDate} 
+                onChange={(e) => handleFilterChange('toDate', e.target.value)} 
+              />
+            </div>
+
+            {hasFilters && (
+              <button onClick={clearFilters} style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                padding: '8px 12px', borderRadius: '6px', border: '1px solid #fecaca',
+                background: '#fef2f2', fontSize: '13px', color: '#dc2626',
+                cursor: 'pointer', fontFamily: 'inherit'
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>close</span>Xóa lọc
+              </button>
+            )}
           </div>
-        ) : orders.length === 0 ? (
-          <div className="table-wrap">
-            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Chưa có đơn hàng nào.</div>
+        </div>
+
+        {/* Table Content */}
+        <div className="table-wrap">
+          <div className="tbl-header" style={orderGridStyle}>
+            <div className="th">Mã đơn hàng</div>
+            <div className="th">Khách hàng</div>
+            <div className="th">Thanh toán</div>
+            <div className="th right">Tổng cộng</div>
+            <div className="th center">Trạng thái</div>
+            <div className="th right">Thao tác</div>
           </div>
-        ) : (
-          <div className="grid gap-4">
-            {orders.map((o) => {
+
+          {loading ? (
+             <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Đang tải dữ liệu...</div>
+          ) : orders.length === 0 ? (
+             <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Không tìm thấy đơn hàng nào.</div>
+          ) : (
+            orders.map((o) => {
               const orderId = o?.orderId ?? o?.id;
               const nextStatuses = getAvailableNextStatuses(o.status);
-
               return (
-                <div key={String(orderId)} className="table-wrap" style={{ padding: '24px' }}>
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a' }}>
-                          {o?.orderCode || `#${orderId}`}
-                        </span>
-                        <span className={`badge ${getStatusBadge(o?.status)}`}>
-                          {humanStatus(o?.status)}
-                        </span>
-                        <span className="badge badge-gray" style={{ textTransform: 'none' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px', marginRight: '4px' }}>payments</span>
-                          {o?.paymentMethod} · {o?.paymentStatus}
-                        </span>
-                      </div>
-
-                      <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
-                        <div>
-                          <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Tổng cộng</div>
-                          <div style={{ fontSize: '18px', fontWeight: 900, color: '#0066A2', marginTop: '4px' }}>{formatVND(o?.total)}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Khách hàng</div>
-                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginTop: '4px' }}>{o?.fullName || '—'}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Ngày tạo</div>
-                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginTop: '4px' }}>
-                            {o?.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN') : '—'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button className="btn-ghost" onClick={() => openDetail(orderId)}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span> Chi tiết
+                <div className="tbl-row" key={String(orderId)} style={orderGridStyle}>
+                  <div>
+                    <div className="prod-name" style={{ color: '#0066A2', fontWeight: 900 }}>{o?.orderCode || `#${orderId}`}</div>
+                    <div className="price-note" style={{ textAlign: 'left' }}>{o?.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN') : '—'}</div>
+                  </div>
+                  <div>
+                    <div className="prod-name" style={{ fontSize: '13px' }}>{o?.fullName || '—'}</div>
+                    <div className="prod-meta">{o?.phone || '—'}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>{o?.paymentMethod}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{o?.paymentStatus}</div>
+                  </div>
+                  <div className="right">
+                    <div className="price-val" style={{ color: '#0f172a' }}>{formatVND(o?.total)}</div>
+                  </div>
+                  <div className="center">
+                    <span className={`badge ${getStatusBadge(o?.status)}`}>
+                      {humanStatus(o?.status)}
+                    </span>
+                  </div>
+                  <div className="right">
+                    <div className="act-row">
+                      <button className="act-btn" onClick={() => handleExportInvoice(orderId, o?.orderCode)} title="Xuất hóa đơn PDF">
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>receipt_long</span> In HĐ
+                      </button>
+                      <button className="act-btn" onClick={() => openDetail(orderId)}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility</span> Chi tiết
                       </button>
                       {nextStatuses.length > 0 && (
-                        <button className="btn-primary" onClick={() => openUpdate(o)}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit_square</span> Cập nhật
+                        <button className="act-btn edit" onClick={() => openUpdate(o)}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit_square</span> Cập nhật
                         </button>
                       )}
                     </div>
                   </div>
                 </div>
               );
-            })}
+            })
+          )}
+
+          {/* Footer Pagination */}
+          <div className="tbl-footer">
+            <span className="footer-text">
+              Tổng số: <strong>{pagination.total}</strong> đơn hàng
+            </span>
+            <div className="pager">
+              <button className="page-btn" disabled={pagination.current <= 1} onClick={() => setPagination(p => ({ ...p, current: p.current - 1 }))}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_left</span>
+              </button>
+              {Array.from({ length: Math.min(pagination.pages, 5) }, (_, i) => {
+                const p = i + 1;
+                return (
+                  <button key={p} className={`page-btn ${pagination.current === p ? 'active' : ''}`} onClick={() => setPagination(prev => ({ ...prev, current: p }))}>
+                    {p}
+                  </button>
+                );
+              })}
+              <button className="page-btn" disabled={pagination.current >= pagination.pages} onClick={() => setPagination(p => ({ ...p, current: p.current + 1 }))}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
+              </button>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* DETAIL MODAL */}
@@ -394,7 +560,14 @@ export default function AdminOrders() {
               )}
             </div>
 
-            <div className="border-t border-slate-100 px-6 py-4 flex justify-end bg-slate-50/30">
+            <div className="border-t border-slate-100 px-6 py-4 flex justify-end gap-3 bg-slate-50/30">
+              <button 
+                onClick={() => handleExportInvoice(detailOrder?.orderId, detailOrder?.orderCode)} 
+                className="btn-ghost"
+                style={{ color: '#0066A2' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>receipt_long</span> Xuất hóa đơn PDF
+              </button>
               <button onClick={() => setIsDetailOpen(false)} className="btn-ghost">Đóng</button>
             </div>
           </div>
