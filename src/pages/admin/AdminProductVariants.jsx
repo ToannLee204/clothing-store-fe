@@ -234,7 +234,7 @@ const AdminProductVariants = () => {
   }
 
   return (
-    <main className="relative min-h-screen flex-1 overflow-auto bg-[#f8f6f6] px-4 py-6 pb-20 sm:px-6 lg:px-8">
+    <main className="relative flex-1 overflow-y-auto p-8 pb-20 bg-[#f8f6f6] font-sans">
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
@@ -358,7 +358,7 @@ const AdminProductVariants = () => {
         </div>
       )}
 
-      <section className="relative mx-auto max-w-7xl overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+      <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0066A2] via-[#3385b5] to-[#66a3c7]" />
         <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#0066A2]/8 blur-3xl" />
         <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-slate-200/60 blur-3xl" />
@@ -428,7 +428,7 @@ const AdminProductVariants = () => {
         </div>
       </section>
 
-      <section className="mx-auto mt-6 max-w-7xl rounded-3xl border border-white/70 bg-white/90 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+      <section className="mt-6 rounded-3xl border border-white/70 bg-white/90 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <h2 className="text-lg font-bold text-slate-900">Danh sách biến thể</h2>
@@ -450,7 +450,7 @@ const AdminProductVariants = () => {
         </div>
       </section>
 
-      <section className="mx-auto mt-6 max-w-7xl overflow-hidden rounded-3xl border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+      <section className="mt-6 overflow-hidden rounded-3xl border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">

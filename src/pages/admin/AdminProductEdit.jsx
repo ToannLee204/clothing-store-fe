@@ -151,7 +151,7 @@ const AdminProductEdit = () => {
       </div>
 
       {/* Main Form Content */}
-      <div className="max-w-5xl mx-auto mt-8 px-8">
+      <div className="mt-8 px-8">
         <form id="edit-product-form" onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* CỘT TRÁI (Thông tin chính) */}

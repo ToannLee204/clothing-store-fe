@@ -248,8 +248,8 @@ const AdminProducts = () => {
   const hasFilters = filters.categoryId || filters.status !== '';
 
   return (
-    <main className="flex-1 min-h-screen overflow-auto bg-[#f8f6f6] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+    <main className="flex-1 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
+      <div className="flex flex-col gap-6">
         <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0066A2] via-[#3385b5] to-[#66a3c7]" />
           <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#0066A2]/8 blur-3xl" />

@@ -207,7 +207,7 @@ const AdminAddProduct = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto mt-8 px-8">
+      <div className="mt-8 px-8">
         {error && (
           <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-semibold flex items-center gap-2 border border-red-100">
             <span className="material-symbols-outlined text-lg">error</span> {error}
