@@ -21,9 +21,9 @@ export default {
         }
       },
       fontFamily: {
-        // Lumina dùng font Sans hiện đại (Public Sans hoặc Inter)
-        "display": ["Public Sans", "Inter", "sans-serif"],
-        "body": ["Inter", "sans-serif"],
+        "sans": ["Manrope", "sans-serif"],
+        "display": ["Manrope", "sans-serif"],
+        "body": ["Manrope", "sans-serif"],
       },
       borderRadius: {
         "DEFAULT": "0.25rem",
