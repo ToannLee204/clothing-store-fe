@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 function EyeIcon({ hidden = false }) {
   return (
@@ -40,9 +41,9 @@ export default function LoginForm({ onSubmit }) {
       <div>
         <div className="flex justify-between items-end mb-2">
           <label className={labelBase}>Mật khẩu</label>
-          <button type="button" className="text-[10px] tracking-widest uppercase font-bold text-lumiere-terracotta hover:underline mb-2">
+          <Link to="/forgot-password" className="text-[10px] tracking-widest uppercase font-bold text-lumiere-terracotta hover:underline mb-2">
             Quên mật khẩu?
-          </button>
+          </Link>
         </div>
         <div className="relative">
           <input
