@@ -15,37 +15,32 @@ const AdminProductEdit = () => {
   const token = localStorage.getItem('token');
   const thumbnailInputRef = useRef(null);
   const galleryInputRef = useRef(null);
-  // Lưu URLs ảnh ban đầu khi load để tính diff khi submit
   const initialImageUrlsRef = useRef([]);
 
-  // State lưu trữ dữ liệu
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
 
-  // Form Data
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     categoryId: '',
     basePrice: '',
     status: 1,
+    internalNotes: '',
   });
 
-  // File upload states
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const [existingThumbnailUrl, setExistingThumbnailUrl] = useState('');
   
-  const [imageFiles, setImageFiles] = useState([]); // { file, preview }
-  const [existingImages, setExistingImages] = useState([]); // [{id, url}]
+  const [imageFiles, setImageFiles] = useState([]); 
+  const [existingImages, setExistingImages] = useState([]); 
 
-  // 1. Fetch danh mục & Dữ liệu sản phẩm cũ
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Lấy danh mục
         const catRes = await fetch('/api/v1/categories', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -55,7 +50,6 @@ const AdminProductEdit = () => {
           setCategories(actualCat.data || actualCat || []);
         }
 
-        // Lấy chi tiết sản phẩm cần sửa
         const prodRes = await fetch(`/api/v1/admin/products/${id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -71,13 +65,11 @@ const AdminProductEdit = () => {
             status: p.status !== undefined ? p.status : 1,
           });
           setExistingThumbnailUrl(p.thumbnailUrl || p.thumbnail_url || '');
-          // API trả về imageUrls là mảng string, map sang object {url} để render
           const rawImages = p.imageUrls || p.images || p.productImages || [];
           const mappedImages = rawImages.map(img =>
             typeof img === 'string' ? { url: img } : img
           );
           setExistingImages(mappedImages);
-          // Lưu lại URLs gốc để tính diff khi submit
           initialImageUrlsRef.current = mappedImages.map(img => img.url || img.imageUrl).filter(Boolean);
         }
       } catch (error) {
@@ -87,11 +79,9 @@ const AdminProductEdit = () => {
         setFetching(false);
       }
     };
-
     fetchData();
   }, [id, token]);
 
-  // Cleanup preview URLs on unmount
   useEffect(() => {
     return () => {
       if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
@@ -99,16 +89,11 @@ const AdminProductEdit = () => {
     };
   }, [thumbnailPreview, imageFiles]);
 
-  // 2. Xử lý thay đổi Input
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // THUMBNAIL FILE
   const handleThumbnailSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -120,18 +105,14 @@ const AdminProductEdit = () => {
     if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
     setThumbnailFile(null);
     setThumbnailPreview(null);
-    setExistingThumbnailUrl(''); // Xóa luôn ảnh cũ nếu ấn xóa
+    setExistingThumbnailUrl('');
     if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
   };
 
-  // GALLERY FILES
   const handleGallerySelect = (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-    const newImages = files.map(file => ({
-      file,
-      preview: URL.createObjectURL(file)
-    }));
+    const newImages = files.map(file => ({ file, preview: URL.createObjectURL(file) }));
     setImageFiles(prev => [...prev, ...newImages]);
     if (galleryInputRef.current) galleryInputRef.current.value = '';
   };
@@ -146,9 +127,8 @@ const AdminProductEdit = () => {
     setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  // 3. Xử lý Submit lưu thay đổi
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
     setError('');
 
@@ -158,11 +138,9 @@ const AdminProductEdit = () => {
         basePrice: Number(formData.basePrice) || 0,
       };
 
-      // Tính danh sách URL ảnh bị xóa = URLs ban đầu - URLs còn lại hiện tại
       const currentUrls = existingImages.map(img => img.url || img.imageUrl).filter(Boolean);
       const removedUrls = initialImageUrlsRef.current.filter(url => !currentUrls.includes(url));
 
-      // Gắn removeImageUrls vào query string (BE dùng @RequestParam)
       const queryParams = new URLSearchParams();
       removedUrls.forEach(url => queryParams.append('removeImageUrls', url));
       const queryString = queryParams.toString();
@@ -171,26 +149,16 @@ const AdminProductEdit = () => {
         : `/api/v1/admin/products/${id}`;
 
       const submitData = new FormData();
-      submitData.append(
-        'product',
-        new Blob([JSON.stringify(productPayload)], { type: 'application/json' })
-      );
+      submitData.append('product', new Blob([JSON.stringify(productPayload)], { type: 'application/json' }));
 
-      if (thumbnailFile) {
-        submitData.append('thumbnail', thumbnailFile);
-      }
-
+      if (thumbnailFile) submitData.append('thumbnail', thumbnailFile);
       if (imageFiles.length > 0) {
-        imageFiles.forEach(img => {
-          submitData.append('images', img.file);
-        });
+        imageFiles.forEach(img => submitData.append('images', img.file));
       }
 
       const response = await fetch(requestUrl, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: submitData
       });
 
@@ -210,37 +178,37 @@ const AdminProductEdit = () => {
 
   if (fetching) {
     return (
-      <main className="flex-1 flex items-center justify-center min-h-screen bg-stone-100 font-sans">
-        <div className="flex flex-col items-center gap-3 text-stone-400">
-          <span className="material-symbols-outlined animate-spin text-4xl text-stone-500">progress_activity</span>
-          <p className="font-medium">Đang tải dữ liệu sản phẩm...</p>
+      <main className="flex min-h-screen flex-1 items-center justify-center bg-stone-100 px-6">
+        <div className="rounded-2xl border border-stone-200 bg-white px-8 py-8 text-center shadow-sm">
+          <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-2 border-stone-200 border-t-stone-900" />
+          <p className="text-sm font-medium text-stone-500">Đang tải dữ liệu sản phẩm...</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="flex-1 overflow-y-auto h-[calc(100vh-5rem)] bg-stone-100 text-stone-800 font-sans">
+    <main className="flex-1 overflow-y-auto bg-stone-100 text-stone-800 font-sans h-screen">
       {/* Top header bar */}
-      <header className="sticky top-0 z-30 bg-white/95 border-b border-stone-200 px-6 py-3 flex items-center justify-between shadow-sm backdrop-blur">
+      <header className="sticky top-0 z-30 bg-white border-b border-stone-200 px-6 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <button 
             type="button"
             onClick={() => navigate('/admin/products')}
-            className="w-8 h-8 rounded-lg border border-stone-200 flex items-center justify-center text-stone-500 hover:bg-stone-50 transition-colors"
+            className="w-8 h-8 rounded-lg border border-stone-200 flex items-center justify-center text-stone-600 hover:bg-stone-50 transition-colors"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6"/></svg>
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           </button>
           <div>
             <h1 className="font-display text-lg font-semibold text-stone-900 leading-tight tracking-tight">Chỉnh sửa sản phẩm</h1>
-            <p className="text-xs text-stone-400 mt-0.5">ID Sản phẩm: #{id}</p>
+            <p className="text-xs text-stone-500 mt-0.5">ID: #{id} · Cập nhật thông tin chi tiết</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button 
             type="button"
             onClick={() => navigate('/admin/products')}
-            className="px-4 py-2 rounded-lg border border-stone-200 text-sm text-stone-500 hover:bg-stone-50 transition-colors font-medium"
+            className="px-4 py-2 rounded-lg border border-stone-200 text-sm text-stone-600 hover:bg-stone-50 transition-colors font-medium"
           >
             Hủy bỏ
           </button>
@@ -253,10 +221,7 @@ const AdminProductEdit = () => {
             {loading ? (
               <><span className="material-symbols-outlined animate-spin text-[16px]">sync</span> Đang lưu...</>
             ) : (
-              <>
-                <span className="material-symbols-outlined text-[16px]">save</span>
-                Lưu thay đổi
-              </>
+              <><span className="material-symbols-outlined text-[18px]">save</span> Lưu thay đổi</>
             )}
           </button>
         </div>
@@ -271,247 +236,234 @@ const AdminProductEdit = () => {
       )}
 
       {/* Main content */}
-      <div className="mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-
+      <div className="mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        
         {/* LEFT — main column (2/3) */}
-        <div className="lg:col-span-2 flex flex-col gap-5">
-
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          
           {/* Thông tin cơ bản */}
-          <section className="card-section bg-white rounded-2xl border border-stone-200 p-5">
-            <div className="flex items-center gap-2 mb-5 pb-4 border-b border-stone-100">
-              <div className="w-6 h-6 rounded-md bg-brand-50 flex items-center justify-center">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <section className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-stone-100">
+              <div className="w-8 h-8 rounded-lg bg-stone-900 flex items-center justify-center text-white">
+                <span className="material-symbols-outlined text-[20px]">edit_note</span>
               </div>
-              <h2 className="text-sm font-semibold text-stone-800">Thông tin cơ bản</h2>
+              <h2 className="text-sm font-bold text-stone-800">Thông tin cơ bản</h2>
             </div>
 
-            <div className="space-y-4">
-              {/* Tên sản phẩm */}
+            <div className="space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-1.5">
-                  Tên sản phẩm <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-2">Tên sản phẩm</label>
                 <input
-                  className="field-input w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all outline-none focus:border-stone-900"
                   type="text"
                   name="name"
-                  placeholder="Vd: Áo khoác Bomber Minimalist..."
                   value={formData.name}
                   onChange={handleChange}
                 />
               </div>
 
-              {/* Danh mục + Giá */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-1.5">
-                    Danh mục <span className="text-red-400">*</span>
-                  </label>
+                  <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-2">Danh mục</label>
                   <select 
-                    className="field-input w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-stone-800 bg-white transition-all cursor-pointer"
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 bg-white transition-all cursor-pointer outline-none focus:border-stone-900 appearance-none"
+                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a8a29e\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
                     name="categoryId"
                     value={formData.categoryId}
                     onChange={handleChange}
                   >
-                    <option value="" disabled>-- Chọn danh mục --</option>
                     {categories.map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-1.5">
-                    Giá niêm yết (VNĐ) <span className="text-red-400">*</span>
-                  </label>
+                  <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-2">Giá niêm yết (VNĐ)</label>
                   <div className="relative">
                     <input
-                      className="field-input w-full px-3.5 py-2.5 pr-8 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all"
+                      className="w-full px-4 py-3 pr-12 rounded-xl border border-stone-200 text-sm text-stone-800 bg-white outline-none focus:border-stone-900"
                       type="text"
-                      placeholder="0"
                       value={formData.basePrice ? Number(formData.basePrice).toLocaleString('vi-VN') : ''}
                       onChange={(e) => {
                         const rawValue = e.target.value.replace(/\D/g, '');
-                        setFormData({
-                          ...formData,
-                          basePrice: rawValue,
-                        });
+                        setFormData({ ...formData, basePrice: rawValue });
                       }}
                     />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-stone-600 pointer-events-none font-medium">đ</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-bold">đ</span>
                   </div>
                 </div>
               </div>
 
-              {/* Mô tả */}
               <div>
-                <label className="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-1.5">Mô tả sản phẩm</label>
+                <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-2">Mô tả chi tiết</label>
                 <textarea
-                  className="field-input w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all resize-none leading-relaxed"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 bg-white transition-all resize-none leading-relaxed outline-none focus:border-stone-900"
                   rows="6"
                   name="description"
-                  placeholder="Chất liệu, kiểu dáng, xuất xứ..."
                   value={formData.description}
                   onChange={handleChange}
                 ></textarea>
-                <p className="text-xs text-stone-400 mt-1.5">Mô tả chi tiết giúp khách hàng ra quyết định mua hàng dễ hơn.</p>
               </div>
             </div>
           </section>
 
-          {/* Hình ảnh sản phẩm (Upload File) */}
-          <section className="card-section bg-white rounded-2xl border border-stone-200 p-5">
-            <div className="flex items-center justify-between mb-5 pb-4 border-b border-stone-100">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-brand-50 flex items-center justify-center">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                </div>
-                <h2 className="text-sm font-semibold text-stone-800">Hình ảnh sản phẩm</h2>
+          {/* Hình ảnh */}
+          <section className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-stone-100">
+              <div className="w-8 h-8 rounded-lg bg-stone-900 flex items-center justify-center text-white">
+                <span className="material-symbols-outlined text-[20px]">gallery_thumbnail</span>
               </div>
+              <h2 className="text-sm font-bold text-stone-800">Hình ảnh sản phẩm</h2>
             </div>
 
-            {/* Thumbnail */}
-            <div className="mb-5">
-              <label className="block text-xs font-semibold text-stone-500 uppercase tracking-widest mb-2.5">Ảnh đại diện (Thumbnail) <span className="text-red-400">*</span></label>
-              <div className="flex gap-4 items-start">
-                
-                {!(thumbnailPreview || existingThumbnailUrl) ? (
-                  <label className="upload-zone cursor-pointer w-28 h-28 rounded-xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-1.5 transition-all bg-stone-50">
-                    <input type="file" className="hidden" accept="image/*" ref={thumbnailInputRef} onChange={handleThumbnailSelect} />
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    <span className="text-xs font-medium text-stone-500">Chọn ảnh</span>
-                    <span className="text-[10px] text-stone-400">JPG, PNG, WEBP</span>
-                  </label>
-                ) : (
-                  <div className="relative w-28 h-28 rounded-xl overflow-hidden border border-stone-200 group">
-                    <img src={getImageUrl(thumbnailPreview || existingThumbnailUrl)} alt="Thumbnail preview" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button type="button" onClick={removeThumbnail} className="text-white hover:text-red-400 p-2">
-                        <span className="material-symbols-outlined">delete</span>
+            <div className="mb-8">
+              <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-3">Ảnh đại diện hiện tại</label>
+              <div className="flex gap-6 items-start">
+                {(thumbnailPreview || existingThumbnailUrl) ? (
+                  <div className="relative w-32 h-32 rounded-2xl overflow-hidden border border-stone-200 group shadow-md">
+                    <img src={getImageUrl(thumbnailPreview || existingThumbnailUrl)} alt="Thumbnail" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button type="button" onClick={removeThumbnail} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur text-white hover:bg-red-500 transition-all flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[20px]">delete</span>
                       </button>
                     </div>
                   </div>
+                ) : (
+                  <label className="upload-zone cursor-pointer w-32 h-32 rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-2 transition-all bg-stone-50 hover:bg-stone-100 hover:border-stone-300 group">
+                    <input type="file" className="hidden" accept="image/*" ref={thumbnailInputRef} onChange={handleThumbnailSelect} />
+                    <span className="material-symbols-outlined text-stone-300 group-hover:text-stone-400 text-[32px]">add_a_photo</span>
+                    <span className="text-[10px] font-bold text-stone-400 uppercase">Thay đổi</span>
+                  </label>
                 )}
-
-                <div className="flex-1 text-xs text-stone-500 leading-relaxed pt-1">
-                  <p className="font-medium text-stone-600 mb-1">Ảnh đại diện sản phẩm</p>
-                  <p>Kích thước khuyến nghị: <span className="font-medium text-stone-800">800 × 800px</span></p>
-                  <p>Dung lượng tối đa: <span className="font-medium text-stone-800">5 MB</span></p>
-                  <p className="mt-1.5 text-stone-400">Ảnh chất lượng cao giúp tăng tỉ lệ chuyển đổi.</p>
+                <div className="flex-1 text-xs text-stone-400 leading-relaxed pt-2">
+                  <p className="font-bold text-stone-700 mb-1">Ảnh đại diện</p>
+                  <p>Bấm vào ảnh để xóa và chọn ảnh mới. Ảnh này sẽ xuất hiện ở danh sách sản phẩm ngoài trang chủ.</p>
                 </div>
               </div>
             </div>
 
-            {/* Gallery */}
             <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <label className="block text-xs font-semibold text-stone-500 uppercase tracking-widest">Bộ sưu tập ảnh phụ (Gallery)</label>
-                <button type="button" onClick={() => galleryInputRef.current?.click()} className="text-xs text-brand-500 hover:text-brand-600 font-medium flex items-center gap-1 transition-colors">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                  Thêm ảnh
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest">Bộ sưu tập ảnh chi tiết</label>
+                <button type="button" onClick={() => galleryInputRef.current?.click()} className="text-[11px] font-bold text-stone-900 hover:text-stone-600 uppercase tracking-widest flex items-center gap-1.5 transition-colors">
+                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                  Thêm ảnh mới
                 </button>
               </div>
 
-              {/* Input ẩn đặt ngoài điều kiện để galleryInputRef luôn trỏ đến element tồn tại trong DOM */}
-            <input type="file" className="hidden" accept="image/*" multiple ref={galleryInputRef} onChange={handleGallerySelect} />
+              <input type="file" className="hidden" accept="image/*" multiple ref={galleryInputRef} onChange={handleGallerySelect} />
 
-            {(imageFiles.length === 0 && existingImages.length === 0) ? (
-                <div
-                  className="upload-zone cursor-pointer w-full rounded-xl border-2 border-dashed border-stone-200 py-7 flex flex-col items-center gap-2 transition-all bg-stone-50"
-                  onClick={() => galleryInputRef.current?.click()}
-                >
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  <span className="text-sm font-medium text-stone-500">Bấm để chọn ảnh từ máy tính</span>
-                  <span className="text-xs text-stone-400">Có thể chọn nhiều ảnh cùng lúc</span>
-                </div>
-              ) : (
-                <div>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                    {existingImages.map((img, idx) => (
-                      <div key={`exist-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 group">
-                        <img src={getImageUrl(img.url || img.imageUrl)} alt={`Existing Gallery ${idx}`} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button type="button" onClick={() => removeExistingImage(idx)} className="text-white hover:text-red-400 p-2">
-                            <span className="material-symbols-outlined text-[20px]">delete</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {imageFiles.map((img, idx) => (
-                      <div key={`new-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 group">
-                        <img src={img.preview} alt={`New Gallery ${idx}`} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button type="button" onClick={() => removeGalleryImage(idx)} className="text-white hover:text-red-400 p-2">
-                            <span className="material-symbols-outlined text-[20px]">delete</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <div 
-                      onClick={() => galleryInputRef.current?.click()}
-                      className="aspect-square rounded-xl border border-dashed border-stone-300 bg-stone-50 flex flex-col items-center justify-center text-stone-500 hover:text-brand-500 hover:bg-brand-50 hover:border-brand-300 transition-all cursor-pointer"
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                      <span className="text-[10px] mt-1 font-medium">Thêm ảnh</span>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                {existingImages.map((img, idx) => (
+                  <div key={`exist-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 group shadow-sm">
+                    <img src={getImageUrl(img.url || img.imageUrl)} alt="Gallery" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button type="button" onClick={() => removeExistingImage(idx)} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur text-white hover:bg-red-500 transition-all flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
                     </div>
                   </div>
-                </div>
-              )}
+                ))}
+                {imageFiles.map((img, idx) => (
+                  <div key={`new-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border border-stone-300 ring-2 ring-emerald-100 group shadow-sm">
+                    <img src={img.preview} alt="New" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button type="button" onClick={() => removeGalleryImage(idx)} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur text-white hover:bg-red-500 transition-all flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[16px]">close</span>
+                      </button>
+                    </div>
+                    <div className="absolute top-1 left-1 bg-emerald-500 text-[8px] text-white px-1 rounded uppercase font-bold">Mới</div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="aspect-square rounded-xl border-2 border-dashed border-stone-200 bg-stone-50 flex flex-col items-center justify-center text-stone-400 hover:text-stone-900 hover:border-stone-300 transition-all"
+                >
+                  <span className="material-symbols-outlined text-[24px]">add</span>
+                </button>
+              </div>
             </div>
           </section>
 
+          {/* Ghi chú nội bộ */}
+          <section className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-stone-100">
+              <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-stone-500">
+                <span className="material-symbols-outlined text-[20px]">sticky_note_2</span>
+              </div>
+              <h2 className="text-sm font-bold text-stone-800">Ghi chú nội bộ</h2>
+            </div>
+            <textarea
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all resize-none outline-none focus:border-stone-900 leading-relaxed"
+              rows="3"
+              placeholder="Ghi chú riêng cho nhân viên quản lý, không hiển thị cho khách hàng..."
+              name="internalNotes"
+              value={formData.internalNotes}
+              onChange={handleChange}
+            ></textarea>
+          </section>
         </div>
 
         {/* RIGHT — sidebar (1/3) */}
-        <div className="lg:col-span-1 flex flex-col gap-5">
-
-          {/* Trạng thái */}
-          <section className="bg-white rounded-2xl border border-stone-200 p-5">
-            <div className="flex items-center gap-2 mb-4 pb-3.5 border-b border-stone-100">
-              <div className="w-6 h-6 rounded-md bg-green-50 flex items-center justify-center">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b6d11" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          
+          <section className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-stone-100">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <span className="material-symbols-outlined text-[20px]">verified_user</span>
               </div>
-              <h2 className="text-sm font-semibold text-stone-800">Trạng thái</h2>
+              <h2 className="text-sm font-bold text-stone-800">Trạng thái hiển thị</h2>
             </div>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-green-500 pointer-events-none z-10"></span>
-              <select 
-                className="w-full pl-8 pr-8 py-2.5 rounded-xl border border-green-200 bg-green-50 text-sm font-medium text-green-800 cursor-pointer appearance-none transition-all hover:border-green-300"
-                style={{
-                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%233b6d11' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 12px center"
-                }}
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-              >
-                <option value={1}>Hoạt động (Hiển thị ngay)</option>
-                <option value={0}>Nháp (Ẩn khỏi cửa hàng)</option>
-              </select>
+            
+            <div className="space-y-4">
+              <div className="relative">
+                <select
+                  className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-stone-200 bg-white text-sm font-bold text-stone-800 cursor-pointer appearance-none outline-none focus:border-stone-900 transition-all"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                >
+                  <option value={1}>Hoạt động (Hiển thị)</option>
+                  <option value={0}>Nháp (Ẩn)</option>
+                </select>
+                <span className={`absolute left-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${Number(formData.status) === 1 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-stone-300'}`}></span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-stone-400 pointer-events-none">expand_more</span>
+              </div>
+              <p className="text-[11px] text-stone-400 leading-relaxed px-1 italic">Thay đổi trạng thái sẽ ảnh hưởng trực tiếp đến khách hàng trên website.</p>
             </div>
-            <p className="text-xs text-stone-500 mt-2.5 leading-relaxed">Thay đổi trạng thái sẽ cập nhật hiển thị của sản phẩm đối với khách hàng.</p>
           </section>
 
-          {/* Ghi chú */}
-          <section className="bg-white rounded-2xl border border-stone-200 p-5">
-            <div className="flex items-center gap-2 mb-4 pb-3.5 border-b border-stone-100">
-              <div className="w-6 h-6 rounded-md bg-stone-100 flex items-center justify-center">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <section className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-stone-100">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                <span className="material-symbols-outlined text-[20px]">inventory</span>
               </div>
-              <h2 className="text-sm font-semibold text-stone-800">Thông tin phụ</h2>
+              <h2 className="text-sm font-bold text-stone-800">Quản lý kho</h2>
             </div>
-            <div className="text-xs text-stone-500 leading-relaxed space-y-2">
-              <p>Biến thể của sản phẩm (số lượng, kho, kích cỡ) được chỉnh sửa ở mục Quản lý Biến thể riêng biệt để tránh rủi ro thao tác.</p>
+            <div className="space-y-3">
+              <p className="text-xs text-stone-500 leading-relaxed">Để thay đổi số lượng tồn kho, màu sắc hoặc mã SKU của các biến thể, vui lòng chuyển sang trang quản lý biến thể.</p>
               <button 
                 type="button"
                 onClick={() => navigate(`/admin/products/variants/${id}`)}
-                className="mt-2 w-full py-2.5 rounded-xl border border-stone-200 text-stone-600 hover:border-brand-500 hover:text-brand-600 hover:bg-brand-50 transition-all font-medium flex items-center justify-center gap-1.5"
+                className="w-full py-3 rounded-xl bg-stone-50 border border-stone-200 text-stone-700 hover:bg-stone-100 transition-all font-bold text-xs flex items-center justify-center gap-2"
               >
-                <span className="material-symbols-outlined text-[16px]">style</span> Quản lý kho / Biến thể
+                <span className="material-symbols-outlined text-[18px]">style</span>
+                Quản lý biến thể (Variants)
               </button>
             </div>
           </section>
 
+          <div className="p-2 border border-stone-200 rounded-2xl border-dashed">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full py-4 rounded-xl bg-stone-900 text-white text-sm font-bold hover:bg-stone-800 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50"
+            >
+              {loading ? "Đang cập nhật..." : "Cập nhật sản phẩm"}
+            </button>
+          </div>
         </div>
       </div>
     </main>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { getImageUrl } from '../../utils/format';
 
 const PLACEHOLDER_IMAGE = 'https://placehold.co/160x220?text=No+Image';
 const formatVND = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)}₫`;
@@ -13,9 +14,10 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, isBusy }) {
         className="w-full md:w-[120px] aspect-[3/4] bg-lumiere-blush overflow-hidden shrink-0"
       >
         <img 
-          src={item.thumbnailUrl || PLACEHOLDER_IMAGE} 
+          src={getImageUrl(item.thumbnailUrl || item.imageUrl)} 
           alt={item.productName} 
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMAGE; }}
         />
       </Link>
 

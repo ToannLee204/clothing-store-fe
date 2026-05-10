@@ -9,7 +9,52 @@ const AdminAddProduct = () => {
   const galleryInputRef = useRef(null);
 
   const [categories, setCategories] = useState([]);
+  
+  // Dữ liệu chuẩn từ Backend Enums
+  const STANDARD_COLORS = [
+    { code: "BLACK", name: "Màu đen" },
+    { code: "WHITE", name: "Màu trắng" },
+    { code: "RED", name: "Màu đỏ" },
+    { code: "BLUE", name: "Xanh dương" },
+    { code: "GREEN", name: "Xanh lá" },
+    { code: "YELLOW", name: "Màu vàng" },
+    { code: "PINK", name: "Màu hồng" },
+    { code: "PURPLE", name: "Màu tím" },
+    { code: "GRAY", name: "Màu xám" },
+    { code: "BROWN", name: "Màu nâu" },
+    { code: "ORANGE", name: "Màu cam" },
+    { code: "BEIGE", name: "Màu be" },
+    { code: "NAVY", name: "Xanh navy" },
+    { code: "MULTI", name: "Nhiều màu" },
+    { code: "OTHER", name: "Màu khác" }
+  ];
+
+  const STANDARD_SIZES = [
+    { code: "XS", name: "XS" },
+    { code: "S", name: "S" },
+    { code: "M", name: "M" },
+    { code: "L", name: "L" },
+    { code: "XL", name: "XL" },
+    { code: "XXL", name: "XXL" },
+    { code: "SIZE_35", name: "35" },
+    { code: "SIZE_36", name: "36" },
+    { code: "SIZE_37", name: "37" },
+    { code: "SIZE_38", name: "38" },
+    { code: "SIZE_39", name: "39" },
+    { code: "SIZE_40", name: "40" },
+    { code: "SIZE_41", name: "41" },
+    { code: "SIZE_42", name: "42" },
+    { code: "SIZE_43", name: "43" },
+    { code: "SIZE_44", name: "44" },
+    { code: "SIZE_45", name: "45" },
+    { code: "FREESIZE", name: "Freesize" },
+    { code: "OTHER", name: "Khác" }
+  ];
+
+  const [availableColors, setAvailableColors] = useState(STANDARD_COLORS);
+  const [availableSizes, setAvailableSizes] = useState(STANDARD_SIZES);
   const [error, setError] = useState("");
+  const [duplicateIndices, setDuplicateIndices] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [productData, setProductData] = useState({
@@ -18,10 +63,11 @@ const AdminAddProduct = () => {
     basePrice: "",
     description: "",
     status: 1,
+    internalNotes: "",
   });
 
   const [variants, setVariants] = useState([
-    { sku: "", color: "", size: "", stockQty: "", salePrice: "" },
+    { color: "", size: "", stockQty: "", salePrice: "" },
   ]);
 
   // File upload states
@@ -30,22 +76,123 @@ const AdminAddProduct = () => {
   const [imageFiles, setImageFiles] = useState([]); // { file, preview }
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch("/api/v1/categories", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const text = await response.text();
-        if (response.ok && text) {
-          const actualData = JSON.parse(text);
-          setCategories(actualData.data || actualData || []);
+        const headers = { Authorization: `Bearer ${token}` };
+        
+        // Fetch Categories
+        const catRes = await fetch("/api/v1/categories", { headers });
+        if (catRes.ok) {
+          const data = await catRes.json();
+          setCategories(data.data || data || []);
         }
       } catch (err) {
-        console.error("Lỗi lấy danh mục:", err);
+        console.error("Lỗi lấy dữ liệu thuộc tính:", err);
       }
     };
-    fetchCategories();
+    fetchData();
   }, [token]);
+
+  // Searchable Dropdown Component
+  const AttributeSelector = ({ value, onChange, options, placeholder, isError }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const containerRef = useRef(null);
+    const searchInputRef = useRef(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (containerRef.current && !containerRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const filteredOptions = options.filter(opt => 
+      opt.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opt.code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const handleSelect = (opt) => {
+      onChange(opt.name);
+      setIsOpen(false);
+      setSearchTerm("");
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (filteredOptions.length > 0) {
+          handleSelect(filteredOptions[0]);
+        }
+      } else if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    return (
+      <div className={`relative ${isOpen ? "z-[100]" : "z-0"}`} ref={containerRef}>
+        <div className="relative">
+          <input
+            className={`w-full bg-white border ${isError ? "border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,0.2)]" : "border-stone-200"} rounded-lg px-3 py-2 text-sm outline-none focus:border-stone-900 transition-all pr-8`}
+            type="text"
+            placeholder={placeholder}
+            value={value}
+            onChange={(e) => {
+              onChange(e.target.value);
+              setSearchTerm(e.target.value);
+              setIsOpen(true);
+            }}
+            onFocus={() => setIsOpen(true)}
+          />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 material-symbols-outlined text-stone-300 text-[18px] pointer-events-none">
+            expand_more
+          </span>
+        </div>
+
+        {isOpen && (
+          <div className="absolute z-[9999] w-full min-w-[220px] mt-1 bg-white border border-stone-200 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] max-h-60 overflow-y-auto animate-fadeIn left-0">
+            <div className="sticky top-0 bg-white p-2 border-b border-stone-100">
+              <div className="relative">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  className="w-full bg-stone-50 border-none rounded-lg px-8 py-1.5 text-xs outline-none focus:ring-1 focus:ring-stone-200"
+                  placeholder="Tìm nhanh..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  autoFocus
+                />
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-stone-400 text-[14px]">search</span>
+              </div>
+            </div>
+            <div className="p-1">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((opt) => (
+                  <button
+                    key={opt.code}
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-stone-50 rounded-lg transition-colors flex items-center justify-between group"
+                    onClick={() => handleSelect(opt)}
+                  >
+                    <span className="font-medium text-stone-700">{opt.name}</span>
+                    <span className="text-[10px] text-stone-300 group-hover:text-stone-400 font-mono">{opt.code}</span>
+                  </button>
+                ))
+              ) : (
+                <div className="px-3 py-4 text-center">
+                  <p className="text-[10px] text-stone-400 italic">Không tìm thấy. Bạn có thể tự nhập.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Cleanup preview URLs on unmount
   useEffect(() => {
@@ -53,18 +200,20 @@ const AdminAddProduct = () => {
       if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
       imageFiles.forEach((img) => URL.revokeObjectURL(img.preview));
     };
-  }, []);
+  }, [thumbnailPreview, imageFiles]);
 
   // VARIANTS
   const handleVariantChange = (index, field, value) => {
     const newVariants = [...variants];
     newVariants[index][field] = value;
     setVariants(newVariants);
+    if (duplicateIndices.length > 0) setDuplicateIndices([]);
+    if (error.startsWith("Trùng biến thể")) setError("");
   };
   const addVariant = () => {
     setVariants([
       ...variants,
-      { sku: "", color: "", size: "", stockQty: "", salePrice: "" },
+      { color: "", size: "", stockQty: "", salePrice: "" },
     ]);
   };
   const removeVariant = (index) => {
@@ -118,13 +267,35 @@ const AdminAddProduct = () => {
       return setError("Vui lòng điền đủ Tên, Danh mục và Giá cơ bản!");
     }
 
+    // Kiểm tra trùng lặp biến thể (Màu sắc + Kích cỡ)
+    const variantMap = new Map();
+    const dups = [];
+    variants.forEach((v, idx) => {
+      if (!v.color || !v.size) return;
+      const key = `${v.color.trim().toLowerCase()}-${v.size.trim().toLowerCase()}`;
+      if (variantMap.has(key)) {
+        dups.push(variantMap.get(key));
+        dups.push(idx);
+      } else {
+        variantMap.set(key, idx);
+      }
+    });
+
+    if (dups.length > 0) {
+      setDuplicateIndices(dups);
+      const firstDup = variants[dups[1]];
+      return setError(`Trùng biến thể: color=${firstDup.color}, size=${firstDup.size}. Vui lòng kiểm tra lại!`);
+    }
+    setDuplicateIndices([]);
+
     setLoading(true);
     try {
       const productPayload = {
         ...productData,
         basePrice: Number(productData.basePrice),
         variants: variants.map((v) => ({
-          ...v,
+          color: v.color,
+          size: v.size,
           stockQty: Number(v.stockQty) || 0,
           salePrice: v.salePrice ? Number(v.salePrice) : null,
         })),
@@ -138,12 +309,10 @@ const AdminAddProduct = () => {
         }),
       );
 
-      // Append thumbnail file nếu có
       if (thumbnailFile) {
         formData.append("thumbnail", thumbnailFile);
       }
 
-      // Append gallery files nếu có
       if (imageFiles.length > 0) {
         imageFiles.forEach((img) => {
           formData.append("images", img.file);
@@ -179,7 +348,7 @@ const AdminAddProduct = () => {
   };
 
   return (
-    <main className="flex-1 overflow-y-auto bg-stone-100 text-stone-800 font-sans">
+    <main className="flex-1 overflow-y-auto bg-stone-100 text-stone-800 font-sans h-screen">
       {/* Top header bar */}
       <header className="sticky top-0 z-20 bg-white border-b border-stone-200 px-6 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
@@ -188,23 +357,14 @@ const AdminAddProduct = () => {
             onClick={() => navigate("/admin/products")}
             className="w-8 h-8 rounded-lg border border-stone-200 flex items-center justify-center text-stone-600 hover:bg-stone-50 transition-colors"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           </button>
           <div>
             <h1 className="font-display text-lg font-semibold text-stone-900 leading-tight tracking-tight">
               Thêm sản phẩm mới
             </h1>
-            <p className="text-xs text-stone-600 mt-0.5">
-              Tạo sản phẩm mới cho hệ thống Clothing Store
+            <p className="text-xs text-stone-500 mt-0.5">
+              Thiết lập sản phẩm và các biến thể phân loại
             </p>
           </div>
         </div>
@@ -223,28 +383,9 @@ const AdminAddProduct = () => {
             className="px-4 py-2 rounded-lg bg-stone-900 text-white text-sm font-medium hover:bg-stone-800 transition-colors flex items-center gap-1.5 disabled:opacity-50"
           >
             {loading ? (
-              <>
-                <span className="material-symbols-outlined animate-spin text-[16px]">
-                  sync
-                </span>{" "}
-                Đang lưu...
-              </>
+              <><span className="material-symbols-outlined animate-spin text-[16px]">sync</span> Đang lưu...</>
             ) : (
-              <>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                  <polyline points="17 21 17 13 7 13 7 21" />
-                  <polyline points="7 3 7 8 15 8" />
-                </svg>
-                Lưu sản phẩm
-              </>
+              <><span className="material-symbols-outlined text-[18px]">save</span> Lưu sản phẩm</>
             )}
           </button>
         </div>
@@ -253,572 +394,383 @@ const AdminAddProduct = () => {
       {error && (
         <div className="max-w-6xl mx-auto px-6 mt-6">
           <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-semibold flex items-center gap-2 border border-red-100">
-            <span className="material-symbols-outlined text-lg">error</span>{" "}
-            {error}
+            <span className="material-symbols-outlined text-lg">error</span> {error}
           </div>
         </div>
       )}
 
       {/* Main content */}
-      <div className="mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+      <div className="mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        
         {/* LEFT — main column (2/3) */}
-        <div className="lg:col-span-2 flex flex-col gap-5">
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          
           {/* Thông tin cơ bản */}
-          <section className="card-section bg-white rounded-2xl border border-stone-200 p-5">
-            <div className="flex items-center gap-2 mb-5 pb-4 border-b border-stone-100">
-              <div className="w-6 h-6 rounded-md bg-brand-50 flex items-center justify-center">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#3b5bdb"
-                  strokeWidth="2"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <path d="M3 9h18M9 21V9" />
-                </svg>
+          <section className="card-section bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-stone-100">
+              <div className="w-8 h-8 rounded-lg bg-stone-900 flex items-center justify-center text-white">
+                <span className="material-symbols-outlined text-[20px]">info</span>
               </div>
-              <h2 className="text-sm font-semibold text-stone-800">
-                Thông tin cơ bản
-              </h2>
+              <h2 className="text-sm font-bold text-stone-800">Thông tin cơ bản</h2>
             </div>
 
-            <div className="space-y-4">
-              {/* Tên sản phẩm */}
+            <div className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-stone-800 uppercase tracking-widest mb-1.5">
+                <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-2">
                   Tên sản phẩm <span className="text-red-400">*</span>
                 </label>
                 <input
-                  className="field-input w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all outline-none focus:border-stone-900"
                   type="text"
                   placeholder="Vd: Áo khoác Bomber Minimalist..."
                   value={productData.name}
-                  onChange={(e) =>
-                    setProductData({ ...productData, name: e.target.value })
-                  }
+                  onChange={(e) => setProductData({ ...productData, name: e.target.value })}
                 />
               </div>
 
-              {/* Danh mục + Giá */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-xs font-bold text-stone-800 uppercase tracking-widest mb-1.5">
+                  <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-2">
                     Danh mục <span className="text-red-400">*</span>
                   </label>
                   <select
-                    className="field-input w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-stone-800 bg-white transition-all cursor-pointer"
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 bg-white transition-all cursor-pointer outline-none focus:border-stone-900 appearance-none"
+                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a8a29e\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
                     value={productData.categoryId}
-                    onChange={(e) =>
-                      setProductData({
-                        ...productData,
-                        categoryId: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setProductData({ ...productData, categoryId: e.target.value })}
                   >
-                    <option value="" disabled>
-                      -- Chọn danh mục --
-                    </option>
+                    <option value="" disabled>-- Chọn danh mục --</option>
                     {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-stone-800 uppercase tracking-widest mb-1.5">
+                  <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-2">
                     Giá niêm yết (VNĐ) <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
                     <input
-                      className="field-input w-full px-3.5 py-2.5 pr-8 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all"
+                      className="w-full px-4 py-3 pr-12 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all outline-none focus:border-stone-900"
                       type="text"
                       placeholder="0"
                       value={productData.basePrice ? Number(productData.basePrice).toLocaleString('vi-VN') : ''}
                       onChange={(e) => {
                         const rawValue = e.target.value.replace(/\D/g, '');
-                        setProductData({
-                          ...productData,
-                          basePrice: rawValue,
-                        });
+                        setProductData({ ...productData, basePrice: rawValue });
                       }}
                     />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-stone-600 pointer-events-none font-medium">
-                      đ
-                    </span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-bold">đ</span>
                   </div>
                 </div>
               </div>
 
-              {/* Mô tả */}
               <div>
-                <label className="block text-xs font-bold text-stone-800 uppercase tracking-widest mb-1.5">
+                <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-2">
                   Mô tả sản phẩm
                 </label>
                 <textarea
-                  className="field-input w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all resize-none leading-relaxed"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all resize-none leading-relaxed outline-none focus:border-stone-900"
                   rows="4"
                   placeholder="Chất liệu, kiểu dáng, xuất xứ..."
                   value={productData.description}
-                  onChange={(e) =>
-                    setProductData({
-                      ...productData,
-                      description: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setProductData({ ...productData, description: e.target.value })}
                 ></textarea>
-                <p className="text-xs text-stone-500 mt-1.5">
-                  Mô tả chi tiết giúp khách hàng ra quyết định mua hàng dễ hơn.
-                </p>
               </div>
             </div>
           </section>
 
           {/* Hình ảnh sản phẩm */}
-          <section className="card-section bg-white rounded-2xl border border-stone-200 p-5">
-            <div className="flex items-center justify-between mb-5 pb-4 border-b border-stone-100">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-brand-50 flex items-center justify-center">
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#3b5bdb"
-                    strokeWidth="2"
-                  >
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                </div>
-                <h2 className="text-sm font-semibold text-stone-800">
-                  Hình ảnh sản phẩm
-                </h2>
+          <section className="card-section bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-stone-100">
+              <div className="w-8 h-8 rounded-lg bg-stone-900 flex items-center justify-center text-white">
+                <span className="material-symbols-outlined text-[20px]">image</span>
               </div>
+              <h2 className="text-sm font-bold text-stone-800">Hình ảnh sản phẩm</h2>
             </div>
 
             {/* Thumbnail */}
-            <div className="mb-5">
-              <label className="block text-xs font-bold text-stone-800 uppercase tracking-widest mb-2.5">
+            <div className="mb-8">
+              <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-3">
                 Ảnh đại diện (Thumbnail) <span className="text-red-400">*</span>
               </label>
-              <div className="flex gap-4 items-start">
+              <div className="flex gap-6 items-start">
                 {!thumbnailPreview ? (
-                  <label className="upload-zone cursor-pointer w-28 h-28 rounded-xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-1.5 transition-all bg-stone-50">
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      ref={thumbnailInputRef}
-                      onChange={handleThumbnailSelect}
-                    />
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#a8a29e"
-                      strokeWidth="1.5"
-                    >
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                    <span className="text-xs font-medium text-stone-600">
-                      Chọn ảnh
-                    </span>
-                    <span className="text-xs text-stone-500">
-                      JPG, PNG, WEBP
-                    </span>
+                  <label className="upload-zone cursor-pointer w-32 h-32 rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-2 transition-all bg-stone-50 hover:bg-stone-100 hover:border-stone-300 group">
+                    <input type="file" className="hidden" accept="image/*" ref={thumbnailInputRef} onChange={handleThumbnailSelect} />
+                    <span className="material-symbols-outlined text-stone-300 group-hover:text-stone-400 text-[32px]">add_a_photo</span>
+                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-tighter">Chọn ảnh</span>
                   </label>
                 ) : (
-                  <div className="relative w-28 h-28 rounded-xl overflow-hidden border border-stone-200 group">
-                    <img
-                      src={thumbnailPreview}
-                      alt="Thumbnail preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={removeThumbnail}
-                        className="text-white hover:text-red-400 p-2"
-                      >
-                        <span className="material-symbols-outlined">
-                          delete
-                        </span>
+                  <div className="relative w-32 h-32 rounded-2xl overflow-hidden border border-stone-200 group shadow-md">
+                    <img src={thumbnailPreview} alt="Thumbnail" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button type="button" onClick={removeThumbnail} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur text-white hover:bg-red-500 transition-all flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[20px]">delete</span>
                       </button>
                     </div>
                   </div>
                 )}
-
-                <div className="flex-1 text-xs text-stone-600 leading-relaxed pt-1">
-                  <p className="font-medium text-stone-600 mb-1">
-                    Ảnh đại diện sản phẩm
-                  </p>
-                  <p>
-                    Kích thước khuyến nghị:{" "}
-                    <span className="font-medium text-stone-600">
-                      800 × 800px
-                    </span>
-                  </p>
-                  <p>
-                    Dung lượng tối đa:{" "}
-                    <span className="font-medium text-stone-600">5 MB</span>
-                  </p>
-                  <p className="mt-1.5 text-stone-500">
-                    Ảnh chất lượng cao giúp tăng tỉ lệ chuyển đổi.
-                  </p>
+                <div className="flex-1 text-xs text-stone-500 leading-relaxed pt-2">
+                  <p className="font-bold text-stone-700 mb-1">Quy định về hình ảnh</p>
+                  <ul className="list-disc list-inside space-y-1 text-stone-400">
+                    <li>Kích thước tối thiểu 800x800px</li>
+                    <li>Định dạng JPG, PNG hoặc WEBP</li>
+                    <li>Dung lượng không quá 5MB mỗi file</li>
+                  </ul>
                 </div>
               </div>
             </div>
 
             {/* Gallery */}
             <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <label className="block text-xs font-bold text-stone-800 uppercase tracking-widest">
-                  Bộ sưu tập ảnh phụ (Gallery)
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-widest">
+                  Bộ sưu tập ảnh (Gallery)
                 </label>
                 <button
                   type="button"
                   onClick={() => galleryInputRef.current?.click()}
-                  className="text-xs text-brand-500 hover:text-brand-600 font-medium flex items-center gap-1 transition-colors"
+                  className="text-[11px] font-bold text-stone-900 hover:text-stone-600 uppercase tracking-widest flex items-center gap-1.5 transition-colors"
                 >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="16" />
-                    <line x1="8" y1="12" x2="16" y2="12" />
-                  </svg>
+                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
                   Thêm ảnh
                 </button>
               </div>
 
+              <input type="file" className="hidden" accept="image/*" multiple ref={galleryInputRef} onChange={handleGallerySelect} />
+
               {imageFiles.length === 0 ? (
-                <label className="upload-zone cursor-pointer w-full rounded-xl border-2 border-dashed border-stone-200 py-7 flex flex-col items-center gap-2 transition-all bg-stone-50">
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    multiple
-                    ref={galleryInputRef}
-                    onChange={handleGallerySelect}
-                  />
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#a8a29e"
-                    strokeWidth="1.5"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>
-                  <span className="text-sm font-medium text-stone-600">
-                    Bấm để chọn ảnh từ máy tính
-                  </span>
-                  <span className="text-xs text-stone-500">
-                    Có thể chọn nhiều ảnh cùng lúc
-                  </span>
-                </label>
-              ) : (
-                <div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    multiple
-                    ref={galleryInputRef}
-                    onChange={handleGallerySelect}
-                  />
-                  <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                    {imageFiles.map((img, idx) => (
-                      <div
-                        key={idx}
-                        className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 group"
-                      >
-                        <img
-                          src={img.preview}
-                          alt={`Gallery ${idx}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button
-                            type="button"
-                            onClick={() => removeGalleryImage(idx)}
-                            className="text-white hover:text-red-400 p-2"
-                          >
-                            <span className="material-symbols-outlined text-[20px]">
-                              delete
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <div
-                      onClick={() => galleryInputRef.current?.click()}
-                      className="aspect-square rounded-xl border border-dashed border-stone-300 bg-stone-50 flex flex-col items-center justify-center text-stone-600 hover:text-brand-500 hover:bg-brand-50 hover:border-brand-300 transition-all cursor-pointer"
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
-                      <span className="text-xs mt-1 font-medium">Thêm ảnh</span>
-                    </div>
+                <div 
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="cursor-pointer w-full rounded-2xl border-2 border-dashed border-stone-200 py-10 flex flex-col items-center gap-3 transition-all bg-stone-50 hover:bg-stone-100 hover:border-stone-300 group"
+                >
+                  <span className="material-symbols-outlined text-stone-300 group-hover:text-stone-400 text-[40px]">collections</span>
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-stone-500">Kéo thả hoặc bấm để chọn ảnh</p>
+                    <p className="text-[11px] text-stone-400 mt-1">Nên có ít nhất 3-4 ảnh chi tiết sản phẩm</p>
                   </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                  {imageFiles.map((img, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-stone-200 group shadow-sm">
+                      <img src={img.preview} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button type="button" onClick={() => removeGalleryImage(idx)} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur text-white hover:bg-red-500 transition-all flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="aspect-square rounded-xl border-2 border-dashed border-stone-200 bg-stone-50 flex flex-col items-center justify-center text-stone-400 hover:text-stone-900 hover:border-stone-300 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-[24px]">add</span>
+                    <span className="text-[10px] font-bold uppercase mt-1">Thêm</span>
+                  </button>
                 </div>
               )}
             </div>
           </section>
-        </div>
 
-        {/* RIGHT — sidebar (1/3) */}
-        <div className="lg:col-span-1 flex flex-col gap-5">
-          {/* Trạng thái */}
-          <section className="bg-white rounded-2xl border border-stone-200 p-5">
-            <div className="flex items-center gap-2 mb-4 pb-3.5 border-b border-stone-100">
-              <div className="w-6 h-6 rounded-md bg-green-50 flex items-center justify-center">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#3b6d11"
-                  strokeWidth="2"
-                >
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-              </div>
-              <h2 className="text-sm font-semibold text-stone-800">
-                Trạng thái
-              </h2>
-            </div>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-green-500 pointer-events-none z-10"></span>
-              <select
-                className="w-full pl-8 pr-8 py-2.5 rounded-xl border border-green-200 bg-green-50 text-sm font-medium text-green-800 cursor-pointer appearance-none transition-all hover:border-green-300"
-                style={{
-                  backgroundImage:
-                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%233b6d11' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 12px center",
-                }}
-                value={productData.status}
-                onChange={(e) =>
-                  setProductData({ ...productData, status: e.target.value })
-                }
-              >
-                <option value="1">Kích hoạt (Hiển thị ngay)</option>
-                <option value="0">Nháp (Ẩn khỏi cửa hàng)</option>
-              </select>
-            </div>
-            <p className="text-xs text-stone-600 mt-2.5 leading-relaxed">
-              Sản phẩm sẽ hiển thị ngay trên cửa hàng sau khi lưu.
-            </p>
-          </section>
+          <section className="card-section bg-white rounded-2xl border border-stone-200 p-6 shadow-sm min-h-[450px]">
 
-          {/* Biến thể */}
-          <section className="bg-white rounded-2xl border border-stone-200 p-5">
-            <div className="flex items-center gap-2 mb-4 pb-3.5 border-b border-stone-100">
-              <div className="w-6 h-6 rounded-md bg-brand-50 flex items-center justify-center">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#3b5bdb"
-                  strokeWidth="2"
-                >
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M12 2v3m0 14v3M4.22 4.22l2.12 2.12m11.32 11.32 2.12 2.12M2 12h3m14 0h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
-                </svg>
-              </div>
-              <h2 className="text-sm font-semibold text-stone-800">
-                Biến thể (Variants)
-              </h2>
-            </div>
-
-            <div className="space-y-3">
-              {variants.map((variant, index) => (
-                <div
-                  key={index}
-                  className="variant-item bg-stone-50 rounded-xl border border-stone-100 p-3.5"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold text-stone-600 uppercase tracking-widest">
-                      Biến thể {index + 1}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeVariant(index)}
-                      className="w-5 h-5 rounded flex items-center justify-center text-stone-500 hover:text-red-400 hover:bg-red-50 transition-all"
-                    >
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1">
-                        Màu sắc
-                      </label>
-                      <input
-                        className="field-input w-full px-3 py-2 rounded-lg border border-stone-200 text-xs text-stone-800 placeholder-stone-400 bg-white transition-all"
-                        type="text"
-                        placeholder="Trắng, Đen..."
-                        value={variant.color}
-                        onChange={(e) =>
-                          handleVariantChange(index, "color", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1">
-                        Kích cỡ
-                      </label>
-                      <input
-                        className="field-input w-full px-3 py-2 rounded-lg border border-stone-200 text-xs text-stone-800 placeholder-stone-400 bg-white transition-all"
-                        type="text"
-                        placeholder="S, M, L..."
-                        value={variant.size}
-                        onChange={(e) =>
-                          handleVariantChange(index, "size", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mb-2">
-                    <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1">
-                      Mã SKU <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      className="field-input w-full px-3 py-2 rounded-lg border border-stone-200 text-xs text-stone-800 placeholder-stone-400 bg-white font-mono transition-all"
-                      type="text"
-                      placeholder="SKU-XXXX"
-                      value={variant.sku}
-                      onChange={(e) =>
-                        handleVariantChange(index, "sku", e.target.value)
-                      }
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1">
-                        Tồn kho
-                      </label>
-                      <input
-                        className="field-input w-full px-3 py-2 rounded-lg border border-stone-200 text-xs text-stone-800 bg-white transition-all"
-                        type="number"
-                        value={variant.stockQty}
-                        onChange={(e) =>
-                          handleVariantChange(index, "stockQty", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1">
-                        Giá sale
-                      </label>
-                      <input
-                        className="field-input w-full px-3 py-2 rounded-lg border border-stone-200 text-xs text-stone-800 placeholder-stone-400 bg-white transition-all"
-                        type="text"
-                        placeholder="Trống = ko sale"
-                        value={variant.salePrice ? Number(variant.salePrice).toLocaleString('vi-VN') : ''}
-                        onChange={(e) => {
-                          const rawValue = e.target.value.replace(/\D/g, '');
-                          handleVariantChange(
-                            index,
-                            "salePrice",
-                            rawValue
-                          );
-                        }}
-                      />
-                    </div>
-                  </div>
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-stone-900 flex items-center justify-center text-white">
+                  <span className="material-symbols-outlined text-[20px]">inventory_2</span>
                 </div>
-              ))}
+                <div>
+                  <h2 className="text-sm font-bold text-stone-800">Biến thể sản phẩm</h2>
+                  <p className="text-[11px] text-stone-400 mt-0.5">Màu sắc, kích cỡ, SKU và tồn kho riêng biệt</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={addVariant}
+                className="px-4 py-2 rounded-lg bg-stone-100 text-stone-600 hover:bg-stone-200 text-xs font-bold flex items-center gap-2 transition-all"
+              >
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                Thêm dòng
+              </button>
+            </div>
+
+            <div className="overflow-x-auto -mx-2 pb-60 -mb-60">
+              <table className="w-full text-left border-collapse min-w-[600px] relative z-10">
+
+                <thead>
+                  <tr className="text-stone-400 text-[10px] uppercase tracking-[0.2em] font-bold">
+                    <th className="px-4 py-3 border-b border-stone-100">Màu sắc</th>
+                    <th className="px-4 py-3 border-b border-stone-100">Kích cỡ</th>
+                    <th className="px-4 py-3 border-b border-stone-100 text-center">Tồn kho</th>
+                    <th className="px-4 py-3 border-b border-stone-100">Giá sale (đ)</th>
+                    <th className="px-4 py-3 border-b border-stone-100 text-center w-10"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {variants.map((variant, index) => (
+                    <tr key={index} className="group hover:bg-stone-50/50 transition-colors">
+                      <td className="px-2 py-3">
+                        <AttributeSelector
+                          placeholder="Vd: Đen"
+                          value={variant.color}
+                          options={availableColors}
+                          onChange={(val) => handleVariantChange(index, "color", val)}
+                          isError={duplicateIndices.includes(index)}
+                        />
+                      </td>
+                      <td className="px-2 py-3 w-24">
+                        <AttributeSelector
+                          placeholder="M"
+                          value={variant.size}
+                          options={availableSizes}
+                          onChange={(val) => handleVariantChange(index, "size", val)}
+                          isError={duplicateIndices.includes(index)}
+                        />
+                      </td>
+
+                      <td className="px-2 py-3 w-28">
+                        <input
+                          className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm text-center outline-none focus:border-stone-900 transition-all"
+                          type="number"
+                          placeholder="0"
+                          value={variant.stockQty}
+                          onChange={(e) => handleVariantChange(index, "stockQty", e.target.value)}
+                        />
+                      </td>
+                      <td className="px-2 py-3 w-36">
+                        <input
+                          className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-stone-900 transition-all"
+                          type="text"
+                          placeholder="Không"
+                          value={variant.salePrice ? Number(variant.salePrice).toLocaleString('vi-VN') : ''}
+                          onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\D/g, '');
+                            handleVariantChange(index, "salePrice", rawValue);
+                          }}
+                        />
+                      </td>
+                      <td className="px-2 py-3 text-center">
+                        {variants.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeVariant(index)}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">close</span>
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             <button
               type="button"
               onClick={addVariant}
-              className="mt-3 w-full py-2.5 rounded-xl border border-dashed border-stone-200 text-xs font-medium text-stone-600 hover:border-brand-500 hover:text-brand-500 hover:bg-brand-50 transition-all flex items-center justify-center gap-1.5"
+              className="mt-6 w-full py-4 rounded-xl border-2 border-dashed border-stone-100 text-xs font-bold text-stone-400 hover:text-stone-900 hover:border-stone-300 hover:bg-stone-50 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
             >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Thêm biến thể khác
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Thêm một biến thể mới
             </button>
           </section>
 
           {/* Ghi chú nội bộ */}
-          <section className="bg-white rounded-2xl border border-stone-200 p-5">
-            <div className="flex items-center gap-2 mb-4 pb-3.5 border-b border-stone-100">
-              <div className="w-6 h-6 rounded-md bg-stone-100 flex items-center justify-center">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#78716c"
-                  strokeWidth="2"
-                >
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                  <polyline points="10 9 9 9 8 9" />
-                </svg>
+          <section className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm relative z-0">
+
+            <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-stone-100">
+              <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-stone-500">
+                <span className="material-symbols-outlined text-[20px]">sticky_note_2</span>
               </div>
-              <h2 className="text-sm font-semibold text-stone-800">
-                Ghi chú nội bộ
-              </h2>
+              <h2 className="text-sm font-bold text-stone-800">Ghi chú nội bộ</h2>
             </div>
             <textarea
-              className="field-input w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all resize-none leading-relaxed"
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-stone-800 placeholder-stone-400 bg-white transition-all resize-none outline-none focus:border-stone-900 leading-relaxed"
               rows="3"
-              placeholder="Ghi chú riêng cho team, không hiển thị ra ngoài..."
+              placeholder="Ghi chú riêng cho nhân viên quản lý, không hiển thị cho khách hàng..."
+              value={productData.internalNotes}
+              onChange={(e) => setProductData({ ...productData, internalNotes: e.target.value })}
             ></textarea>
           </section>
+        </div>
+
+        {/* RIGHT — sidebar (1/3) */}
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          
+          {/* Trạng thái */}
+          <section className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-stone-100">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <span className="material-symbols-outlined text-[20px]">verified</span>
+              </div>
+              <h2 className="text-sm font-bold text-stone-800">Trạng thái xuất bản</h2>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="relative">
+                <select
+                  className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-stone-200 bg-white text-sm font-bold text-stone-800 cursor-pointer appearance-none transition-all hover:border-stone-900 focus:border-stone-900 outline-none"
+                  value={productData.status}
+                  onChange={(e) => setProductData({ ...productData, status: e.target.value })}
+                >
+                  <option value="1">Kích hoạt (Hoạt động)</option>
+                  <option value="0">Bản nháp (Lưu trữ)</option>
+                </select>
+                <span className={`absolute left-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${Number(productData.status) === 1 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-stone-300'}`}></span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-stone-400 pointer-events-none">expand_more</span>
+              </div>
+              
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-100">
+                <div className="flex gap-3">
+                  <span className="material-symbols-outlined text-amber-500 text-[20px]">lightbulb</span>
+                  <p className="text-[11px] text-stone-500 leading-relaxed">
+                    Sản phẩm <span className="font-bold text-stone-700">Kích hoạt</span> sẽ hiển thị công khai trên website ngay sau khi lưu.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Mẹo nhỏ */}
+          <section className="bg-stone-900 rounded-2xl p-7 text-white overflow-hidden relative shadow-xl">
+            <div className="relative z-10">
+              <h3 className="text-[11px] font-bold mb-4 flex items-center gap-2 uppercase tracking-[0.2em] text-amber-400">
+                <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                Mẹo tối ưu
+              </h3>
+              <ul className="text-xs text-stone-400 space-y-4 leading-relaxed">
+                <li className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white shrink-0">1</span>
+                  <span>Tên sản phẩm nên chứa từ khóa tìm kiếm phổ biến.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white shrink-0">2</span>
+                  <span>Hình ảnh có nền trắng giúp sản phẩm trông chuyên nghiệp hơn.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white shrink-0">3</span>
+                  <span>Thiết lập giá sale hợp lý để tăng tỷ lệ chuyển đổi.</span>
+                </li>
+              </ul>
+            </div>
+            <span className="absolute -bottom-10 -right-10 material-symbols-outlined text-[140px] text-white/5 rotate-12 pointer-events-none">inventory</span>
+          </section>
+
+          <div className="p-2 border border-stone-200 rounded-2xl border-dashed">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full py-4 rounded-xl bg-stone-900 text-white text-sm font-bold hover:bg-stone-800 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50"
+            >
+              {loading ? "Đang xử lý..." : "Lưu & Hoàn tất"}
+            </button>
+          </div>
         </div>
       </div>
     </main>

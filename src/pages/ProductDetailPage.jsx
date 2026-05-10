@@ -4,6 +4,7 @@ import {
   emitCartUpdated,
   saveCartSnapshotCount,
 } from '../utils/cart';
+import { getImageUrl } from '../utils/format';
 import ProductGallery from '../components/products/ProductGallery';
 import ProductInfo from '../components/products/ProductInfo';
 import ProductDetailAccordions from '../components/products/ProductDetailAccordions';
@@ -19,6 +20,24 @@ function normalizeList(payload) {
   if (Array.isArray(payload?.result)) return payload.result;
   return [];
 }
+
+const COLOR_MAP = {
+  "Màu đen": "#000000",
+  "Màu trắng": "#FFFFFF",
+  "Màu đỏ": "#DC2626",
+  "Xanh dương": "#2563EB",
+  "Xanh lá": "#16A34A",
+  "Màu vàng": "#CA8A04",
+  "Màu hồng": "#DB2777",
+  "Màu tím": "#7C3AED",
+  "Màu xám": "#4B5563",
+  "Màu nâu": "#78350F",
+  "Màu cam": "#EA580C",
+  "Màu be": "#F5F5DC",
+  "Xanh navy": "#1E3A8A",
+  "Nhiều màu": "linear-gradient(45deg, red, blue, green)",
+  "Màu khác": "#A8A29E"
+};
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -97,7 +116,30 @@ export default function ProductDetailPage() {
 
   const variants = useMemo(() => product?.variants || [], [product]);
   const colors = useMemo(() => [...new Set(variants.map(v => v.color).filter(Boolean))], [variants]);
-  const sizes = useMemo(() => [...new Set(variants.map(v => v.size).filter(Boolean))], [variants]);
+  
+  const sizes = useMemo(() => {
+    const rawSizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
+    
+    const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "FREESIZE", "KHÁC"];
+    
+    return rawSizes.sort((a, b) => {
+      const isANum = !isNaN(a);
+      const isBNum = !isNaN(b);
+      
+      if (isANum && isBNum) return Number(a) - Number(b);
+      if (isANum) return 1; // Numbers after letters
+      if (isBNum) return -1; // Letters before numbers
+      
+      const idxA = sizeOrder.indexOf(a.toUpperCase());
+      const idxB = sizeOrder.indexOf(b.toUpperCase());
+      
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      
+      return a.localeCompare(b);
+    });
+  }, [variants]);
 
   const selectedVariant = useMemo(() => {
     if (!selectedColor || !selectedSize) return null;
@@ -182,14 +224,17 @@ export default function ProductDetailPage() {
           <span className="text-lumiere-charcoal">{product.name}</span>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 xl:gap-20">
-          {/* Left: Gallery */}
-          <ProductGallery 
-            images={[product.thumbnailUrl, ...(product.imageUrls || [])]} 
-            selectedImage={selectedImage}
-            onSelectImage={setSelectedImage}
-            badge={hasDiscount ? `−${discountPercent}%` : 'Mới về'}
-          />
+        <div className="grid lg:grid-cols-2 gap-12 xl:gap-20 items-start">
+
+          {/* Left: Gallery (Sticky) */}
+          <div className="lg:sticky lg:top-32">
+            <ProductGallery 
+              images={[getImageUrl(product.thumbnailUrl), ...(product.imageUrls || []).map(img => getImageUrl(img))]} 
+              selectedImage={getImageUrl(selectedImage)}
+              onSelectImage={(img) => setSelectedImage(img)}
+              badge={hasDiscount ? `−${discountPercent}%` : 'Mới về'}
+            />
+          </div>
 
           {/* Right: Product Info */}
           <div>
@@ -204,12 +249,12 @@ export default function ProductDetailPage() {
               quantity={quantity}
               onQuantityChange={(delta) => setQuantity(Math.max(1, quantity + delta))}
               onAddToCart={handleAddToCart}
-              onAddToWishlist={() => alert('Đã thêm vào yêu thích!')}
               currentPrice={currentPrice}
               basePrice={basePrice}
               hasDiscount={hasDiscount}
               discountPercent={discountPercent}
               stockMessage={stockMessage}
+              colorMap={COLOR_MAP}
             />
             
             <ProductDetailAccordions product={product} />

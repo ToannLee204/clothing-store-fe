@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { getImageUrl } from "../utils/format";
 
 const API_ORDERS_URL = "/api/v1/orders";
 const API_REVIEWS_URL = "/api/v1/reviews";
@@ -488,7 +489,7 @@ export default function OrderDetailPage() {
                         <div className="flex gap-3">
                           <div className="h-14 w-14 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
                             {item.thumbnailUrl ? (
-                              <img src={item.thumbnailUrl} alt={item.productName} className="h-full w-full object-cover" />
+                              <img src={getImageUrl(item.thumbnailUrl)} alt={item.productName} className="h-full w-full object-cover" />
                             ) : (
                               <span className="text-xs text-slate-400">IMG</span>
                             )}
@@ -614,7 +615,7 @@ export default function OrderDetailPage() {
                                             {review.imageUrls.slice(0, 5).map((url, idx) => (
                                               <div key={String(url ?? idx)} className="h-16 w-16 rounded-xl border border-slate-200 bg-white overflow-hidden">
                                                 <img
-                                                  src={url}
+                                                  src={getImageUrl(url)}
                                                   alt={`Review image ${idx + 1}`}
                                                   className="h-full w-full object-cover"
                                                   onError={(e) => {
