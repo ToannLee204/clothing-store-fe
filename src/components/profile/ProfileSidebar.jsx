@@ -4,8 +4,9 @@ export default function ProfileSidebar({ user, activeTab, onTabChange, onLogout 
   const menuItems = [
     { id: 'personal-info', label: 'Hồ sơ cá nhân', icon: 'account_circle' },
     { id: 'addresses', label: 'Quản lý địa chỉ', icon: 'location_on' },
+    { id: 'reviews', label: 'Đánh giá sản phẩm', icon: 'star' },
     { id: 'password', label: 'Đổi mật khẩu', icon: 'lock' },
-    { id: 'orders', label: 'Lịch sử đơn hàng', icon: 'shopping_bag', link: '/orders' },
+    { id: 'orders', label: 'Lịch sử đơn hàng', icon: 'shopping_bag' },
   ];
 
   return (
@@ -25,7 +26,7 @@ export default function ProfileSidebar({ user, activeTab, onTabChange, onLogout 
           {menuItems.map(item => (
             <button
               key={item.id}
-              onClick={() => item.link ? (window.location.href = item.link) : onTabChange(item.id)}
+              onClick={() => onTabChange(item.id)}
               className={`flex items-center gap-4 px-4 py-3.5 transition-all text-[13px] font-medium tracking-wide ${
                 activeTab === item.id 
                   ? 'bg-lumiere-charcoal text-white' 
