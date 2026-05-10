@@ -2,19 +2,19 @@ import { useState } from 'react';
 
 function EyeIcon({ hidden = false }) {
   return (
-    <span className="material-symbols-outlined text-[18px]">
+    <span className="material-symbols-outlined text-[20px]">
       {hidden ? 'visibility_off' : 'visibility'}
     </span>
   );
 }
 
 const inputBase =
-  'w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:bg-white focus:border-[#0066A2] focus:ring-2 focus:ring-[#0066A2]/20 font-medium';
-const labelBase = 'mb-1.5 block text-sm font-bold text-slate-700';
+  'w-full bg-lumiere-cream/30 border border-lumiere-gray/20 px-4 py-3.5 text-[14px] text-lumiere-charcoal outline-none transition-all placeholder:text-lumiere-gray/50 focus:border-lumiere-charcoal focus:bg-white';
+const labelBase = 'text-[11px] tracking-[0.15em] uppercase font-bold text-lumiere-gray mb-2 block';
 const formButtonBase =
-  'w-full rounded-xl bg-[#0066A2] px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#0066A2]/20 transition-all hover:bg-[#005587] hover:-translate-y-0.5';
+  'w-full bg-lumiere-charcoal text-white text-[12px] tracking-[0.2em] uppercase font-bold py-4 hover:bg-lumiere-terracotta transition-all shadow-xl shadow-lumiere-charcoal/10 active:scale-[0.98]';
 
-export default function RegisterForm({ onSubmit, error }) {
+export default function RegisterForm({ onSubmit }) {
   const [regData, setRegData] = useState({
     hoTen: '',
     ngaySinh: '',
@@ -33,16 +33,16 @@ export default function RegisterForm({ onSubmit, error }) {
   };
 
   return (
-    <form className="space-y-5 animate-fade-in" onSubmit={handleSubmit}>
-      <div className="grid grid-cols-2 gap-4">
+    <form className="space-y-6 animate-fade-in" onSubmit={handleSubmit}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-          <label className={labelBase}>Họ tên</label>
+          <label className={labelBase}>Họ và tên</label>
           <input
             className={inputBase}
             type="text"
             value={regData.hoTen}
             onChange={(e) => setRegData({ ...regData, hoTen: e.target.value })}
-            placeholder="Nguyễn Văn A"
+            placeholder="VD: Nguyễn Văn A"
             required
           />
         </div>
@@ -53,13 +53,13 @@ export default function RegisterForm({ onSubmit, error }) {
             type="tel"
             value={regData.soDienThoai}
             onChange={(e) => setRegData({ ...regData, soDienThoai: e.target.value })}
-            placeholder="0987654321"
+            placeholder="VD: 0912 345 678"
             required
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className={labelBase}>Ngày sinh</label>
           <input
@@ -85,23 +85,23 @@ export default function RegisterForm({ onSubmit, error }) {
       </div>
 
       <div>
-        <label className={labelBase}>Email</label>
+        <label className={labelBase}>Địa chỉ Email</label>
         <input
           className={inputBase}
           type="email"
           value={regData.email}
           onChange={(e) => setRegData({ ...regData, email: e.target.value })}
-          placeholder="you@example.com"
+          placeholder="example@lumiere.com"
           required
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className={labelBase}>Mật khẩu</label>
           <div className="relative">
             <input
-              className={`${inputBase} pr-10`}
+              className={`${inputBase} pr-12`}
               type={showRegPassword ? 'text' : 'password'}
               value={regData.matKhau}
               onChange={(e) => setRegData({ ...regData, matKhau: e.target.value })}
@@ -111,7 +111,7 @@ export default function RegisterForm({ onSubmit, error }) {
             <button
               type="button"
               onClick={() => setShowRegPassword(!showRegPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0066A2] p-1"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-lumiere-gray hover:text-lumiere-charcoal p-1"
             >
               <EyeIcon hidden={showRegPassword} />
             </button>
@@ -121,7 +121,7 @@ export default function RegisterForm({ onSubmit, error }) {
           <label className={labelBase}>Xác nhận</label>
           <div className="relative">
             <input
-              className={`${inputBase} pr-10`}
+              className={`${inputBase} pr-12`}
               type={showConfirmPassword ? 'text' : 'password'}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -131,7 +131,7 @@ export default function RegisterForm({ onSubmit, error }) {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0066A2] p-1"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-lumiere-gray hover:text-lumiere-charcoal p-1"
             >
               <EyeIcon hidden={showConfirmPassword} />
             </button>
@@ -139,9 +139,9 @@ export default function RegisterForm({ onSubmit, error }) {
         </div>
       </div>
 
-      <div className="pt-2">
+      <div className="pt-4">
         <button type="submit" className={formButtonBase}>
-          Tạo tài khoản
+          Tạo tài khoản mới
         </button>
       </div>
     </form>

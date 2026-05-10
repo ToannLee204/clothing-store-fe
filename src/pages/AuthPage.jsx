@@ -128,14 +128,6 @@ export default function AuthPage() {
             mergeFailed: mergeResult.mergeFailed,
           });
 
-          alert(
-            mergeResult.mergeFailed
-              ? 'Đăng nhập thành công, nhưng chưa thể đồng bộ giỏ hàng tạm.'
-              : mergeResult.guestCount > 0
-                ? 'Đăng nhập thành công! Giỏ hàng tạm đã được đồng bộ.'
-                : 'Đăng nhập thành công!'
-          );
-
           const role = user && user.role ? user.role.toUpperCase() : '';
           if (role.includes('ADMIN')) navigate('/admin');
           else navigate('/');
@@ -160,7 +152,7 @@ export default function AuthPage() {
       const response = await fetch(`${API_BASE_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: regData.hoTen, email: regData.email, password: regData.matKhau }),
+        body: JSON.stringify({ hoTen: regData.hoTen, email: regData.email, password: regData.matKhau, ngaySinh: regData.ngaySinh, gioiTinh: regData.gioiTinh, soDienThoai: regData.soDienThoai }),
       });
       const textData = await response.text();
       let res;
@@ -171,7 +163,7 @@ export default function AuthPage() {
       }
 
       if (response.ok) {
-        alert('Đăng ký thành công, vui lòng đăng nhập!');
+        alert('Đăng ký thành công, vui lòng kiểm tra email để xác thực!');
         setIsLogin(true);
       } else {
         const errData = res.data || res;
@@ -187,72 +179,77 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans flex">
+    <div className="min-h-screen bg-lumiere-cream flex">
       {/* Nút Back về Home */}
-      <div className="absolute top-6 left-6 z-50">
+      <div className="absolute top-8 left-8 z-50">
         <Link
           to="/"
-          className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-[#0066A2] transition-colors bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-sm border border-slate-100"
+          className="group flex items-center gap-3 text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-charcoal hover:text-lumiere-terracotta transition-all"
         >
-          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          <span className="material-symbols-outlined text-[20px] transition-transform group-hover:-translate-x-1">west</span>
           Trở lại cửa hàng
         </Link>
       </div>
 
-      {/* CỘT TRÁI: HÌNH ẢNH */}
-      <div className="hidden lg:flex w-1/2 relative bg-slate-950 items-end justify-start p-12">
+      {/* CỘT TRÁI: HÌNH ẢNH (Premium Sidebar) */}
+      <div className="hidden lg:flex w-2/5 relative bg-lumiere-charcoal items-end justify-start p-16 overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNXzF9oiSuQAE-88sBApihNmVDa1IHGI_KMHRKsUCzuQTLqfAAYfEs_DHdDyjrYilOlso32UyhLXz6G5Qbfegii9eZlV1x16QJ6oFpYe5NtIaI1icwIu60z_vehxMn5Nz8klxJRxx2f9ICHHUaapNoDr_vXYZbxDt2f0TS6VzhyP2AdvdI2TEBKEW8F-YOxP1hs4tFAIYACY3wFgfP-pgaFS0sknhPiTxadSca98KBvmH10wyyTb9f3_KpkTFgFKdXYl6Aj0dDOM"
-            alt="Fashion Editorial"
-            className="h-full w-full object-cover opacity-60"
+            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop"
+            alt="LUMIÈRE Fashion"
+            className="h-full w-full object-cover opacity-60 grayscale hover:grayscale-0 transition-all duration-1000"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-lumiere-charcoal via-lumiere-charcoal/20 to-transparent" />
         </div>
 
-        <div className="relative z-10 max-w-lg text-white">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-widest backdrop-blur mb-6">
-            <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
-            Clothing Store 2026
+        <div className="relative z-10 max-w-md animate-slide-up">
+          <div className="serif text-white text-[120px] leading-none mb-8 opacity-10 select-none pointer-events-none absolute -top-32 -left-10">L</div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-lumiere-terracotta animate-pulse"></span>
+            LUMIÈRE COLLECTION 2026
           </div>
-          <h1 className="text-5xl font-black tracking-tight leading-[1.1] mb-6">
-            Định hình<br />phong cách của bạn.
+          <h1 className="serif text-5xl text-white leading-tight mb-6">
+            Khám phá tinh hoa<br />phong cách.
           </h1>
-          <p className="text-slate-300 text-lg font-medium leading-relaxed">
-            Đăng nhập để trải nghiệm mua sắm cá nhân hóa, lưu giữ giỏ hàng và nhận vô vàn ưu đãi đặc quyền từ Clothing Store.
+          <p className="text-white/60 text-sm font-medium leading-relaxed tracking-wide">
+            Đăng nhập để trải nghiệm đặc quyền dành riêng cho thành viên của LUMIÈRE, nhận thông tin về các bộ sưu tập giới hạn sớm nhất.
           </p>
         </div>
       </div>
 
-      {/* CỘT PHẢI: FORM */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-md">
+      {/* CỘT PHẢI: FORM (Minimalist Form) */}
+      <div className="w-full lg:w-3/5 flex items-center justify-center p-8 sm:p-20 relative">
+        <div className="absolute top-12 right-12 serif text-[14px] text-lumiere-charcoal/40 hidden md:block">
+          EST. 2026 — PREMIUM QUALITY
+        </div>
+        
+        <div className="w-full max-w-xl">
           {/* Header Form */}
-          <div className="mb-10 text-center lg:text-left">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white font-black text-xl mb-6 shadow-md">
-              CS
-            </div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-              {isLogin ? 'Chào mừng trở lại' : 'Tạo tài khoản mới'}
+          <div className="mb-12">
+            <Link to="/" className="serif text-4xl text-lumiere-charcoal mb-10 block tracking-tighter">
+              LUMIÈRE<span className="text-lumiere-terracotta">.</span>
+            </Link>
+            <h2 className="serif text-3xl text-lumiere-charcoal mb-3">
+              {isLogin ? 'Chào mừng trở lại' : 'Tạo hành trình mới'}
             </h2>
-            <p className="mt-3 text-slate-500 font-medium">
+            <p className="text-lumiere-gray text-[14px] leading-relaxed">
               {isLogin
-                ? 'Nhập thông tin của bạn để tiếp tục mua sắm.'
-                : 'Tham gia cùng chúng tôi để nhận nhiều ưu đãi hấp dẫn.'}
+                ? 'Vui lòng điền thông tin bên dưới để tiếp tục hành trình mua sắm.'
+                : 'Tham gia cùng cộng đồng LUMIÈRE để nhận nhiều ưu đãi độc quyền.'}
             </p>
           </div>
 
-          {/* Nút Tab Chuyển đổi */}
-          <div className="flex p-1 bg-slate-100 rounded-xl mb-8">
+          {/* Nút Tab Chuyển đổi (Premium Tabs) */}
+          <div className="flex border-b border-lumiere-gray/10 mb-10">
             <button
-              onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${isLogin ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              onClick={() => { setIsLogin(true); setError(''); }}
+              className={`pb-4 px-8 text-[11px] tracking-[0.2em] uppercase font-bold transition-all border-b-2 ${isLogin ? 'border-lumiere-terracotta text-lumiere-charcoal' : 'border-transparent text-lumiere-gray hover:text-lumiere-charcoal'}`}
             >
               Đăng nhập
             </button>
             <button
-              onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${!isLogin ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              onClick={() => { setIsLogin(false); setError(''); }}
+              className={`pb-4 px-8 text-[11px] tracking-[0.2em] uppercase font-bold transition-all border-b-2 ${!isLogin ? 'border-lumiere-terracotta text-lumiere-charcoal' : 'border-transparent text-lumiere-gray hover:text-lumiere-charcoal'}`}
             >
               Đăng ký
             </button>
@@ -260,18 +257,26 @@ export default function AuthPage() {
 
           {/* Thông báo Lỗi */}
           {error && (
-            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 flex items-start gap-3 text-red-600">
-              <span className="material-symbols-outlined shrink-0 text-[20px]">error</span>
-              <p className="text-sm font-medium pt-0.5">{error}</p>
+            <div className="mb-8 p-4 bg-rose-50 border border-rose-100 flex items-start gap-4 animate-shake">
+              <span className="material-symbols-outlined text-rose-500 mt-0.5">error</span>
+              <p className="text-[13px] text-rose-600 serif italic font-medium">{error}</p>
             </div>
           )}
 
           {/* FORM */}
-          {isLogin ? (
-            <LoginForm onSubmit={handleLogin} error={error} />
-          ) : (
-            <RegisterForm onSubmit={handleRegister} error={error} />
-          )}
+          <div className="animate-fade-in">
+            {isLogin ? (
+              <LoginForm onSubmit={handleLogin} />
+            ) : (
+              <RegisterForm onSubmit={handleRegister} />
+            )}
+          </div>
+
+          <div className="mt-12 pt-8 border-t border-lumiere-gray/5 text-center lg:text-left">
+             <p className="text-[11px] text-lumiere-gray leading-relaxed uppercase tracking-widest">
+                © 2026 LUMIÈRE STORE. ALL RIGHTS RESERVED.
+             </p>
+          </div>
         </div>
       </div>
     </div>
