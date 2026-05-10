@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   AUTH_EVENT_NAME,
   CART_EVENT_NAME,
@@ -10,28 +10,26 @@ import {
 
 export default function Header() {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [cartCount, setCartCount] = useState(0);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const syncCartCount = (detail = null) => {
     const countFromDetail = Number(detail?.count);
-
     if (Number.isFinite(countFromDetail) && countFromDetail >= 0) {
       setCartCount(countFromDetail);
       return;
     }
-
     const token = localStorage.getItem('token');
     const guestCart = readGuestCart();
-
     if (token) {
       try {
         const snapshotRaw = localStorage.getItem(CART_SNAPSHOT_KEY);
         const snapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
         const countFromSnapshot = Number(snapshot?.count);
-
         if (Number.isFinite(countFromSnapshot) && countFromSnapshot >= 0) {
           setCartCount(countFromSnapshot);
           return;
@@ -40,7 +38,6 @@ export default function Header() {
         console.error('Không thể đọc snapshot giỏ hàng:', error);
       }
     }
-
     setCartCount(getCartCount(guestCart));
   };
 
@@ -56,22 +53,12 @@ export default function Header() {
 
     syncCartCount();
 
-    const handleCartUpdate = (event) => {
-      syncCartCount(event?.detail);
-    };
-
+    const handleCartUpdate = (event) => syncCartCount(event?.detail);
     const handleAuthUpdate = (event) => {
       const user = localStorage.getItem('user');
       if (user) {
-        try {
-          setCurrentUser(JSON.parse(user));
-        } catch (error) {
-          console.error('Lỗi parse thông tin user');
-        }
-      } else {
-        setCurrentUser(null);
-      }
-
+        try { setCurrentUser(JSON.parse(user)); } catch (error) { console.error('Lỗi parse thông tin user'); }
+      } else { setCurrentUser(null); }
       syncCartCount(event?.detail);
     };
 
@@ -104,135 +91,101 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-100 bg-white">
-      <div className="container mx-auto flex h-20 items-center justify-between gap-8 px-4">
-        <div className="flex items-center gap-10">
-          <Link to="/" className="flex-shrink-0 text-2xl font-black uppercase tracking-tighter text-slate-900">
-            CLOTHING STORE
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-[100] bg-lumiere-cream/95 backdrop-blur-xl border-b border-lumiere-gray/15 transition-all duration-300 px-6 lg:px-12 py-5">
+        <div className="max-w-screen-xl mx-auto flex items-center justify-between relative">
+          
+          {/* Mobile Menu Button */}
+          <button 
+            className="lg:hidden flex flex-col gap-1.5 p-1" 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <span className={`w-6 h-0.5 block bg-lumiere-charcoal transition-all ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+            <span className={`w-4 h-0.5 block bg-lumiere-charcoal transition-all ${isMobileMenuOpen ? 'opacity-0' : ''}`}></span>
+            <span className={`w-6 h-0.5 block bg-lumiere-charcoal transition-all ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+          </button>
+
+          {/* Desktop Nav */}
+          <div className="hidden lg:flex items-center gap-10">
+            <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Trang chủ</Link>
+            <Link to="/products?gender=nu" className="nav-link">Nữ</Link>
+            <Link to="/products?gender=nam" className="nav-link">Nam</Link>
+            <Link to="/products?collection=new" className="nav-link">Bộ sưu tập</Link>
+          </div>
+
+          {/* Logo */}
+          <Link 
+            to="/" 
+            className="logo absolute left-1/2 -translate-x-1/2 text-[26px] font-light tracking-[0.3em] text-lumiere-charcoal serif"
+          >
+            LUMIÈ<span className="text-lumiere-terracotta">RE</span>
           </Link>
 
-          <nav className="hidden items-center gap-8 lg:flex">
-            <Link
-              to="/products"
-              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#0066A2]"
-            >
-              Tất cả
-            </Link>
-            <Link
-              to="/products?category=ao"
-              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#0066A2]"
-            >
-              Áo
-            </Link>
-            <Link
-              to="/products?category=quan"
-              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#0066A2]"
-            >
-              Quần
-            </Link>
-            <Link
-              to="/products?category=phu-kien"
-              className="text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:text-[#0066A2]"
-            >
-              Phụ kiện
-            </Link>
-          </nav>
-        </div>
-
-        <div className="hidden flex-1 max-w-md md:flex">
-          <div className="group relative w-full">
-            <input
-              className="w-full rounded-full border border-transparent bg-slate-50 py-2 pl-10 pr-4 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:border-[#0066A2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066A2]/20"
-              placeholder="Tìm kiếm sản phẩm..."
-              type="text"
-            />
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-[#0066A2]">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          {/* Icons */}
+          <div className="flex items-center gap-6">
+            <Link to="/products" className="nav-link hidden lg:block">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
               </svg>
+            </Link>
+
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                className="nav-link flex items-center gap-2"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                {currentUser && <span className="hidden lg:block text-[10px] tracking-widest">{currentUser.fullName.split(' ').pop()}</span>}
+              </button>
+
+              {/* User Dropdown */}
+              {isUserDropdownOpen && (
+                <div className="absolute right-0 mt-4 w-48 bg-lumiere-cream border border-lumiere-gray/15 shadow-2xl py-2 z-50">
+                  {currentUser ? (
+                    <>
+                      <Link to="/profile" className="block px-4 py-2 text-[11px] uppercase tracking-wider text-lumiere-gray hover:text-lumiere-charcoal">Hồ sơ</Link>
+                      <Link to="/orders" className="block px-4 py-2 text-[11px] uppercase tracking-wider text-lumiere-gray hover:text-lumiere-charcoal">Đơn hàng</Link>
+                      <div className="h-px bg-lumiere-gray/10 my-1 mx-2"></div>
+                      <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-[11px] uppercase tracking-wider text-lumiere-terracotta">Đăng xuất</button>
+                    </>
+                  ) : (
+                    <Link to="/auth" className="block px-4 py-2 text-[11px] uppercase tracking-wider text-lumiere-gray hover:text-lumiere-charcoal">Đăng nhập</Link>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        </div>
 
-        <div className="flex flex-shrink-0 items-center gap-2 sm:gap-4">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className="flex items-center gap-2 rounded-full p-2 text-slate-600 transition-all hover:bg-blue-50 hover:text-[#0066A2]"
-            >
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            <Link to="/cart" className="nav-link relative">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 01-8 0" />
               </svg>
-              {currentUser && (
-                <span className="hidden max-w-[100px] truncate text-xs font-bold md:block">
-                  {currentUser.fullName}
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-lumiere-terracotta text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
+                  {cartCount}
                 </span>
               )}
-            </button>
-
-            <div
-              className={`absolute right-0 mt-3 w-56 origin-top-right overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 transition-all duration-300 ${
-                isUserDropdownOpen ? 'visible scale-100 opacity-100' : 'invisible scale-95 opacity-0'
-              }`}
-            >
-              <div className="flex flex-col py-2">
-                {currentUser ? (
-                  <>
-                    <Link
-                      to="/profile"
-                      className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#0066A2]"
-                      onClick={() => setIsUserDropdownOpen(false)}
-                    >
-                      Thông tin cá nhân
-                    </Link>
-                    <Link
-                      to="/orders"
-                      className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#0066A2]"
-                      onClick={() => setIsUserDropdownOpen(false)}
-                    >
-                      Đơn hàng của tôi
-                    </Link>
-                    <div className="mx-4 my-1 h-px bg-slate-100" />
-                    <button
-                      type="button"
-                      className="text-left px-6 py-3 text-xs font-bold uppercase tracking-widest text-red-600 transition-colors hover:bg-red-50"
-                      onClick={handleLogout}
-                    >
-                      Đăng xuất
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    to="/auth"
-                    className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#0066A2]"
-                    onClick={() => setIsUserDropdownOpen(false)}
-                  >
-                    Đăng nhập / Đăng ký
-                  </Link>
-                )}
-              </div>
-            </div>
+            </Link>
           </div>
+        </div>
+      </nav>
 
-          <Link to="/cart" className="relative rounded-full p-2 text-slate-600 transition-all hover:bg-blue-50 hover:text-[#0066A2]">
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-            </svg>
-            {cartCount > 0 && (
-              <span className="absolute right-0 top-0 rounded-full border-2 border-white bg-[#0066A2] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-
-          <button type="button" className="rounded-full p-2 text-slate-600 transition-all hover:bg-blue-50 hover:text-[#0066A2] lg:hidden">
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-            </svg>
-          </button>
+      {/* Mobile Menu Overlay */}
+      <div className={`fixed inset-0 z-[150] bg-lumiere-cream transition-transform duration-500 flex flex-col p-12 pt-24 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <button className="absolute top-8 right-8 text-2xl" onClick={() => setIsMobileMenuOpen(false)}>✕</button>
+        <Link to="/" className="text-4xl serif font-light py-4 border-b border-lumiere-gray/15 hover:text-lumiere-terracotta" onClick={() => setIsMobileMenuOpen(false)}>Trang chủ</Link>
+        <Link to="/products?gender=nu" className="text-4xl serif font-light py-4 border-b border-lumiere-gray/15 hover:text-lumiere-terracotta" onClick={() => setIsMobileMenuOpen(false)}>Nữ</Link>
+        <Link to="/products?gender=nam" className="text-4xl serif font-light py-4 border-b border-lumiere-gray/15 hover:text-lumiere-terracotta" onClick={() => setIsMobileMenuOpen(false)}>Nam</Link>
+        <Link to="/products" className="text-4xl serif font-light py-4 border-b border-lumiere-gray/15 hover:text-lumiere-terracotta" onClick={() => setIsMobileMenuOpen(false)}>Bộ sưu tập</Link>
+        <div className="mt-auto">
+          <p className="text-[11px] tracking-widest text-lumiere-gray uppercase">© 2024 LUMIÈRE. ALL RIGHTS RESERVED.</p>
         </div>
       </div>
-    </header>
+    </>
   );
 }

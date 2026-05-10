@@ -1,81 +1,94 @@
 import React from 'react';
-import { getImageUrl } from '../../utils/format';
+import { useNavigate } from 'react-router-dom';
 
-export default function HeroSection({ heroImage }) {
+export default function HeroSection() {
+  const navigate = useNavigate();
+
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-slate-950">
-      {/* Background Image with Zoom and Admin-like gradient */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <img
-          src={getImageUrl(heroImage)}
-          alt="Hero Fashion"
-          className="w-full h-full object-cover opacity-50 scale-105 animate-[pulse_10s_infinite]"
-        />
-        <div className="absolute inset-0 hero-gradient" />
+    <section className="hero-bg min-h-screen flex items-center pt-20">
+      <div className="hero-accent absolute bottom-[-40px] right-[-40px] text-[clamp(100px,18vw,220px)] font-light text-white/5 pointer-events-none leading-none serif">
+        MODE
       </div>
-
-      <div className="relative z-10 container mx-auto px-6 py-20">
-        <div className="max-w-4xl">
-          {/* Badge */}
-          <div className="text-reveal flex items-center gap-3 mb-8" style={{ animationDelay: '0.1s' }}>
-            <span className="w-10 h-px bg-[#0066A2]"></span>
-            <span className="text-[#0066A2] text-[11px] font-black uppercase tracking-[0.25em]">BỘ SƯU TẬP MỚI 2026</span>
+      
+      <div className="max-w-screen-xl mx-auto px-6 lg:px-12 w-full py-20 grid lg:grid-cols-2 gap-16 items-center">
+        <div className="fade-up">
+          <div className="inline-block text-[10px] tracking-[0.25em] uppercase text-lumiere-terracotta border border-lumiere-terracotta px-3.5 py-1.5 mb-6">
+            Bộ sưu tập Xuân / Hè 2024
           </div>
-
-          {/* Headline with Serif Font */}
-          <h1 className="text-reveal font-display text-6xl md:text-8xl font-medium text-white leading-[0.95] tracking-tight mb-8" style={{ animationDelay: '0.3s' }}>
-            Tối giản hơn.<br />
-            Tinh tế hơn.<br />
-            <em className="text-[#0066A2] not-italic">Đúng phong cách</em><br />
-            của riêng bạn.
+          
+          <h1 className="text-[clamp(52px,8vw,96px)] font-light leading-[1.05] text-lumiere-cream tracking-tight serif mb-8">
+            Phong cách<br />
+            của <em className="italic text-lumiere-terracotta">bạn</em>,<br />
+            câu chuyện<br />
+            của tôi.
           </h1>
-
-          {/* Description */}
-          <p className="text-reveal text-lg text-slate-300 leading-relaxed max-w-xl mb-12" style={{ animationDelay: '0.5s' }}>
-            Không phải thời trang nhập nhằng. Từng sản phẩm được chọn lọc kỹ lưỡng để bạn luôn tỏa sáng mà không cần cố gắng.
+          
+          <p className="text-sm leading-relaxed text-lumiere-cream/55 max-w-[400px] mb-10">
+            Khám phá những thiết kế thời trang tinh tế, kết hợp giữa vẻ đẹp đương đại và sự thanh lịch trường tồn. Mỗi trang phục là một tác phẩm nghệ thuật.
           </p>
-
-          {/* Buttons with Admin style */}
-          <div className="text-reveal flex flex-wrap items-center gap-4 mb-16" style={{ animationDelay: '0.7s' }}>
-            <a 
-              href="/products" 
-              className="px-10 py-4 rounded-full bg-[#0066A2] text-white text-sm font-bold uppercase tracking-widest hover:bg-[#005587] transition-all hover:shadow-xl hover:shadow-[#0066A2]/20"
+          
+          <div className="flex flex-wrap gap-4 mb-14">
+            <button 
+              onClick={() => navigate('/products')}
+              className="btn-primary"
             >
-              Khám phá ngay →
-            </a>
-            <a 
-              href="#collections" 
-              className="px-10 py-4 rounded-full border border-white/20 text-white text-sm font-bold uppercase tracking-widest hover:bg-white hover:text-slate-950 transition-all"
-            >
-              Xem câu chuyện
-            </a>
+              Mua ngay
+            </button>
+            <button className="btn-outline">Xem lookbook</button>
           </div>
+          
+          <div className="flex gap-12 pt-8 border-t border-white/10">
+            <div>
+              <div className="text-4xl text-lumiere-cream font-light serif">12K+</div>
+              <div className="text-[10px] tracking-[0.2em] uppercase text-lumiere-cream/40 mt-1">Khách hàng</div>
+            </div>
+            <div>
+              <div className="text-4xl text-lumiere-cream font-light serif">380+</div>
+              <div className="text-[10px] tracking-[0.2em] uppercase text-lumiere-cream/40 mt-1">Mẫu thiết kế</div>
+            </div>
+            <div>
+              <div className="text-4xl text-lumiere-cream font-light serif">98%</div>
+              <div className="text-[10px] tracking-[0.2em] uppercase text-lumiere-cream/40 mt-1">Hài lòng</div>
+            </div>
+          </div>
+        </div>
 
-          {/* Stats with Admin look */}
-          <div className="text-reveal flex flex-wrap items-center gap-12" style={{ animationDelay: '0.9s' }}>
-            <div>
-              <p className="font-display text-4xl font-medium text-white">120+</p>
-              <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Mẫu thiết kế</p>
-            </div>
-            <div className="w-px h-10 bg-slate-800"></div>
-            <div>
-              <p className="font-display text-4xl font-medium text-white">24h</p>
-              <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Giao nhanh</p>
-            </div>
-            <div className="w-px h-10 bg-slate-800"></div>
-            <div>
-              <p className="font-display text-4xl font-medium text-white">98%</p>
-              <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Hài lòng</p>
-            </div>
+        {/* Hero Visual Placeholder */}
+        <div className="relative fade-up delay-1 h-[580px]">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#3D2B1F] to-lumiere-terracotta/10 rounded overflow-hidden flex flex-col items-center justify-center gap-4">
+            <svg width="160" height="320" viewBox="0 0 160 320" fill="none" className="opacity-40">
+              <ellipse cx="80" cy="38" rx="28" ry="32" stroke="rgba(248,243,236,0.5)" strokeWidth="1.5" />
+              <path
+                d="M52 68 C30 90 20 130 24 180 L40 180 L44 280 L116 280 L120 180 L136 180 C140 130 130 90 108 68 C96 76 64 76 52 68Z"
+                stroke="rgba(248,243,236,0.4)" strokeWidth="1.5" fill="rgba(196,113,74,0.1)" />
+              <path d="M52 68 L20 140" stroke="rgba(248,243,236,0.3)" strokeWidth="1.2" />
+              <path d="M108 68 L140 140" stroke="rgba(248,243,236,0.3)" strokeWidth="1.2" />
+            </svg>
+            <div className="text-[14px] text-lumiere-cream/30 tracking-[0.15em] uppercase serif">Hình ảnh sản phẩm</div>
+          </div>
+          
+          {/* Bestseller Badge Card */}
+          <div className="absolute bottom-10 left-[-20px] bg-lumiere-cream p-5 md:p-6 shadow-2xl">
+            <div className="text-[10px] tracking-[0.2em] uppercase text-lumiere-gray mb-1">Bestseller</div>
+            <div className="text-xl serif">Áo Linen Trắng</div>
+            <div className="text-[13px] text-lumiere-terracotta mt-0.5">790.000 ₫</div>
           </div>
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 text-white/30">
-        <span className="text-[9px] uppercase tracking-[0.3em] font-bold">Cuộn xuống</span>
-        <div className="w-px h-10 bg-gradient-to-b from-white/40 to-transparent"></div>
-      </div>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .hero-bg {
+          background: linear-gradient(135deg, #2C2420 0%, #1A1A1A 40%, #3D2B1F 100%);
+          position: relative;
+          overflow: hidden;
+        }
+        .hero-bg::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse at 70% 50%, rgba(196, 113, 74, 0.15) 0%, transparent 60%);
+        }
+      `}} />
     </section>
   );
 }

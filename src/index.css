@@ -1,40 +1,85 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --lumiere-cream: #F8F3EC;
+  --lumiere-charcoal: #1A1A1A;
+  --lumiere-gray: #8C8178;
+  --lumiere-terracotta: #C4714A;
+  --lumiere-blush: #E8D5C8;
+  --lumiere-gold: #B89A6E;
+}
+
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900; 
-    font-family: 'Be Vietnam Pro', sans-serif;
+    @apply bg-lumiere-cream text-lumiere-charcoal antialiased overflow-x-hidden;
+    font-family: 'Jost', sans-serif;
   }
-  
-  h1, h2, h3, .font-display {
+
+  h1, h2, h3, .serif {
     font-family: 'Cormorant Garamond', serif;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--lumiere-cream);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--lumiere-gray);
+  }
+}
+
+@layer components {
+  .nav-link {
+    @apply text-[11px] tracking-premium uppercase font-medium text-lumiere-gray cursor-pointer transition-colors duration-200 py-1 border-b border-transparent hover:text-lumiere-charcoal hover:border-lumiere-charcoal;
+  }
+
+  .nav-link.active {
+    @apply text-lumiere-charcoal border-lumiere-charcoal;
+  }
+
+  .btn-primary {
+    @apply inline-block bg-lumiere-terracotta text-white text-[11px] tracking-premium uppercase font-medium px-9 py-3.5 cursor-pointer transition-all duration-300 border border-lumiere-terracotta hover:bg-transparent hover:text-lumiere-terracotta;
+  }
+
+  .btn-outline {
+    @apply inline-block bg-transparent text-lumiere-cream text-[11px] tracking-premium uppercase font-medium px-9 py-3.5 cursor-pointer transition-all duration-300 border border-white/40 hover:border-lumiere-cream hover:bg-lumiere-cream/10;
+  }
+
+  .btn-dark {
+    @apply inline-block bg-lumiere-charcoal text-white text-[11px] tracking-premium uppercase font-medium px-9 py-3.5 cursor-pointer transition-all duration-300 border border-lumiere-charcoal hover:bg-transparent hover:text-lumiere-charcoal;
   }
 }
 
 @layer utilities {
-  .hero-gradient {
-    background: linear-gradient(to right, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.4) 60%, transparent 100%);
+  .animate-marquee {
+    animation: marquee 25s linear infinite;
   }
 
-  .text-reveal {
-    animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
   }
 
-  @keyframes reveal {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+  .fade-up {
+    animation: fadeUp 0.7s ease forwards;
   }
 
-  .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

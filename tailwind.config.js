@@ -7,39 +7,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Màu Cam chủ đạo của Lumina
-        "primary": "#ec5b13", 
-        // Màu nền xám nhạt hiện đại (Thay cho màu be cũ)
-        "background-light": "#f8f6f6",
-        "background-dark": "#221610",
-        // Các tông màu bổ trợ cho bảng và card
-        "slate-custom": {
-          50: "#f8fafc",
-          100: "#f1f5f9",
-          200: "#e2e8f0",
-          800: "#1e293b",
-        },
-        "brand": {
-          50:  '#f0f4ff',
-          100: '#dde6ff',
-          500: '#3b5bdb',
-          600: '#2f4ac4',
-          700: '#243aad',
-        }
+        "lumiere-cream": "#F8F3EC",
+        "lumiere-charcoal": "#1A1A1A",
+        "lumiere-gray": "#8C8178",
+        "lumiere-terracotta": "#C4714A",
+        "lumiere-blush": "#E8D5C8",
+        "lumiere-gold": "#B89A6E",
       },
       fontFamily: {
-        "sans": ["Manrope", "sans-serif"],
-        "display": ["Manrope", "sans-serif"],
-        "body": ["Manrope", "sans-serif"],
+        "sans": ["Jost", "sans-serif"],
+        "serif": ["Cormorant Garamond", "serif"],
+        "display": ["Cormorant Garamond", "serif"],
       },
-      borderRadius: {
-        "DEFAULT": "0.25rem",
-        "lg": "0.5rem",
-        "xl": "0.75rem",
-        "2xl": "1rem",
-        "3xl": "1.5rem",
-        "full": "9999px",
-      },
+      letterSpacing: {
+        "ultra-widest": "0.3em",
+        "premium": "0.2em",
+      }
     },
   },
   plugins: [],
