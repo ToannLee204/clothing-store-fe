@@ -1,4 +1,5 @@
 import React from 'react';
+import { getImageUrl } from '../../utils/format';
 
 const PLACEHOLDER_IMAGE = 'https://placehold.co/900x1200?text=No+Image';
 
@@ -18,7 +19,7 @@ export default function ProductGallery({ images, selectedImage, onSelectImage, b
               activeImage === img ? 'border-lumiere-terracotta' : 'border-transparent hover:border-lumiere-gray/30'
             }`}
           >
-            <img src={img} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
+            <img src={getImageUrl(img)} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
           </button>
         ))}
       </div>
@@ -26,7 +27,7 @@ export default function ProductGallery({ images, selectedImage, onSelectImage, b
       {/* Main Image */}
       <div className="relative flex-1 aspect-[3/4] bg-lumiere-blush overflow-hidden group">
         <img 
-          src={activeImage} 
+          src={getImageUrl(activeImage)} 
           alt="Product main" 
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
         />

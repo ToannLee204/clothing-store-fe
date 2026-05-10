@@ -17,7 +17,7 @@ export default function ProductCard({ product, onAddToCart }) {
     >
       <div className="relative overflow-hidden bg-lumiere-blush aspect-[3/4] mb-4">
         <img 
-          src={getImageUrl(product.imageUrl || product.anhDaiDien)} 
+          src={getImageUrl(product.thumbnailUrl || product.imageUrl || product.anhDaiDien)} 
           alt={product.productName || product.ten} 
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />

@@ -34,8 +34,12 @@ export function formatDateInput(date) {
 }
 
 export function getImageUrl(url) {
-  if (!url) return 'https://via.placeholder.com/400x600?text=No+Image';
+  if (!url) return 'https://placehold.co/400x600?text=No+Image';
   if (url.startsWith('blob:') || url.startsWith('http') || url.startsWith('data:')) return url;
+  
+  // Nếu bắt đầu bằng /uploads/ thì nối với base api
   if (url.startsWith('/uploads/')) return `http://localhost:8080/api/v1${url}`;
+  
+  // Nếu chỉ là tên file thì nối với path mặc định của product images
   return `http://localhost:8080/api/v1/uploads/products/${url}`;
 }
