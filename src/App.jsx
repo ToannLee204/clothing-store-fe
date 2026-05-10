@@ -17,6 +17,7 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 
 // Admin pages
 import AdminProducts from './pages/admin/AdminProducts';
@@ -100,6 +101,7 @@ function AppContent() {
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:orderId" element={<OrderDetailPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
 
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<AdminReports />} />
