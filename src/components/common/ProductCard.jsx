@@ -57,13 +57,13 @@ export default function ProductCard({ product, onAddToCart }) {
           {product.categoryName || 'Sản phẩm'}
         </p>
         <div className="text-sm">
-          {product.giaGoc > (product.price || product.giaHienTai) ? (
+          {product.basePrice > (product.salePrice || product.price || product.giaHienTai) ? (
             <div className="flex items-center gap-2">
-              <span className="text-lumiere-terracotta font-medium">{formatPrice(product.price || product.giaHienTai || 0)}</span>
-              <span className="text-lumiere-gray line-through text-xs">{formatPrice(product.giaGoc)}</span>
+              <span className="text-lumiere-terracotta font-medium">{formatPrice(product.salePrice || product.price || product.giaHienTai || product.basePrice || 0)}</span>
+              <span className="text-lumiere-gray line-through text-xs">{formatPrice(product.basePrice)}</span>
             </div>
           ) : (
-            <span className="text-lumiere-gray">{formatPrice(product.price || product.giaHienTai || 0)}</span>
+            <span className="text-lumiere-gray">{formatPrice(product.salePrice || product.price || product.giaHienTai || product.basePrice || 0)}</span>
           )}
         </div>
       </div>

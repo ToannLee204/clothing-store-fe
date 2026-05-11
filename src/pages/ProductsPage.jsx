@@ -23,14 +23,21 @@ function normalizePagination(payload) {
 }
 
 export default function ProductsPage() {
+  const queryParams = new URLSearchParams(window.location.search);
+  const collection = queryParams.get('collection');
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedSize, setSelectedSize] = useState('');
+  const [colors, setColors] = useState([]);
+  const [sizes, setSizes] = useState([]);
   const [priceRange, setPriceRange] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState(collection === 'new' ? 'newest' : 'newest');
   const [keyword, setKeyword] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,17 +51,49 @@ export default function ProductsPage() {
     over1m: { label: 'Trên 1.000.000₫', minPrice: 1000000, maxPrice: null }
   }), []);
 
+  // Helper to flatten category tree
+  const flattenCategories = (categoriesTree, prefix = "") => {
+    let flatList = [];
+    categoriesTree.forEach((cat) => {
+      flatList.push({ ...cat, displayName: prefix + cat.name });
+      if (cat.children && cat.children.length > 0) {
+        flatList = flatList.concat(flattenCategories(cat.children, prefix + "— "));
+      }
+    });
+    return flatList;
+  };
+
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch('/api/v1/categories');
-        if (res.ok) {
-          const payload = await res.json();
-          setCategories(normalizeList(payload));
+        const [catRes, colorRes, sizeRes] = await Promise.all([
+          fetch('/api/v1/categories').catch(() => null),
+          fetch('/api/v1/products/attributes/colors').catch(() => null),
+          fetch('/api/v1/products/attributes/sizes').catch(() => null)
+        ]);
+        
+        if (catRes && catRes.ok) {
+          const payload = await catRes.json().catch(() => null);
+          if (payload) {
+            const rawItems = normalizeList(payload);
+            setCategories(flattenCategories(rawItems));
+          }
         }
-      } catch (err) { console.error('Lỗi tải danh mục:', err); }
+        
+        if (colorRes && colorRes.ok) {
+          const payload = await colorRes.json().catch(() => null);
+          if (payload) setColors(normalizeList(payload));
+        }
+        
+        if (sizeRes && sizeRes.ok) {
+          const payload = await sizeRes.json().catch(() => null);
+          if (payload) setSizes(normalizeList(payload));
+        }
+      } catch (err) { 
+        console.error('Lỗi tải dữ liệu lọc:', err); 
+      }
     };
-    fetchCategories();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -69,7 +108,10 @@ export default function ProductsPage() {
         });
         if (keyword) params.set('keyword', keyword);
         if (selectedCategoryId) params.set('categoryId', selectedCategoryId);
+        if (selectedColor) params.set('color', selectedColor);
+        if (selectedSize) params.set('size', selectedSize);
         if (sortBy !== 'all') params.set('sortBy', sortBy);
+        
         const range = priceRanges[priceRange] ?? priceRanges.all;
         if (range.minPrice !== null) params.set('minPrice', String(range.minPrice));
         if (range.maxPrice !== null) params.set('maxPrice', String(range.maxPrice));
@@ -88,7 +130,7 @@ export default function ProductsPage() {
       }
     };
     fetchProducts();
-  }, [currentPage, keyword, priceRange, selectedCategoryId, sortBy, priceRanges]);
+  }, [currentPage, keyword, priceRange, selectedCategoryId, selectedColor, selectedSize, sortBy, priceRanges]);
 
   return (
     <div className="min-h-screen bg-lumiere-cream">
@@ -106,6 +148,12 @@ export default function ProductsPage() {
             categories={categories}
             selectedCategoryId={selectedCategoryId}
             onCategoryChange={(id) => { setSelectedCategoryId(id); setCurrentPage(1); }}
+            colors={colors}
+            selectedColor={selectedColor}
+            onColorChange={(color) => { setSelectedColor(color); setCurrentPage(1); }}
+            sizes={sizes}
+            selectedSize={selectedSize}
+            onSizeChange={(size) => { setSelectedSize(size); setCurrentPage(1); }}
             priceRange={priceRange}
             onPriceChange={(key) => { setPriceRange(key); setCurrentPage(1); }}
             priceRanges={priceRanges}
@@ -136,7 +184,13 @@ export default function ProductsPage() {
                 <h3 className="serif text-2xl font-light text-lumiere-charcoal mb-2">Không tìm thấy sản phẩm</h3>
                 <p className="text-sm text-lumiere-gray mb-8">Hãy thử đổi từ khóa hoặc xóa bớt bộ lọc.</p>
                 <button 
-                  onClick={() => { setKeyword(''); setPriceRange('all'); setSelectedCategoryId(''); }}
+                  onClick={() => { 
+                    setKeyword(''); 
+                    setPriceRange('all'); 
+                    setSelectedCategoryId(''); 
+                    setSelectedColor('');
+                    setSelectedSize('');
+                  }}
                   className="btn-outline"
                 >
                   Xóa tất cả bộ lọc

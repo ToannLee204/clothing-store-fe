@@ -23,10 +23,33 @@ export default function ProductSidebar({
   categories, 
   selectedCategoryId, 
   onCategoryChange,
+  colors,
+  selectedColor,
+  onColorChange,
+  sizes,
+  selectedSize,
+  onSizeChange,
   priceRange,
   onPriceChange,
   priceRanges
 }) {
+  const COLOR_MAP = {
+    "Màu đen": "#000000",
+    "Màu trắng": "#FFFFFF",
+    "Màu đỏ": "#DC2626",
+    "Xanh dương": "#2563EB",
+    "Xanh lá": "#16A34A",
+    "Màu vàng": "#CA8A04",
+    "Màu hồng": "#DB2777",
+    "Màu tím": "#7C3AED",
+    "Màu xám": "#4B5563",
+    "Màu nâu": "#78350F",
+    "Màu cam": "#EA580C",
+    "Màu be": "#F5F5DC",
+    "Xanh navy": "#1E3A8A",
+    "Nhiều màu": "linear-gradient(45deg, red, blue, green)",
+    "Màu khác": "#A8A29E"
+  };
   return (
     <aside className="hidden lg:block space-y-2">
       <div className="text-[10px] tracking-[0.25em] uppercase text-lumiere-charcoal mb-6 font-medium">
@@ -57,7 +80,7 @@ export default function ProductSidebar({
                 className="accent-lumiere-terracotta w-3.5 h-3.5"
               />
               <span className={`text-[13px] transition-colors ${selectedCategoryId === String(cat.id) ? 'text-lumiere-charcoal font-medium' : 'text-lumiere-gray group-hover:text-lumiere-charcoal'}`}>
-                {cat.name || cat.ten}
+                {cat.displayName}
               </span>
             </label>
           ))}
@@ -85,33 +108,49 @@ export default function ProductSidebar({
 
       <AccordionItem title="Kích cỡ">
         <div className="flex flex-wrap gap-2 pt-2">
-          {['XS', 'S', 'M', 'L', 'XL'].map(size => (
-            <button 
-              key={size}
-              className="text-[11px] tracking-[0.15em] uppercase font-medium px-4 py-2 border border-lumiere-gray/30 text-lumiere-gray hover:border-lumiere-charcoal hover:text-lumiere-charcoal transition-all"
-            >
-              {size}
-            </button>
-          ))}
+          {sizes.map(sizeObj => {
+            const sizeValue = typeof sizeObj === 'object' ? (sizeObj.name || sizeObj.code) : sizeObj;
+            return (
+              <button 
+                key={sizeValue}
+                onClick={() => onSizeChange(selectedSize === sizeValue ? '' : sizeValue)}
+                className={`text-[11px] tracking-[0.15em] uppercase font-medium px-4 py-2 border transition-all ${
+                  selectedSize === sizeValue 
+                    ? 'bg-lumiere-charcoal text-lumiere-cream border-lumiere-charcoal' 
+                    : 'border-lumiere-gray/30 text-lumiere-gray hover:border-lumiere-charcoal hover:text-lumiere-charcoal'
+                }`}
+              >
+                {sizeValue}
+              </button>
+            );
+          })}
         </div>
       </AccordionItem>
 
       <AccordionItem title="Màu sắc">
         <div className="flex flex-wrap gap-3 pt-2">
-          {[
-            { name: 'Kem', bg: '#F5EFE0' },
-            { name: 'Đen', bg: '#1A1A1A' },
-            { name: 'Camel', bg: '#C4A882' },
-            { name: 'Đất nung', bg: '#C4714A' },
-            { name: 'Xanh khói', bg: '#8BAAB2' }
-          ].map(color => (
-            <button 
-              key={color.name}
-              title={color.name}
-              className="w-7 h-7 rounded-full border border-lumiere-gray/20 hover:border-lumiere-charcoal transition-all"
-              style={{ backgroundColor: color.bg }}
-            />
-          ))}
+          {colors.map(colorObj => {
+            const colorName = typeof colorObj === 'object' ? colorObj.name : colorObj;
+            const colorCode = typeof colorObj === 'object' ? colorObj.code : colorObj;
+            
+            return (
+              <button 
+                key={colorName}
+                title={colorName}
+                onClick={() => onColorChange(selectedColor === colorName ? '' : colorName)}
+                className={`w-8 h-8 rounded-full border transition-all flex items-center justify-center ${
+                  selectedColor === colorName 
+                    ? 'border-lumiere-charcoal ring-2 ring-offset-2 ring-lumiere-charcoal/30' 
+                    : 'border-lumiere-gray/20 hover:border-lumiere-charcoal'
+                }`}
+                style={{ background: COLOR_MAP[colorName] || '#EEE' }}
+              >
+                 {selectedColor === colorName && (
+                   <span className={`material-symbols-outlined text-[16px] ${colorName === 'Màu đen' || colorName === 'Xanh navy' ? 'text-white' : 'text-stone-900'}`}>check</span>
+                 )}
+              </button>
+            );
+          })}
         </div>
       </AccordionItem>
 
@@ -119,6 +158,8 @@ export default function ProductSidebar({
         onClick={() => {
           onCategoryChange('');
           onPriceChange('all');
+          onColorChange('');
+          onSizeChange('');
         }}
         className="w-full mt-6 py-3 border border-lumiere-gray/30 text-[11px] tracking-[0.15em] uppercase text-lumiere-gray hover:text-lumiere-charcoal hover:border-lumiere-charcoal transition-all font-medium"
       >
