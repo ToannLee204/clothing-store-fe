@@ -108,7 +108,10 @@ export default function AuthPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginData.email, password: loginData.matKhau }),
       });
-      const res = await response.json();
+
+      const res = await parseResponseBody(response);
+      console.log('Login Response:', { status: response.status, data: res });
+
       if (response.ok) {
         const token = res.accessToken || (res.data && res.data.accessToken);
         const user = res.user || (res.data && res.data.user);
@@ -135,10 +138,12 @@ export default function AuthPage() {
           setError('Không tìm thấy Token trong phản hồi từ Server!');
         }
       } else {
-        setError(res.message || 'Đăng nhập thất bại!');
+        const errorMsg = extractMessage(res, 'Đăng nhập thất bại!');
+        setError(errorMsg);
       }
     } catch (err) {
-      setError('Lỗi kết nối Server!');
+      console.error('Login error details:', err);
+      setError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau!');
     }
   };
 
@@ -152,15 +157,18 @@ export default function AuthPage() {
       const response = await fetch(`${API_BASE_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hoTen: regData.hoTen, email: regData.email, password: regData.matKhau, ngaySinh: regData.ngaySinh, gioiTinh: regData.gioiTinh, soDienThoai: regData.soDienThoai }),
+        body: JSON.stringify({ 
+          fullName: regData.hoTen, 
+          email: regData.email, 
+          password: regData.matKhau, 
+          ngaySinh: regData.ngaySinh, 
+          gioiTinh: regData.gioiTinh, 
+          soDienThoai: regData.soDienThoai 
+        }),
       });
-      const textData = await response.text();
-      let res;
-      try {
-        res = JSON.parse(textData);
-      } catch (e) {
-        res = { message: textData };
-      }
+
+      const res = await parseResponseBody(response);
+      console.log('Register Response:', { status: response.status, data: res });
 
       if (response.ok) {
         alert('Đăng ký thành công, vui lòng kiểm tra email để xác thực!');
@@ -170,11 +178,13 @@ export default function AuthPage() {
         if (errData.fullName) setError('Lỗi họ tên: ' + errData.fullName);
         else if (errData.email) setError('Lỗi email: ' + errData.email);
         else if (errData.password) setError('Lỗi mật khẩu: ' + errData.password);
-        else if (typeof res.message === 'string') setError(res.message);
-        else setError(JSON.stringify(errData));
+        else {
+          setError(extractMessage(res, 'Đăng ký thất bại!'));
+        }
       }
     } catch (err) {
-      setError('Không thể kết nối đến Server Backend!');
+      console.error('Register error details:', err);
+      setError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau!');
     }
   };
 

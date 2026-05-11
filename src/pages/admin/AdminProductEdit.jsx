@@ -38,6 +38,21 @@ const AdminProductEdit = () => {
   const [imageFiles, setImageFiles] = useState([]); 
   const [existingImages, setExistingImages] = useState([]); 
 
+  // Helper to flatten category tree
+  const flattenCategories = (categoriesTree, prefix = "") => {
+    let flatList = [];
+    categoriesTree.forEach((cat) => {
+      flatList.push({
+        ...cat,
+        displayName: prefix + cat.name,
+      });
+      if (cat.children && cat.children.length > 0) {
+        flatList = flatList.concat(flattenCategories(cat.children, prefix + "— "));
+      }
+    });
+    return flatList;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -47,7 +62,9 @@ const AdminProductEdit = () => {
         const catText = await catRes.text();
         if (catRes.ok && catText) {
           const actualCat = JSON.parse(catText);
-          setCategories(actualCat.data || actualCat || []);
+          const rawItems = actualCat.result || actualCat.data?.result || actualCat.data || actualCat || [];
+          const flatData = flattenCategories(Array.isArray(rawItems) ? rawItems : []);
+          setCategories(flatData);
         }
 
         const prodRes = await fetch(`/api/v1/admin/products/${id}`, {
@@ -273,7 +290,7 @@ const AdminProductEdit = () => {
                     onChange={handleChange}
                   >
                     {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      <option key={cat.id} value={cat.id}>{cat.displayName || cat.name}</option>
                     ))}
                   </select>
                 </div>

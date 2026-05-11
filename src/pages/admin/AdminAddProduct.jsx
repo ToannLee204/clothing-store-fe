@@ -67,13 +67,28 @@ const AdminAddProduct = () => {
   });
 
   const [variants, setVariants] = useState([
-    { color: "", size: "", stockQty: "", salePrice: "" },
+    { color: "", size: "", stockQty: "", salePrice: "", importPrice: "" },
   ]);
 
   // File upload states
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const [imageFiles, setImageFiles] = useState([]); // { file, preview }
+
+  // Helper to flatten category tree
+  const flattenCategories = (categoriesTree, prefix = "") => {
+    let flatList = [];
+    categoriesTree.forEach((cat) => {
+      flatList.push({
+        ...cat,
+        displayName: prefix + cat.name,
+      });
+      if (cat.children && cat.children.length > 0) {
+        flatList = flatList.concat(flattenCategories(cat.children, prefix + "— "));
+      }
+    });
+    return flatList;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,7 +99,9 @@ const AdminAddProduct = () => {
         const catRes = await fetch("/api/v1/categories", { headers });
         if (catRes.ok) {
           const data = await catRes.json();
-          setCategories(data.data || data || []);
+          const rawItems = data.result || data.data?.result || data.data || data || [];
+          const flatData = flattenCategories(Array.isArray(rawItems) ? rawItems : []);
+          setCategories(flatData);
         }
       } catch (err) {
         console.error("Lỗi lấy dữ liệu thuộc tính:", err);
@@ -213,7 +230,7 @@ const AdminAddProduct = () => {
   const addVariant = () => {
     setVariants([
       ...variants,
-      { color: "", size: "", stockQty: "", salePrice: "" },
+      { color: "", size: "", stockQty: "", salePrice: "", importPrice: "" },
     ]);
   };
   const removeVariant = (index) => {
@@ -298,6 +315,7 @@ const AdminAddProduct = () => {
           size: v.size,
           stockQty: Number(v.stockQty) || 0,
           salePrice: v.salePrice ? Number(v.salePrice) : null,
+          importPrice: v.importPrice ? Number(v.importPrice) : null,
         })),
       };
 
@@ -441,7 +459,7 @@ const AdminAddProduct = () => {
                   >
                     <option value="" disabled>-- Chọn danh mục --</option>
                     {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      <option key={cat.id} value={cat.id}>{cat.displayName || cat.name}</option>
                     ))}
                   </select>
                 </div>
@@ -606,6 +624,7 @@ const AdminAddProduct = () => {
                     <th className="px-4 py-3 border-b border-stone-100">Màu sắc</th>
                     <th className="px-4 py-3 border-b border-stone-100">Kích cỡ</th>
                     <th className="px-4 py-3 border-b border-stone-100 text-center">Tồn kho</th>
+                    <th className="px-4 py-3 border-b border-stone-100">Giá nhập (đ)</th>
                     <th className="px-4 py-3 border-b border-stone-100">Giá sale (đ)</th>
                     <th className="px-4 py-3 border-b border-stone-100 text-center w-10"></th>
                   </tr>
@@ -641,11 +660,23 @@ const AdminAddProduct = () => {
                           onChange={(e) => handleVariantChange(index, "stockQty", e.target.value)}
                         />
                       </td>
+                      <td className="px-2 py-3 w-32">
+                        <input
+                          className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-stone-900 transition-all"
+                          type="text"
+                          placeholder="0"
+                          value={variant.importPrice ? Number(variant.importPrice).toLocaleString('vi-VN') : ''}
+                          onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\D/g, '');
+                            handleVariantChange(index, "importPrice", rawValue);
+                          }}
+                        />
+                      </td>
                       <td className="px-2 py-3 w-36">
                         <input
                           className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-stone-900 transition-all"
                           type="text"
-                          placeholder="Không"
+                          placeholder="Mặc định"
                           value={variant.salePrice ? Number(variant.salePrice).toLocaleString('vi-VN') : ''}
                           onChange={(e) => {
                             const rawValue = e.target.value.replace(/\D/g, '');

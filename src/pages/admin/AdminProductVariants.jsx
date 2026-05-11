@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { parseResponseBody, extractMessage, jsonAuthHeaders } from '../../api/http';
 import './AdminAddProduct.css';
 
 const currencyFormatter = new Intl.NumberFormat('vi-VN');
@@ -19,11 +20,39 @@ const getStockMeta = (stockQty) => {
 const AdminProductVariants = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
 
   const [product, setProduct] = useState(null);
   const [variants, setVariants] = useState([]);
-  
+  const [loading, setLoading] = useState(true);
+  const [duplicateIndices, setDuplicateIndices] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Pagination & Filter state
+  const [pagination, setPagination] = useState({
+    currentPage: 0,
+    pageSize: 20,
+    totalElements: 0,
+    totalPages: 0
+  });
+
+  const [filters, setFilters] = useState({
+    color: '',
+    size: '',
+    sortBy: ''
+  });
+
+  const SORT_OPTIONS = [
+    { value: '', label: 'Mặc định' },
+    { value: 'color', label: 'Theo màu sắc' },
+    { value: 'size', label: 'Theo kích cỡ' },
+    { value: 'stock_asc', label: 'Tồn kho (Thấp - Cao)' },
+    { value: 'stock_desc', label: 'Tồn kho (Cao - Thấp)' },
+    { value: 'price_asc', label: 'Giá bán (Thấp - Cao)' },
+    { value: 'price_desc', label: 'Giá bán (Cao - Thấp)' },
+  ];
+
   const STANDARD_COLORS = [
     { code: "BLACK", name: "Màu đen" },
     { code: "WHITE", name: "Màu trắng" },
@@ -64,44 +93,87 @@ const AdminProductVariants = () => {
     { code: "OTHER", name: "Khác" }
   ];
 
-  const [availableColors, setAvailableColors] = useState(STANDARD_COLORS);
-  const [availableSizes, setAvailableSizes] = useState(STANDARD_SIZES);
-  const [loading, setLoading] = useState(true);
-  const [duplicateIndices, setDuplicateIndices] = useState([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const API_URL = `/api/v1/admin/products/${id}`;
-
-  const fetchData = useCallback(async () => {
+  const fetchProduct = useCallback(async () => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const response = await fetch(API_URL, { headers });
-      const res = await response.json();
+      const response = await fetch(`/api/v1/admin/products/${id}`, {
+        headers: jsonAuthHeaders()
+      });
+      const res = await parseResponseBody(response);
       if (response.ok && res.data) {
         setProduct(res.data);
-        setVariants(res.data.variants || []);
       }
     } catch (err) {
-      console.error('Lỗi lấy dữ liệu:', err);
-      setError('Không thể tải dữ liệu biến thể.');
+      console.error('Lỗi lấy thông tin sản phẩm:', err);
+      setError('Không thể tải thông tin sản phẩm.');
+    }
+  }, [id]);
+
+  const fetchVariants = useCallback(async (page = 0, currentFilters = filters) => {
+    try {
+      setLoading(true);
+      
+      const queryParams = new URLSearchParams({
+        page: page,
+        pageSize: pagination.pageSize,
+      });
+
+      if (currentFilters.color) queryParams.append('color', currentFilters.color);
+      if (currentFilters.size) queryParams.append('size', currentFilters.size);
+      if (currentFilters.sortBy) queryParams.append('sortBy', currentFilters.sortBy);
+
+      const response = await fetch(`/api/v1/admin/products/${id}/variants?${queryParams.toString()}`, {
+        headers: jsonAuthHeaders()
+      });
+      const res = await parseResponseBody(response);
+      const dataPayload = res.data || res;
+      const resultItems = dataPayload.result || [];
+      const metaData = dataPayload.meta || {};
+
+      if (response.ok) {
+        const mappedVariants = resultItems.map(v => ({ ...v, isModified: false, isNew: false }));
+        setVariants(mappedVariants);
+        setPagination(prev => ({
+          ...prev,
+          currentPage: metaData.page ?? 0,
+          pageSize: metaData.pageSize ?? 20,
+          totalElements: metaData.totals ?? metaData.totalElements ?? resultItems.length,
+          totalPages: metaData.pages ?? 1
+        }));
+      } else {
+        setVariants([]);
+      }
+    } catch (err) {
+      console.error('Lỗi lấy danh sách biến thể:', err);
+      setError('Không thể tải danh sách biến thể.');
     } finally {
       setLoading(false);
     }
-  }, [API_URL, token]);
+  }, [id, pagination.pageSize, filters]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchProduct();
+  }, [fetchProduct]);
 
-  // Searchable Dropdown Component
-  const AttributeSelector = ({ value, onChange, options, placeholder, isError }) => {
+  useEffect(() => {
+    fetchVariants(0);
+  }, [id, filters]);
+
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ color: '', size: '', sortBy: '' });
+  };
+
+  // AttributeSelector component
+  const AttributeSelector = ({ value, onChange, options, placeholder, isError, className = "" }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const containerRef = React.useRef(null);
     const searchInputRef = React.useRef(null);
 
-    React.useEffect(() => {
+    useEffect(() => {
       const handleClickOutside = (event) => {
         if (containerRef.current && !containerRef.current.contains(event.target)) {
           setIsOpen(false);
@@ -122,19 +194,8 @@ const AdminProductVariants = () => {
       setSearchTerm("");
     };
 
-    const handleKeyDown = (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        if (filteredOptions.length > 0) {
-          handleSelect(filteredOptions[0]);
-        }
-      } else if (e.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
     return (
-      <div className={`relative ${isOpen ? "z-[100]" : "z-0"}`} ref={containerRef}>
+      <div className={`relative ${isOpen ? "z-[100]" : "z-0"} ${className}`} ref={containerRef}>
         <div className="relative">
           <input
             className={`w-full bg-transparent border ${isError ? "border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,0.2)]" : "border-transparent hover:border-stone-200"} focus:border-stone-900 focus:bg-white rounded-lg px-3 py-2 text-sm transition-all outline-none pr-8`}
@@ -164,7 +225,6 @@ const AdminProductVariants = () => {
                   placeholder="Tìm nhanh..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={handleKeyDown}
                   autoFocus
                 />
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-stone-400 text-[14px]">search</span>
@@ -185,7 +245,7 @@ const AdminProductVariants = () => {
                 ))
               ) : (
                 <div className="px-3 py-4 text-center">
-                  <p className="text-[10px] text-stone-400 italic">Không tìm thấy. Bạn có thể tự nhập.</p>
+                  <p className="text-[10px] text-stone-400 italic">Không tìm thấy.</p>
                 </div>
               )}
             </div>
@@ -198,86 +258,160 @@ const AdminProductVariants = () => {
   const handleVariantChange = (index, field, value) => {
     const newVariants = [...variants];
     newVariants[index][field] = value;
+    newVariants[index].isModified = true;
     setVariants(newVariants);
     if (duplicateIndices.length > 0) setDuplicateIndices([]);
-    if (error.startsWith("Trùng biến thể")) setError("");
+    if (error && error.includes("Trùng biến thể")) setError("");
   };
 
-  const addVariant = () => {
-    setVariants([...variants, { color: '', size: '', stockQty: 0, salePrice: '' }]);
+  const addNewVariant = () => {
+    setVariants([{
+      color: '',
+      size: '',
+      stockQty: 0,
+      salePrice: '',
+      importPrice: '',
+      isNew: true,
+      isModified: true
+    }, ...variants]);
   };
 
-  const removeVariant = (index) => {
-    if (variants.length === 1) return alert('Phải có ít nhất 1 biến thể!');
-    setVariants(variants.filter((_, i) => i !== index));
-  };
-
-  const handleSaveAll = async () => {
-    // Kiểm tra trùng lặp biến thể (Màu sắc + Kích cỡ)
-    const variantMap = new Map();
-    const dups = [];
-    variants.forEach((v, idx) => {
-      if (!v.color || !v.size) return;
-      const key = `${v.color.trim().toLowerCase()}-${v.size.trim().toLowerCase()}`;
-      if (variantMap.has(key)) {
-        dups.push(variantMap.get(key));
-        dups.push(idx);
-      } else {
-        variantMap.set(key, idx);
-      }
-    });
-
-    if (dups.length > 0) {
-      setDuplicateIndices(dups);
-      const firstDup = variants[dups[1]];
-      return setError(`Trùng biến thể: color=${firstDup.color}, size=${firstDup.size}. Vui lòng kiểm tra lại!`);
+  const handleSaveVariant = async (index) => {
+    const variant = variants[index];
+    if (!variant.color || !variant.size) {
+      return setError("Vui lòng nhập đầy đủ Màu sắc và Kích cỡ.");
     }
-    setDuplicateIndices([]);
+
+    const isDuplicate = variants.some((v, idx) => 
+      idx !== index && 
+      v.color?.toLowerCase() === variant.color?.toLowerCase() && 
+      v.size?.toLowerCase() === variant.size?.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      setDuplicateIndices([index]);
+      return setError(`Trùng biến thể: ${variant.color} - ${variant.size}`);
+    }
 
     setIsSaving(true);
     setError('');
+    setSuccess('');
+
     try {
       const payload = {
-        name: product.name,
-        categoryId: product.category?.id || product.categoryId,
-        description: product.description,
-        basePrice: product.basePrice,
-        status: product.status,
-        thumbnailUrl: product.thumbnailUrl,
-        imageUrls: product.imageUrls || [],
-        variants: variants.map((v) => ({
-          color: v.color,
-          size: v.size,
-          stockQty: Number(v.stockQty) || 0,
-          salePrice: v.salePrice ? Number(v.salePrice) : null,
-        })),
+        color: variant.color,
+        size: variant.size,
+        stockQty: Number(variant.stockQty) || 0,
+        salePrice: variant.salePrice ? Number(variant.salePrice) : null,
+        importPrice: variant.importPrice ? Number(variant.importPrice) : null
       };
 
-      const response = await fetch(API_URL, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+      const method = variant.isNew ? 'POST' : 'PUT';
+      const url = variant.isNew 
+        ? `/api/v1/admin/products/${id}/variants`
+        : `/api/v1/admin/products/${id}/variants/${variant.id}`;
+
+      const response = await fetch(url, {
+        method: method,
+        headers: jsonAuthHeaders(),
+        body: JSON.stringify(payload)
       });
 
+      const res = await parseResponseBody(response);
+
       if (response.ok) {
-        alert('Đã lưu tất cả thay đổi!');
-        await fetchData();
+        setSuccess(`Đã lưu biến thể ${variant.color} - ${variant.size} thành công!`);
+        await fetchVariants(pagination.currentPage);
       } else {
-        const text = await response.text();
-        setError('Lỗi khi lưu: ' + text);
+        setError(extractMessage(res, 'Lỗi khi lưu biến thể.'));
       }
-    } catch {
+    } catch (err) {
       setError('Lỗi kết nối máy chủ!');
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleDeleteVariant = async (index) => {
+    const variant = variants[index];
+    if (variant.isNew) {
+      setVariants(variants.filter((_, i) => i !== index));
+      return;
+    }
+
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa biến thể ${variant.color} - ${variant.size}?`)) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/v1/admin/products/${id}/variants/${variant.id}`, {
+        method: 'DELETE',
+        headers: jsonAuthHeaders()
+      });
+
+      if (response.ok) {
+        setSuccess('Đã xóa biến thể thành công.');
+        await fetchVariants(pagination.currentPage);
+      } else {
+        const res = await parseResponseBody(response);
+        setError(extractMessage(res, 'Không thể xóa biến thể.'));
+      }
+    } catch (err) {
+      setError('Lỗi kết nối máy chủ!');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateStock = (index, newQty) => {
+    handleVariantChange(index, "stockQty", newQty);
+  };
+
+  const handleSaveAll = async () => {
+    const modifiedVariants = variants.filter(v => v.isModified);
+    if (modifiedVariants.length === 0) {
+      return alert("Không có thay đổi nào để lưu.");
+    }
+
+    setIsSaving(true);
+    setError('');
+    let hasError = false;
+
+    for (const variant of modifiedVariants) {
+        try {
+            const payload = {
+                color: variant.color,
+                size: variant.size,
+                stockQty: Number(variant.stockQty) || 0,
+                salePrice: variant.salePrice ? Number(variant.salePrice) : null,
+                importPrice: variant.importPrice ? Number(variant.importPrice) : null
+            };
+            const method = variant.isNew ? 'POST' : 'PUT';
+            const url = variant.isNew 
+                ? `/api/v1/admin/products/${id}/variants`
+                : `/api/v1/admin/products/${id}/variants/${variant.id}`;
+
+            const response = await fetch(url, {
+                method: method,
+                headers: jsonAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) hasError = true;
+        } catch (err) {
+            hasError = true;
+        }
+    }
+
+    if (hasError) {
+        setError("Có lỗi xảy ra khi lưu một số biến thể. Vui lòng kiểm tra lại.");
+    } else {
+        setSuccess("Đã lưu tất cả thay đổi!");
+        await fetchVariants(pagination.currentPage);
+    }
+    setIsSaving(false);
+  };
+
   const summary = useMemo(() => {
-    const totalVariants = variants.length;
+    const totalVariants = pagination.totalElements;
     const totalStock = variants.reduce((sum, item) => sum + (Number(item.stockQty) || 0), 0);
     const activeVariants = variants.filter((item) => Number(item.stockQty) > 0).length;
     const lowStockVariants = variants.filter((item) => {
@@ -289,11 +423,10 @@ const AdminProductVariants = () => {
       { label: 'Tổng biến thể', value: totalVariants, icon: 'layers', color: 'bg-stone-900' },
       { label: 'Tổng tồn kho', value: totalStock, icon: 'inventory_2', color: 'bg-stone-600' },
       { label: 'Sẵn hàng', value: activeVariants, icon: 'check_circle', color: 'bg-emerald-600' },
-      { label: 'Sắp hết hàng', value: lowStockVariants, icon: 'warning', color: 'bg-amber-500' },
     ];
-  }, [variants]);
+  }, [variants, pagination.totalElements]);
 
-  if (loading) {
+  if (loading && variants.length === 0) {
     return (
       <main className="flex min-h-screen flex-1 items-center justify-center bg-stone-100 px-6">
         <div className="rounded-2xl border border-stone-200 bg-white px-8 py-8 text-center shadow-sm">
@@ -322,7 +455,7 @@ const AdminProductVariants = () => {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={addVariant}
+            onClick={addNewVariant}
             className="px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-700 hover:bg-stone-50 text-xs font-bold transition-all shadow-sm flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -330,7 +463,7 @@ const AdminProductVariants = () => {
           </button>
           <button
             onClick={handleSaveAll}
-            disabled={isSaving}
+            disabled={isSaving || !variants.some(v => v.isModified)}
             className="px-6 py-2.5 rounded-xl bg-stone-900 text-white hover:bg-stone-800 text-xs font-bold transition-all shadow-lg shadow-stone-200 flex items-center gap-2 disabled:opacity-50 active:scale-[0.98]"
           >
             {isSaving ? (
@@ -345,14 +478,20 @@ const AdminProductVariants = () => {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {error && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-xs font-bold flex items-center gap-3 border border-red-100">
+          <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-xs font-bold flex items-center gap-3 border border-red-100 animate-shake">
             <span className="material-symbols-outlined text-[20px]">error</span>
             {error}
           </div>
         )}
+        {success && (
+          <div className="bg-emerald-50 text-emerald-600 p-4 rounded-2xl text-xs font-bold flex items-center gap-3 border border-emerald-100 animate-fadeIn">
+            <span className="material-symbols-outlined text-[20px]">check_circle</span>
+            {success}
+          </div>
+        )}
 
         {/* Summary Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {summary.map((item) => (
             <div key={item.label} className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
               <div>
@@ -366,6 +505,51 @@ const AdminProductVariants = () => {
           ))}
         </section>
 
+        {/* Filter Bar */}
+        <section className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 min-w-[200px]">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Màu sắc:</span>
+            <AttributeSelector
+              placeholder="Tất cả màu"
+              value={filters.color}
+              options={STANDARD_COLORS}
+              onChange={(val) => handleFilterChange('color', val)}
+              className="flex-1"
+            />
+          </div>
+          <div className="flex items-center gap-2 min-w-[150px]">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Size:</span>
+            <AttributeSelector
+              placeholder="Tất cả size"
+              value={filters.size}
+              options={STANDARD_SIZES}
+              onChange={(val) => handleFilterChange('size', val)}
+              className="flex-1"
+            />
+          </div>
+          <div className="flex items-center gap-2 min-w-[220px]">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Sắp xếp:</span>
+            <select
+              value={filters.sortBy}
+              onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+              className="bg-stone-50 border border-stone-100 rounded-lg px-3 py-2 text-sm outline-none focus:border-stone-900 transition-all flex-1"
+            >
+              {SORT_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          {(filters.color || filters.size || filters.sortBy) && (
+            <button
+              onClick={clearFilters}
+              className="px-3 py-2 text-xs font-bold text-stone-400 hover:text-red-500 transition-colors flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[16px]">close</span>
+              Xóa lọc
+            </button>
+          )}
+        </section>
+
         {/* Variants Table */}
         <section className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
 
@@ -374,7 +558,7 @@ const AdminProductVariants = () => {
               <span className="material-symbols-outlined text-stone-400">reorder</span>
               <h2 className="text-sm font-bold text-stone-800">Danh sách các phiên bản chi tiết</h2>
             </div>
-            <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">Tự động đồng bộ với kho hàng</p>
+            {loading && <span className="text-[10px] text-stone-400 animate-pulse font-bold">Đang cập nhật danh sách...</span>}
           </div>
 
           <div className="overflow-x-auto pb-64 -mb-64">
@@ -382,48 +566,68 @@ const AdminProductVariants = () => {
 
               <thead>
                 <tr className="bg-white">
+                  <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100">SKU / ID</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100">Màu sắc</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100">Kích cỡ</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 text-center">Tồn kho</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100">Giá bán riêng (đ)</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100">Giá nhập (đ)</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100">Giá bán (đ)</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 text-center">Trạng thái</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 w-16"></th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100 w-32 text-right pr-10">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-50">
                 {variants.map((variant, index) => {
                   const stockMeta = getStockMeta(variant.stockQty);
                   return (
-                    <tr key={index} className="group hover:bg-stone-50/30 transition-all">
-                      <td className="px-4 py-3">
+                    <tr key={variant.id || `new-${index}`} className={`group hover:bg-stone-50/30 transition-all ${variant.isModified ? 'bg-amber-50/10' : ''}`}>
+                      <td className="px-6 py-3">
+                        <div className="flex flex-col">
+                            <span className="text-xs font-mono text-stone-600">{variant.sku || 'N/A'}</span>
+                            <span className="text-[9px] text-stone-400 uppercase">{variant.isNew ? 'Mới' : `ID: ${variant.id?.substring(0, 8)}...`}</span>
+                        </div>
+                      </td>
+                      <td className="px-2 py-3">
                         <AttributeSelector
                           placeholder="Màu sắc"
                           value={variant.color}
-                          options={availableColors}
+                          options={STANDARD_COLORS}
                           onChange={(val) => handleVariantChange(index, "color", val)}
                           isError={duplicateIndices.includes(index)}
                         />
                       </td>
-                      <td className="px-4 py-3 w-28">
+                      <td className="px-2 py-3 w-28">
                         <AttributeSelector
                           placeholder="Size"
                           value={variant.size}
-                          options={availableSizes}
+                          options={STANDARD_SIZES}
                           onChange={(val) => handleVariantChange(index, "size", val)}
                           isError={duplicateIndices.includes(index)}
                         />
                       </td>
 
-                      <td className="px-4 py-3 w-24">
+                      <td className="px-2 py-3 w-24">
                         <input
                           className="w-full bg-transparent border border-transparent hover:border-stone-200 focus:border-stone-900 focus:bg-white rounded-lg px-3 py-2 text-sm text-center transition-all outline-none"
                           type="number"
                           placeholder="0"
                           value={variant.stockQty}
-                          onChange={(e) => handleVariantChange(index, "stockQty", e.target.value)}
+                          onChange={(e) => handleUpdateStock(index, e.target.value)}
                         />
                       </td>
-                      <td className="px-4 py-3 w-40">
+                      <td className="px-2 py-3 w-32">
+                        <input
+                          className="w-full bg-transparent border border-transparent hover:border-stone-200 focus:border-stone-900 focus:bg-white rounded-lg px-3 py-2 text-sm transition-all outline-none"
+                          type="text"
+                          placeholder="Giá nhập"
+                          value={variant.importPrice ? Number(variant.importPrice).toLocaleString('vi-VN') : ''}
+                          onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\D/g, '');
+                            handleVariantChange(index, "importPrice", rawValue);
+                          }}
+                        />
+                      </td>
+                      <td className="px-2 py-3 w-32">
                         <input
                           className="w-full bg-transparent border border-transparent hover:border-stone-200 focus:border-stone-900 focus:bg-white rounded-lg px-3 py-2 text-sm transition-all outline-none"
                           type="text"
@@ -441,16 +645,27 @@ const AdminProductVariants = () => {
                           {stockMeta.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        {variants.length > 1 && (
+                      <td className="px-6 py-3 text-right pr-10">
+                        <div className="flex items-center justify-end gap-2">
+                          {variant.isModified && (
+                              <button
+                                onClick={() => handleSaveVariant(index)}
+                                disabled={isSaving}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all shadow-sm"
+                                title="Lưu dòng này"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">save</span>
+                              </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => removeVariant(index)}
+                            onClick={() => handleDeleteVariant(index)}
                             className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                            title="Xóa biến thể"
                           >
-                            <span className="material-symbols-outlined text-[18px]">close</span>
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
                           </button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -461,7 +676,7 @@ const AdminProductVariants = () => {
 
           <div className="p-4 bg-stone-50/50 border-t border-stone-100 flex justify-center">
             <button
-              onClick={addVariant}
+              onClick={addNewVariant}
               className="text-xs font-bold text-stone-400 hover:text-stone-900 uppercase tracking-widest flex items-center gap-2 transition-all"
             >
               <span className="material-symbols-outlined text-[18px]">add_circle</span>
@@ -470,13 +685,36 @@ const AdminProductVariants = () => {
           </div>
         </section>
 
+        {/* Pagination Controls */}
+        {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+                <button 
+                    disabled={pagination.currentPage === 0 || loading}
+                    onClick={() => fetchVariants(pagination.currentPage - 1)}
+                    className="w-10 h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-600 hover:bg-stone-50 disabled:opacity-50 transition-all"
+                >
+                    <span className="material-symbols-outlined">chevron_left</span>
+                </button>
+                <div className="px-4 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-stone-800">
+                    Trang {pagination.currentPage + 1} / {pagination.totalPages}
+                </div>
+                <button 
+                    disabled={pagination.currentPage >= pagination.totalPages - 1 || loading}
+                    onClick={() => fetchVariants(pagination.currentPage + 1)}
+                    className="w-10 h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-600 hover:bg-stone-50 disabled:opacity-50 transition-all"
+                >
+                    <span className="material-symbols-outlined">chevron_right</span>
+                </button>
+            </div>
+        )}
+
         <div className="flex justify-end pt-4 pb-10">
           <button
             onClick={handleSaveAll}
-            disabled={isSaving}
+            disabled={isSaving || !variants.some(v => v.isModified)}
             className="px-8 py-4 rounded-2xl bg-stone-900 text-white hover:bg-stone-800 text-sm font-bold transition-all shadow-xl shadow-stone-200 flex items-center gap-3 active:scale-[0.98] disabled:opacity-50"
           >
-            {isSaving ? "Đang lưu hệ thống..." : "Xác nhận & Cập nhật kho hàng"}
+            {isSaving ? "Đang xử lý hệ thống..." : "Lưu tất cả biến thể đã sửa"}
             <span className="material-symbols-outlined">arrow_forward</span>
           </button>
         </div>
