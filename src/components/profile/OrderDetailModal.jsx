@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReviewModal from './ReviewModal';
+import { getImageUrl, translateOrderStatus } from '../../utils/format';
 
 const formatVND = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)}₫`;
 
@@ -100,7 +101,7 @@ export default function OrderDetailModal({ show, onClose, orderId, token }) {
                         return (
                           <div key={idx} className="py-6 flex flex-col sm:flex-row gap-6">
                             <div className="w-20 h-24 bg-lumiere-blush shrink-0 overflow-hidden">
-                              {item.thumbnailUrl && <img src={item.thumbnailUrl} alt={item.productName} className="w-full h-full object-cover" />}
+                              {item.thumbnailUrl && <img src={getImageUrl(item.thumbnailUrl)} alt={item.productName} className="w-full h-full object-cover" />}
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col justify-between">
                               <div>
@@ -178,6 +179,10 @@ export default function OrderDetailModal({ show, onClose, orderId, token }) {
                   <div className="bg-white border border-lumiere-gray/15 p-6">
                     <h4 className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-charcoal mb-4">Thanh toán</h4>
                     <div className="space-y-4 text-[13px]">
+                      <div className="flex justify-between">
+                        <span className="text-lumiere-gray">Trạng thái đơn:</span>
+                        <span className="font-semibold text-lumiere-terracotta uppercase">{translateOrderStatus(order.status)}</span>
+                      </div>
                       <div className="flex justify-between">
                         <span className="text-lumiere-gray">Phương thức:</span>
                         <span className="font-semibold text-lumiere-charcoal uppercase">{order.paymentMethod}</span>

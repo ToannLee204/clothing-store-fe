@@ -4,6 +4,7 @@ import { normalizeBackendCartItem } from '../utils/cart';
 import CheckoutAddressSelector from '../components/checkout/CheckoutAddressSelector';
 import CheckoutPaymentMethod from '../components/checkout/CheckoutPaymentMethod';
 import CheckoutSummary from '../components/checkout/CheckoutSummary';
+import AddressModal from '../components/profile/AddressModal';
 
 const API_CART_URL = '/api/v1/cart';
 const API_ORDERS_URL = '/api/v1/orders';
@@ -38,13 +39,46 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [note, setNote] = useState('');
 
+  // Address Modal State
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [addrForm, setAddrForm] = useState({ 
+    fullName: '', phone: '', province: '', district: '', ward: '', street: '', isDefault: false 
+  });
+  const [locationTree, setLocationTree] = useState([]);
+  const [districtsOptions, setDistrictsOptions] = useState([]);
+  const [wardsOptions, setWardsOptions] = useState([]);
+
   useEffect(() => {
     if (!token) {
       navigate('/auth');
       return;
     }
     fetchData();
+    fetchLocationTree();
   }, [token, navigate]);
+
+  const fetchLocationTree = async () => {
+    try {
+      const res = await fetch('https://provinces.open-api.vn/api/?depth=3');
+      const data = await res.json();
+      setLocationTree(data);
+    } catch (err) { console.error("Lỗi lấy dữ liệu Tỉnh thành:", err); }
+  };
+
+  useEffect(() => {
+    if (addrForm.province && locationTree.length > 0) {
+      const p = locationTree.find(x => x.name === addrForm.province);
+      setDistrictsOptions(p ? p.districts : []);
+    } else { setDistrictsOptions([]); }
+  }, [addrForm.province, locationTree]);
+
+  useEffect(() => {
+    if (addrForm.district && districtsOptions.length > 0) {
+      const d = districtsOptions.find(x => x.name === addrForm.district);
+      setWardsOptions(d ? d.wards : []);
+    } else { setWardsOptions([]); }
+  }, [addrForm.district, districtsOptions]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -77,6 +111,93 @@ export default function CheckoutPage() {
       }
     } catch (e) { setError('Lỗi khởi tạo dữ liệu.'); }
     finally { setLoading(false); }
+  };
+
+  const fetchAddressesOnly = async () => {
+    try {
+      const res = await fetch(API_ADDRESSES_URL, { headers: { Authorization: `Bearer ${token}` } });
+      const addrPayload = await parseJson(res);
+      if (res.ok) {
+        const list = addrPayload?.data || addrPayload?.result || addrPayload?.content || [];
+        const sorted = list.sort((a, b) => (b.isDefault || b.default ? 1 : 0) - (a.isDefault || a.default ? 1 : 0));
+        setAddresses(sorted);
+        // If we just added an address, maybe select it? Or keep current selection.
+      }
+    } catch (e) { console.error("Lỗi tải lại địa chỉ:", e); }
+  };
+
+  const handleSaveAddress = async (e) => {
+    e.preventDefault();
+
+    // Validation
+    const { fullName, phone, province, district, ward, street } = addrForm;
+    
+    if (fullName.trim().length < 2) {
+      alert("Họ tên phải có ít nhất 2 ký tự.");
+      return;
+    }
+
+    const phoneRegex = /^(0[3|5|7|8|9])([0-9]{8})$/;
+    if (!phoneRegex.test(phone.trim())) {
+      alert("Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng đầu số VN).");
+      return;
+    }
+
+    if (!province || !district || !ward) {
+      alert("Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã.");
+      return;
+    }
+
+    if (street.trim().length < 5) {
+      alert("Địa chỉ chi tiết quá ngắn.");
+      return;
+    }
+
+    try {
+      const method = editingId ? 'PUT' : 'POST';
+      const url = editingId ? `${API_ADDRESSES_URL}/${editingId}` : API_ADDRESSES_URL;
+      const payload = { ...addrForm, default: addrForm.isDefault, isDefault: addrForm.isDefault };
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload) 
+      });
+      if (res.ok) { 
+        await fetchAddressesOnly(); 
+        setShowAddressModal(false); 
+      }
+      else { 
+        const errorData = await parseJson(res);
+        alert(extractMessage(errorData, "Lỗi khi lưu địa chỉ.")); 
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const openAddModal = () => {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : {};
+    setAddrForm({ 
+      fullName: user.fullName || '', 
+      phone: user.soDienThoai || user.phone || '', 
+      province: '', district: '', ward: '', street: '', 
+      isDefault: addresses.length === 0 
+    });
+    setEditingId(null);
+    setShowAddressModal(true);
+  };
+
+  const openEditModal = (addr) => {
+    setAddrForm({ 
+      fullName: addr.fullName, 
+      phone: addr.phone, 
+      province: addr.province, 
+      district: addr.district, 
+      ward: addr.ward, 
+      street: addr.street, 
+      isDefault: !!(addr.isDefault || addr.default) 
+    });
+    setEditingId(addr.id);
+    setShowAddressModal(true);
   };
 
   const handlePlaceOrder = async () => {
@@ -140,7 +261,8 @@ export default function CheckoutPage() {
               addresses={addresses}
               selectedId={selectedAddressId}
               onSelect={setSelectedAddressId}
-              onAddNew={() => navigate('/profile', { state: { activeTab: 'addresses' } })}
+              onAddNew={openAddModal}
+              onEdit={openEditModal}
             />
 
             <CheckoutPaymentMethod 
@@ -162,6 +284,18 @@ export default function CheckoutPage() {
           </aside>
         </div>
       </div>
+
+      <AddressModal 
+        show={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        editingId={editingId}
+        form={addrForm}
+        setForm={setAddrForm}
+        onSave={handleSaveAddress}
+        locationTree={locationTree}
+        districtsOptions={districtsOptions}
+        wardsOptions={wardsOptions}
+      />
     </div>
   );
 }

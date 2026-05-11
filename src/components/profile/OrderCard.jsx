@@ -1,31 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+import { translateOrderStatus, getOrderStatusColor } from '../../utils/format';
+
 const formatPrice = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)} ₫`;
 
 export default function OrderCard({ order, onCancel, onRetryPayment, onDetail, actionBusyId }) {
   const orderId = order.orderId ?? order.id;
-  
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'completed': return 'text-emerald-600 bg-emerald-50';
-      case 'cancelled': return 'text-rose-600 bg-rose-50';
-      case 'shipping': return 'text-amber-600 bg-amber-50';
-      case 'confirmed': return 'text-blue-600 bg-blue-50';
-      default: return 'text-lumiere-gray bg-lumiere-blush/50';
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case 'pending': return 'Chờ xử lý';
-      case 'confirmed': return 'Đã xác nhận';
-      case 'shipping': return 'Đang giao hàng';
-      case 'completed': return 'Đã hoàn tất';
-      case 'cancelled': return 'Đã hủy';
-      default: return status;
-    }
-  };
 
   const canCancel = order?.status === 'pending';
   const canRetryPayment = order?.status === 'payment_failed' && order?.paymentMethod === 'vnpay';
@@ -41,8 +22,8 @@ export default function OrderCard({ order, onCancel, onRetryPayment, onDetail, a
             >
               Đơn hàng: {order.orderCode}
             </button>
-            <span className={`text-[10px] tracking-widest uppercase px-2.5 py-1 font-semibold ${getStatusStyle(order.status)}`}>
-              {getStatusLabel(order.status)}
+            <span className={`text-[10px] tracking-widest uppercase px-2.5 py-1 font-semibold ${getOrderStatusColor(order.status)}`}>
+              {translateOrderStatus(order.status)}
             </span>
             <span className={`text-[10px] tracking-widest uppercase px-2.5 py-1 font-semibold ${order.paymentStatus === 'paid' ? 'text-emerald-600 bg-emerald-50' : 'text-lumiere-gray bg-lumiere-blush/50'}`}>
               {order.paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}

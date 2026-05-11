@@ -109,41 +109,49 @@ export default function ProductDetailPage() {
       if (res.ok) {
         const payload = await res.json();
         const list = normalizeList(payload);
-        setRelatedProducts(list.filter(p => String(p.id) !== String(id)).slice(0, 4));
       }
     } catch (e) { console.error('Lỗi tải sản phẩm liên quan:', e); }
   };
 
   const variants = useMemo(() => product?.variants || [], [product]);
-  const colors = useMemo(() => [...new Set(variants.map(v => v.color).filter(Boolean))], [variants]);
+  
+  const colors = useMemo(() => {
+    const rawColors = variants.map(v => typeof v.color === 'object' ? v.color.name : v.color).filter(Boolean);
+    return [...new Set(rawColors)];
+  }, [variants]);
   
   const sizes = useMemo(() => {
-    const rawSizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
+    const rawSizes = variants.map(v => typeof v.size === 'object' ? (v.size.name || v.size.code) : v.size).filter(Boolean);
+    const uniqueSizes = [...new Set(rawSizes)];
     
     const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "FREESIZE", "KHÁC"];
     
-    return rawSizes.sort((a, b) => {
+    return uniqueSizes.sort((a, b) => {
       const isANum = !isNaN(a);
       const isBNum = !isNaN(b);
       
       if (isANum && isBNum) return Number(a) - Number(b);
-      if (isANum) return 1; // Numbers after letters
-      if (isBNum) return -1; // Letters before numbers
+      if (isANum) return 1; 
+      if (isBNum) return -1;
       
-      const idxA = sizeOrder.indexOf(a.toUpperCase());
-      const idxB = sizeOrder.indexOf(b.toUpperCase());
+      const idxA = sizeOrder.indexOf(a.toString().toUpperCase());
+      const idxB = sizeOrder.indexOf(b.toString().toUpperCase());
       
       if (idxA !== -1 && idxB !== -1) return idxA - idxB;
       if (idxA !== -1) return -1;
       if (idxB !== -1) return 1;
       
-      return a.localeCompare(b);
+      return a.toString().localeCompare(b.toString());
     });
   }, [variants]);
 
   const selectedVariant = useMemo(() => {
     if (!selectedColor || !selectedSize) return null;
-    return variants.find(v => v.color === selectedColor && v.size === selectedSize) || null;
+    return variants.find(v => {
+      const vColor = typeof v.color === 'object' ? v.color.name : v.color;
+      const vSize = typeof v.size === 'object' ? (v.size.name || v.size.code) : v.size;
+      return vColor === selectedColor && vSize === selectedSize;
+    }) || null;
   }, [selectedColor, selectedSize, variants]);
 
   const currentPrice = selectedVariant?.salePrice || product?.basePrice || 0;
@@ -159,11 +167,15 @@ export default function ProductDetailPage() {
   }, [selectedColor, selectedSize, selectedVariant]);
 
   const handleAddToCart = async () => {
+    // Debug để kiểm tra
+    console.log('Selected Color:', selectedColor);
+    console.log('Selected Size:', selectedSize);
+    console.log('Selected Variant:', selectedVariant);
+
     if (!selectedVariant) {
       alert('Vui lòng chọn đầy đủ màu sắc và kích cỡ.');
       return;
     }
-
     const token = window.localStorage.getItem('token');
     if (!token) {
       alert('Bạn cần đăng nhập để thực hiện tính năng này.');

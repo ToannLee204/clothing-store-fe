@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import './AdminProducts.css';
+import { getImageUrl, translateOrderStatus, translatePaymentStatus } from '../../utils/format';
 
 const API_ADMIN_ORDERS_URL = '/api/v1/admin/orders';
 
@@ -35,15 +36,7 @@ function getAvailableNextStatuses(status) {
 }
 
 function humanStatus(status) {
-  switch (status) {
-    case 'pending': return 'Chờ xác nhận';
-    case 'confirmed': return 'Đã xác nhận';
-    case 'shipping': return 'Đang giao';
-    case 'completed': return 'Hoàn tất';
-    case 'cancelled': return 'Đã hủy';
-    case 'payment_failed': return 'Thanh toán lỗi';
-    default: return status || '—';
-  }
+  return translateOrderStatus(status);
 }
 
 function getStatusBadge(status) {
@@ -248,7 +241,7 @@ export default function AdminOrders() {
   const hasFilters = filters.status || filters.keyword || filters.fromDate || filters.toDate;
 
   // Grid template for orders table
-  const orderGridStyle = { gridTemplateColumns: '180px 1fr 140px 140px 140px 260px' };
+  const orderGridStyle = { gridTemplateColumns: '180px 1fr 160px 140px 140px 260px', minWidth: '1000px' };
 
   return (
     <main className="flex-1 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
@@ -378,12 +371,12 @@ export default function AdminOrders() {
                     <div className="price-note" style={{ textAlign: 'left' }}>{o?.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN') : '—'}</div>
                   </div>
                   <div>
-                    <div className="prod-name" style={{ fontSize: '13px' }}>{o?.fullName || '—'}</div>
-                    <div className="prod-meta">{o?.phone || '—'}</div>
+                    <div className="prod-name" style={{ fontSize: '13px' }}>{o?.customerName || '—'}</div>
+                    <div className="prod-meta" style={{ textTransform: 'none', letterSpacing: 'normal' }}>{o?.customerEmail || '—'}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>{o?.paymentMethod}</div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{o?.paymentStatus}</div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155', textTransform: 'uppercase' }}>{o?.paymentMethod}</div>
+                    <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{translatePaymentStatus(o?.paymentStatus)}</div>
                   </div>
                   <div className="right">
                     <div className="price-val" style={{ color: '#0f172a' }}>{formatVND(o?.total)}</div>
@@ -470,12 +463,26 @@ export default function AdminOrders() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-slate-500">Thanh toán:</span>
-                          <span className="text-xs font-bold text-slate-700">{detailOrder.paymentMethod}</span>
+                          <span className="text-xs font-bold text-slate-700 uppercase">{detailOrder.payment?.method || detailOrder.paymentMethod}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-slate-500">Tình trạng:</span>
-                          <span className="text-xs font-bold text-slate-700">{detailOrder.paymentStatus}</span>
+                          <span className={`text-xs font-bold ${detailOrder.payment?.status === 'paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {translatePaymentStatus(detailOrder.payment?.status || detailOrder.paymentStatus)}
+                          </span>
                         </div>
+                        {detailOrder.payment?.paidAt && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-slate-500">Ngày trả:</span>
+                            <span className="text-[10px] text-slate-600">{new Date(detailOrder.payment.paidAt).toLocaleString('vi-VN')}</span>
+                          </div>
+                        )}
+                        {detailOrder.payment?.vnpayTransactionNo && (
+                          <div className="pt-2 border-t border-slate-100">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase">Mã GD VNPAY:</span>
+                            <div className="text-[11px] font-mono text-slate-600">{detailOrder.payment.vnpayTransactionNo}</div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -524,7 +531,11 @@ export default function AdminOrders() {
                           <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50/50 transition">
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">
-                                <div className="size-10 rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0" />
+                                <img 
+                                  src={getImageUrl(item.thumbnailUrl)} 
+                                  alt={item.productName}
+                                  className="size-12 rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0 object-cover" 
+                                />
                                 <div>
                                   <div className="text-sm font-bold text-slate-900">{item.productName}</div>
                                   <div className="text-[10px] text-slate-500 uppercase tracking-tighter">Màu: {item.color} · Size: {item.size}</div>
@@ -532,8 +543,8 @@ export default function AdminOrders() {
                               </div>
                             </td>
                             <td className="px-4 py-3 text-center text-sm font-bold text-slate-700">{item.quantity}</td>
-                            <td className="px-4 py-3 text-right text-sm font-medium text-slate-600">{formatVND(item.price)}</td>
-                            <td className="px-4 py-3 text-right text-sm font-bold text-slate-900">{formatVND(item.price * item.quantity)}</td>
+                            <td className="px-4 py-3 text-right text-sm font-medium text-slate-600">{formatVND(item.unitPrice || item.price)}</td>
+                            <td className="px-4 py-3 text-right text-sm font-bold text-slate-900">{formatVND(item.lineTotal || (item.price * item.quantity))}</td>
                           </tr>
                         ))}
                       </tbody>

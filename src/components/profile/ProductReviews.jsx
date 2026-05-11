@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReviewModal from './ReviewModal';
 import ViewReviewModal from './ViewReviewModal';
+import { getImageUrl } from '../../utils/format';
 
 const formatVND = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)}₫`;
 
@@ -107,7 +108,7 @@ export default function ProductReviews({ token }) {
             (activeSubTab === 'pending' ? pendingItems : reviewedItems).map((item, idx) => (
               <div key={idx} className="bg-lumiere-cream/20 border border-lumiere-gray/10 p-6 flex flex-col md:flex-row gap-6 hover:border-lumiere-gray/30 transition-all">
                 <div className="w-20 h-28 bg-lumiere-blush shrink-0 overflow-hidden">
-                  {item.thumbnailUrl && <img src={item.thumbnailUrl} alt={item.productName} className="w-full h-full object-cover" />}
+                  {item.thumbnailUrl && <img src={getImageUrl(item.thumbnailUrl)} alt={item.productName} className="w-full h-full object-cover" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="mb-4">

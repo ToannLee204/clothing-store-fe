@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { parseResponseBody, extractMessage, jsonAuthHeaders, authHeaders } from '../../api/http';
+import { translateInvoiceStatus, translatePaymentStatus } from '../../utils/format';
 import './AdminProducts.css';
 
 const API_INVOICES_URL = '/api/v1/admin/invoices';
@@ -9,21 +10,18 @@ function formatVND(value) {
 }
 
 function humanInvoiceStatus(status) {
-  switch (status) {
-    case 'PENDING': return 'Chờ thanh toán';
-    case 'PAID': return 'Đã thanh toán';
-    case 'REFUNDED': return 'Đã hoàn tiền';
-    case 'CANCELLED': return 'Đã hủy';
-    default: return status || '—';
-  }
+  return translateInvoiceStatus(status);
 }
 
 function getInvoiceStatusBadge(status) {
-  switch (status) {
+  if (!status) return 'badge-gray';
+  const s = status.toUpperCase();
+  switch (s) {
     case 'PAID': return 'badge-green';
-    case 'PENDING': return 'badge-amber';
+    case 'PENDING': case 'UNPAID': return 'badge-amber';
     case 'CANCELLED': return 'badge-red';
     case 'REFUNDED': return 'badge-cat';
+    case 'REFUND_REQUESTED': return 'badge-teal';
     default: return 'badge-gray';
   }
 }
@@ -182,7 +180,7 @@ export default function AdminInvoices() {
   };
 
   // Grid template for invoices table
-  const invoiceGridStyle = { gridTemplateColumns: '200px 220px 1fr 120px 140px 140px 120px' };
+  const invoiceGridStyle = { gridTemplateColumns: '160px 180px 1fr 140px 130px 140px 100px', minWidth: '1100px' };
 
   const summary = useMemo(() => {
     const s = { PAID: 0, PENDING: 0, CANCELLED: 0, REFUNDED: 0 };
@@ -310,7 +308,7 @@ export default function AdminInvoices() {
                     {inv.customerEmail || '—'}
                   </div>
                 </div>
-                <div><div className="text-sm font-bold">{inv.paymentMethod?.toUpperCase()}</div><div className="text-[10px] text-slate-400 uppercase tracking-widest">{inv.paymentStatus}</div></div>
+                <div><div className="text-sm font-bold">{inv.paymentMethod?.toUpperCase()}</div><div className="text-[10px] text-slate-400 uppercase tracking-widest">{translatePaymentStatus(inv.paymentStatus)}</div></div>
                 <div className="right font-black text-slate-900">{formatVND(inv.totalAmount)}</div>
                 <div className="center"><span className={`badge ${getInvoiceStatusBadge(inv.status)}`}>{humanInvoiceStatus(inv.status)}</span></div>
                 <div className="right">
@@ -373,7 +371,7 @@ export default function AdminInvoices() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center"><span className="text-xs text-slate-500">Trạng thái HĐ:</span><span className={`badge ${getInvoiceStatusBadge(detailInvoice.status)}`}>{humanInvoiceStatus(detailInvoice.status)}</span></div>
                         <div className="flex justify-between items-center"><span className="text-xs text-slate-500">Phương thức:</span><span className="text-xs font-bold">{detailInvoice.order?.paymentMethod}</span></div>
-                        <div className="flex justify-between items-center"><span className="text-xs text-slate-500">Tình trạng:</span><span className="text-xs font-bold text-emerald-600">{detailInvoice.order?.paymentStatus}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-xs text-slate-500">Tình trạng:</span><span className="text-xs font-bold text-emerald-600">{translatePaymentStatus(detailInvoice.order?.paymentStatus)}</span></div>
                       </div>
                     </div>
                     <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
