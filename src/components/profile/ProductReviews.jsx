@@ -1,16 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import ReviewModal from './ReviewModal';
 import ViewReviewModal from './ViewReviewModal';
+import { authHeaders, extractMessage, parseResponseBody } from '../../api/http';
 import { getImageUrl } from '../../utils/format';
 
-const formatVND = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)}₫`;
+const REVIEWS_PAGE_SIZE = 20;
+
+const formatVND = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)}\u20ab`;
+
+function normalizeList(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.result)) return payload.result;
+  if (Array.isArray(payload?.content)) return payload.content;
+  return [];
+}
+
+function normalizePagination(payload) {
+  const base = payload && typeof payload === 'object' && ('meta' in payload || 'result' in payload || 'content' in payload)
+    ? payload
+    : payload?.data ?? payload;
+
+  return {
+    meta: base?.meta ?? base?.data?.meta ?? null,
+    result: normalizeList(base),
+  };
+}
 
 export default function ProductReviews({ token }) {
   const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState([]);
-  const [myReviews, setMyReviews] = useState({});
-  const [activeSubTab, setActiveSubTab] = useState('pending'); // 'pending' or 'completed'
-  
+  const [pendingItems, setPendingItems] = useState([]);
+  const [reviewedOrderItems, setReviewedOrderItems] = useState([]);
+  const [myReviewList, setMyReviewList] = useState([]);
+  const [productMetaById, setProductMetaById] = useState({});
+  const [activeSubTab, setActiveSubTab] = useState('pending');
+
   const [selectedItem, setSelectedItem] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -19,44 +43,191 @@ export default function ProductReviews({ token }) {
     fetchData();
   }, [token]);
 
+  const fetchAllMyReviews = async () => {
+    const firstRes = await fetch(`/api/v1/reviews/me?page=0&pageSize=${REVIEWS_PAGE_SIZE}`, {
+      headers: authHeaders(),
+    });
+    const firstPayload = await parseResponseBody(firstRes);
+
+    if (!firstRes.ok) {
+      throw new Error(extractMessage(firstPayload, 'Khong the tai danh sach danh gia cua ban.'));
+    }
+
+    const firstPage = normalizePagination(firstPayload);
+    const totalPages = Math.max(1, Number(firstPage.meta?.pages ?? firstPage.meta?.totalPages ?? 1) || 1);
+
+    if (totalPages === 1) {
+      return firstPage.result;
+    }
+
+    const pagePromises = Array.from({ length: totalPages - 1 }, (_, idx) =>
+      fetch(`/api/v1/reviews/me?page=${idx + 1}&pageSize=${REVIEWS_PAGE_SIZE}`, {
+        headers: authHeaders(),
+      }).then(async (res) => {
+        const payload = await parseResponseBody(res);
+        if (!res.ok) {
+          throw new Error(extractMessage(payload, 'Khong the tai danh sach danh gia cua ban.'));
+        }
+        return normalizePagination(payload).result;
+      })
+    );
+
+    const nextPages = await Promise.all(pagePromises);
+    return [firstPage.result, ...nextPages].flat();
+  };
+
+  const fetchProductMetaMap = async (reviewsList, allItems) => {
+    const productIds = [...new Set(
+      reviewsList
+        .filter((review) => {
+          if (!review?.productId) return false;
+          const matchedItem = allItems.find((item) => String(item.orderItemId) === String(review.orderItemId));
+          return !matchedItem?.thumbnailUrl;
+        })
+        .map((review) => review.productId)
+    )];
+
+    if (productIds.length === 0) {
+      return {};
+    }
+
+    const entries = await Promise.all(
+      productIds.map(async (productId) => {
+        try {
+          const res = await fetch(`/api/v1/products/${productId}`, {
+            headers: authHeaders(),
+          });
+          const payload = await parseResponseBody(res);
+          if (!res.ok) {
+            return [String(productId), null];
+          }
+
+          const product = payload?.data ?? payload ?? null;
+          return [
+            String(productId),
+            product
+              ? {
+                  productName: product.name || product.productName || `San pham #${productId}`,
+                  thumbnailUrl: product.thumbnailUrl || product.imageUrl || product.anhDaiDien || product.imageUrls?.[0] || '',
+                }
+              : null,
+          ];
+        } catch {
+          return [String(productId), null];
+        }
+      })
+    );
+
+    return Object.fromEntries(entries.filter(([, value]) => Boolean(value)));
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const ordersRes = await fetch('/api/v1/orders', {
-        headers: { Authorization: `Bearer ${token}` }
+      const pendingRes = await fetch('/api/v1/reviews/me/pending', {
+        headers: authHeaders(),
       });
-      const ordersPayload = await ordersRes.json();
-      const orders = ordersPayload.result || ordersPayload.data?.result || ordersPayload.content || [];
-      const completedOrders = orders.filter(o => o.status === 'completed');
-      
-      const allItems = [];
-      completedOrders.forEach(order => {
-        (order.items || []).forEach(item => {
-          allItems.push({ ...item, orderId: order.id, orderCode: order.orderCode });
-        });
-      });
+      const pendingPayload = await parseResponseBody(pendingRes);
 
-      const reviewsRes = await fetch('/api/v1/reviews/me?page=0&pageSize=100', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const reviewsPayload = await reviewsRes.json();
-      const reviewsList = reviewsPayload.result || reviewsPayload.data?.result || [];
-      const reviewsMap = {};
-      reviewsList.forEach(r => {
-        if (r.orderItemId) reviewsMap[String(r.orderItemId)] = r;
-      });
+      if (pendingRes.ok) {
+        const pendingList = normalizeList(pendingPayload).map((item) => ({
+          ...item,
+          orderItemId: item.orderItemId || item.id,
+          orderId: item.orderId,
+          orderCode: item.orderCode,
+          productId: item.productId,
+          productName: item.productName,
+          color: item.color,
+          size: item.size,
+          thumbnailUrl: item.thumbnailUrl,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+          completedAt: item.completedAt,
+        }));
+        setPendingItems(pendingList);
+      } else {
+        console.error('Fetch pending reviews error:', extractMessage(pendingPayload, 'Khong the tai danh sach san pham chua danh gia.'));
+        setPendingItems([]);
+      }
 
-      setItems(allItems);
-      setMyReviews(reviewsMap);
+      const [ordersResult, reviewsResult] = await Promise.allSettled([
+        fetch('/api/v1/orders', {
+          headers: authHeaders(),
+        }).then(async (ordersRes) => {
+          const ordersPayload = await parseResponseBody(ordersRes);
+          if (!ordersRes.ok) {
+            throw new Error(extractMessage(ordersPayload, 'Khong the tai danh sach don hang.'));
+          }
+
+          let orders = [];
+          if (Array.isArray(ordersPayload)) orders = ordersPayload;
+          else if (Array.isArray(ordersPayload?.result)) orders = ordersPayload.result;
+          else if (Array.isArray(ordersPayload?.content)) orders = ordersPayload.content;
+          else if (Array.isArray(ordersPayload?.data?.result)) orders = ordersPayload.data.result;
+          else if (Array.isArray(ordersPayload?.data?.content)) orders = ordersPayload.data.content;
+
+          const allItems = [];
+          orders.forEach((order) => {
+            const orderId = order.orderId || order.id;
+            const status = (order.status || '').toLowerCase();
+            const itemsList = order.items || order.orderItems || order.orderDetails || order.details || [];
+
+            itemsList.forEach((item) => {
+              allItems.push({
+                ...item,
+                orderItemId: item.orderItemId || item.id,
+                orderId,
+                orderCode: order.orderCode,
+                orderStatus: status,
+              });
+            });
+          });
+
+          return allItems;
+        }),
+        fetchAllMyReviews(),
+      ]);
+
+      const allItems = ordersResult.status === 'fulfilled' ? ordersResult.value : [];
+      const reviewsList = reviewsResult.status === 'fulfilled' ? reviewsResult.value : [];
+
+      if (ordersResult.status === 'rejected') {
+        console.error('Fetch orders error:', ordersResult.reason);
+      }
+      if (reviewsResult.status === 'rejected') {
+        console.error('Fetch my reviews error:', reviewsResult.reason);
+      }
+
+      const productMetaMap = await fetchProductMetaMap(reviewsList, allItems);
+      setReviewedOrderItems(allItems);
+      setMyReviewList(reviewsList);
+      setProductMetaById(productMetaMap);
     } catch (err) {
-      console.error(err);
+      console.error('Fetch reviews error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const pendingItems = items.filter(item => !myReviews[String(item.orderItemId)]);
-  const reviewedItems = items.filter(item => myReviews[String(item.orderItemId)]);
+  const reviewedItems = myReviewList
+    .map((review) => {
+      const matchedItem = reviewedOrderItems.find((item) => String(item.orderItemId) === String(review.orderItemId));
+      const productMeta = productMetaById[String(review.productId)] || null;
+
+      return {
+        ...(matchedItem || {}),
+        orderItemId: review.orderItemId,
+        orderCode: matchedItem?.orderCode || `Order item #${review.orderItemId}`,
+        productName: matchedItem?.productName || productMeta?.productName || `San pham #${review.productId ?? review.orderItemId}`,
+        color: matchedItem?.color || '--',
+        size: matchedItem?.size || '--',
+        unitPrice: matchedItem?.unitPrice || 0,
+        thumbnailUrl: matchedItem?.thumbnailUrl || productMeta?.thumbnailUrl || '',
+        review,
+      };
+    })
+    .sort((a, b) => new Date(b.review?.createdAt || 0) - new Date(a.review?.createdAt || 0));
 
   const handleOpenReview = (item) => {
     setSelectedItem(item);
@@ -64,33 +235,33 @@ export default function ProductReviews({ token }) {
   };
 
   const handleOpenView = (item) => {
-    setSelectedItem({ ...item, review: myReviews[String(item.orderItemId)] });
+    setSelectedItem(item);
     setShowViewModal(true);
   };
 
   return (
     <div className="bg-white border border-lumiere-gray/15 p-8 lg:p-12 animate-fade-in">
       <header className="mb-10">
-        <h2 className="serif text-3xl text-lumiere-charcoal mb-2">Đánh giá sản phẩm</h2>
-        <p className="text-[13px] text-lumiere-gray">Chia sẻ cảm nhận của bạn về các sản phẩm đã mua.</p>
+        <h2 className="serif text-3xl text-lumiere-charcoal mb-2">Danh gia san pham</h2>
+        <p className="text-[13px] text-lumiere-gray">Chia se cam nhan cua ban ve cac san pham da mua.</p>
       </header>
 
       <div className="flex border-b border-lumiere-gray/10 mb-8">
-        <button 
+        <button
           onClick={() => setActiveSubTab('pending')}
           className={`px-6 py-4 text-[12px] tracking-[0.2em] uppercase font-bold transition-all border-b-2 ${
             activeSubTab === 'pending' ? 'border-lumiere-terracotta text-lumiere-charcoal' : 'border-transparent text-lumiere-gray hover:text-lumiere-charcoal'
           }`}
         >
-          Chưa đánh giá ({pendingItems.length})
+          Chua danh gia ({pendingItems.length})
         </button>
-        <button 
+        <button
           onClick={() => setActiveSubTab('completed')}
           className={`px-6 py-4 text-[12px] tracking-[0.2em] uppercase font-bold transition-all border-b-2 ${
             activeSubTab === 'completed' ? 'border-lumiere-terracotta text-lumiere-charcoal' : 'border-transparent text-lumiere-gray hover:text-lumiere-charcoal'
           }`}
         >
-          Đã đánh giá ({reviewedItems.length})
+          Da danh gia ({reviewedItems.length})
         </button>
       </div>
 
@@ -102,7 +273,7 @@ export default function ProductReviews({ token }) {
         <div className="space-y-6">
           {(activeSubTab === 'pending' ? pendingItems : reviewedItems).length === 0 ? (
             <div className="py-16 text-center border border-dashed border-lumiere-gray/20">
-              <p className="serif text-xl text-lumiere-gray italic">Không có sản phẩm nào.</p>
+              <p className="serif text-xl text-lumiere-gray italic">Khong co san pham nao.</p>
             </div>
           ) : (
             (activeSubTab === 'pending' ? pendingItems : reviewedItems).map((item, idx) => (
@@ -112,26 +283,72 @@ export default function ProductReviews({ token }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="mb-4">
-                    <p className="text-[11px] tracking-widest text-lumiere-gray uppercase mb-1">Đơn hàng: {item.orderCode}</p>
+                    <p className="text-[11px] tracking-widest text-lumiere-gray uppercase mb-1">Don hang: {item.orderCode}</p>
                     <h4 className="font-semibold text-lumiere-charcoal text-lg truncate">{item.productName}</h4>
-                    <p className="text-[12px] text-lumiere-gray mt-1">Màu: {item.color} / Size: {item.size}</p>
-                  </div>
-                  <div className="flex justify-between items-end">
-                    <p className="text-[14px] font-bold text-lumiere-charcoal">{formatVND(item.unitPrice)}</p>
+                    <p className="text-[12px] text-lumiere-gray mt-1">Mau: {item.color} / Size: {item.size}</p>
                     {activeSubTab === 'pending' ? (
-                      <button 
+                      <p className="text-[12px] text-lumiere-gray mt-1">
+                        So luong: {item.quantity || 0} • Tam tinh: {formatVND(item.lineTotal ?? item.unitPrice ?? 0)}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {activeSubTab === 'completed' && item.review && (
+                    <div className="mb-4 p-3 bg-white/50 border border-lumiere-gray/5 rounded">
+                      <div className="flex justify-between items-start mb-1.5">
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span
+                              key={star}
+                              className={`material-symbols-outlined text-[16px] ${star <= item.review.starRating ? 'text-lumiere-terracotta' : 'text-lumiere-gray/20'}`}
+                              style={{ fontVariationSettings: star <= item.review.starRating ? "'FILL' 1" : "'FILL' 0" }}
+                            >
+                              star
+                            </span>
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-lumiere-gray uppercase tracking-tighter">
+                          {new Date(item.review.createdAt).toLocaleDateString('vi-VN')}
+                        </span>
+                      </div>
+                      <p className="text-[12px] text-lumiere-gray italic line-clamp-1">"{item.review.content}"</p>
+                      {item.review.likeCount > 0 && (
+                        <div className="flex items-center gap-1 mt-2 text-[11px] text-lumiere-terracotta">
+                          <span className="material-symbols-outlined text-[14px]">favorite</span>
+                          <span>{item.review.likeCount} nguoi thich</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-end">
+                    <div className="text-[14px] font-bold text-lumiere-charcoal">
+                      {activeSubTab === 'pending'
+                        ? formatVND(item.lineTotal ?? item.unitPrice ?? 0)
+                        : ''}
+                    </div>
+                    {activeSubTab === 'pending' ? (
+                      <button
                         onClick={() => handleOpenReview(item)}
                         className="bg-lumiere-charcoal text-white text-[11px] tracking-[0.2em] uppercase font-medium px-6 py-2.5 hover:bg-lumiere-terracotta transition-all shadow-lg shadow-lumiere-charcoal/10"
                       >
-                        Viết đánh giá
+                        Viet danh gia
                       </button>
                     ) : (
-                      <button 
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleOpenReview(item)}
+                        className="bg-lumiere-cream border border-lumiere-charcoal text-lumiere-charcoal text-[11px] tracking-[0.2em] uppercase font-medium px-4 py-2.5 hover:bg-lumiere-charcoal hover:text-white transition-all"
+                      >
+                        Chỉnh sửa
+                      </button>
+                      <button
                         onClick={() => handleOpenView(item)}
-                        className="border border-lumiere-charcoal text-lumiere-charcoal text-[11px] tracking-[0.2em] uppercase font-medium px-6 py-2.5 hover:bg-lumiere-charcoal hover:text-white transition-all"
+                        className="border border-lumiere-charcoal text-lumiere-charcoal text-[11px] tracking-[0.2em] uppercase font-medium px-4 py-2.5 hover:bg-lumiere-charcoal hover:text-white transition-all"
                       >
                         Xem chi tiết
                       </button>
+                    </div>
                     )}
                   </div>
                 </div>
@@ -141,7 +358,7 @@ export default function ProductReviews({ token }) {
         </div>
       )}
 
-      <ReviewModal 
+      <ReviewModal
         show={showReviewModal}
         onClose={() => setShowReviewModal(false)}
         item={selectedItem}
@@ -149,7 +366,7 @@ export default function ProductReviews({ token }) {
         onSuccess={fetchData}
       />
 
-      <ViewReviewModal 
+      <ViewReviewModal
         show={showViewModal}
         onClose={() => setShowViewModal(false)}
         item={selectedItem}

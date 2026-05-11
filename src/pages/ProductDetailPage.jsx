@@ -18,7 +18,16 @@ function normalizeList(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.data)) return payload.data;
   if (Array.isArray(payload?.result)) return payload.result;
+  if (Array.isArray(payload?.content)) return payload.content;
   return [];
+}
+
+function normalizePagination(payload) {
+  const base = payload && typeof payload === 'object' && ('meta' in payload || 'result' in payload || 'content' in payload)
+      ? payload : payload?.data ?? payload;
+  const meta = base?.meta ?? base?.data?.meta ?? null;
+  const result = normalizeList(base);
+  return { meta, result };
 }
 
 const COLOR_MAP = {
@@ -53,6 +62,7 @@ export default function ProductDetailPage() {
   const [error, setError] = useState('');
   
   const [reviews, setReviews] = useState([]);
+  const [totalReviews, setTotalReviews] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
   useEffect(() => {
@@ -94,13 +104,59 @@ export default function ProductDetailPage() {
   const fetchProductReviews = async (productId) => {
     setReviewsLoading(true);
     try {
-      const res = await fetch(`${API_PRODUCTS_URL}/${productId}/reviews?page=0&pageSize=10`);
+      const token = window.localStorage.getItem('token');
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${API_PRODUCTS_URL}/${productId}/reviews?page=0&pageSize=10`, {
+        headers
+      });
       if (res.ok) {
         const payload = await res.json();
-        setReviews(normalizeList(payload));
+        const { result, meta } = normalizePagination(payload);
+        setReviews(result);
+        setTotalReviews(meta?.totals ?? result.length);
       }
-    } catch (e) { console.error('Lỗi tải đánh giá:', e); }
-    finally { setReviewsLoading(false); }
+    } catch (e) { 
+      console.error('Lỗi tải đánh giá:', e); 
+    } finally { 
+      setReviewsLoading(false); 
+    }
+  };
+
+  const handleToggleLike = async (reviewId) => {
+    const token = window.localStorage.getItem('token');
+    if (!token) {
+      alert('Bạn cần đăng nhập để thực hiện tính năng này.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/v1/reviews/${reviewId}/like`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        setReviews(prev => prev.map(r => {
+          if (r.reviewId === reviewId) {
+            const isNowLiked = !r.likedByMe;
+            return {
+              ...r,
+              likedByMe: isNowLiked,
+              likeCount: isNowLiked ? (r.likeCount + 1) : Math.max(0, r.likeCount - 1)
+            };
+          }
+          return r;
+        }));
+      }
+    } catch (e) {
+      console.error('Lỗi khi like:', e);
+    }
   };
 
   const fetchRelatedProducts = async (categoryId) => {
@@ -274,7 +330,12 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Tabs: Reviews, etc. */}
-        <ProductTabs reviews={reviews} description={product.description} />
+        <ProductTabs 
+          reviews={reviews} 
+          totalReviews={totalReviews} 
+          description={product.description} 
+          onToggleLike={handleToggleLike}
+        />
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
