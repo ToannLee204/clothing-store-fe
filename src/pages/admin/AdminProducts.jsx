@@ -41,6 +41,8 @@ const AdminProducts = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState(null);
   const navigate = useNavigate();
 
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0, pages: 1 });
@@ -211,6 +213,61 @@ const AdminProducts = () => {
     }
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await fetch(`${PRODUCT_API_URL}/import/template`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'import_san_pham_mau.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        alert('Không thể tải file mẫu.');
+      }
+    } catch (err) {
+      console.error('Lỗi tải template:', err);
+      alert('Lỗi kết nối máy chủ.');
+    }
+  };
+
+  const handleBulkImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setImportLoading(true);
+    setImportResult(null);
+    try {
+      const response = await fetch(`${PRODUCT_API_URL}/import`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const res = await response.json();
+      if (response.ok) {
+        setImportResult(res.data || res);
+        fetchProducts(pagination.current);
+      } else {
+        alert(res.message || 'Lỗi khi import sản phẩm.');
+      }
+    } catch (err) {
+      console.error('Lỗi import:', err);
+      alert('Lỗi kết nối máy chủ.');
+    } finally {
+      setImportLoading(false);
+      e.target.value = ''; // Reset input
+    }
+  };
+
   const stats = useMemo(() => {
     const visibleCount = products.filter((p) => Number(p.status) !== 0).length;
     const hiddenCount = products.filter((p) => Number(p.status) === 0).length;
@@ -244,6 +301,30 @@ const AdminProducts = () => {
             <div className="pm-subtitle">Tìm kiếm, lọc và quản lý toàn bộ sản phẩm trong hệ thống.</div>
           </div>
           <div className="pm-actions">
+            <button className="btn-ghost" onClick={handleDownloadTemplate}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>Tải file mẫu
+            </button>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="file"
+                id="bulk-import-input"
+                hidden
+                accept=".xlsx, .xls"
+                onChange={handleBulkImport}
+              />
+              <button 
+                className="btn-ghost" 
+                onClick={() => document.getElementById('bulk-import-input').click()}
+                disabled={importLoading}
+              >
+                {importLoading ? (
+                  <span className="material-symbols-outlined animate-spin" style={{ fontSize: '18px' }}>progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>upload_file</span>
+                )}
+                Import sản phẩm
+              </button>
+            </div>
             <button className="btn-ghost">
               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>file_download</span>Xuất Excel
             </button>
@@ -257,6 +338,57 @@ const AdminProducts = () => {
         {error && (
           <div style={{ padding: '12px', background: '#fcebeb', color: '#a32d2d', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
             {error}
+          </div>
+        )}
+
+        {/* Import Result Overlay/Modal */}
+        {importResult && (
+          <div className="import-result-modal" style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+          }}>
+            <div style={{
+              background: '#fff', borderRadius: '16px', maxWidth: '500px', width: '100%',
+              padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.2)', margin: 'auto'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>Kết quả Import</h3>
+                <button onClick={() => setImportResult(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                <div style={{ textAlign: 'center', padding: '12px', background: '#f8fafc', borderRadius: '12px' }}>
+                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Tổng cộng</div>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>{importResult.totalRows}</div>
+                </div>
+                <div style={{ textAlign: 'center', padding: '12px', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                  <div style={{ fontSize: '10px', color: '#16a34a', fontWeight: '700', textTransform: 'uppercase' }}>Thành công</div>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#15803d' }}>{importResult.success}</div>
+                </div>
+                <div style={{ textAlign: 'center', padding: '12px', background: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
+                  <div style={{ fontSize: '10px', color: '#dc2626', fontWeight: '700', textTransform: 'uppercase' }}>Thất bại</div>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#b91c1c' }}>{importResult.failed}</div>
+                </div>
+              </div>
+
+              {importResult.errors && importResult.errors.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>Danh sách lỗi:</p>
+                  <div style={{ maxHeight: '150px', overflowY: 'auto', background: '#fef2f2', padding: '12px', borderRadius: '8px', fontSize: '12px', color: '#b91c1c' }}>
+                    {importResult.errors.map((err, i) => <div key={i} style={{ marginBottom: '4px' }}>• {err}</div>)}
+                  </div>
+                </div>
+              )}
+
+              <button 
+                onClick={() => setImportResult(null)}
+                style={{ width: '100%', padding: '12px', background: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         )}
 
