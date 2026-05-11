@@ -503,6 +503,9 @@ const AdminProducts = () => {
                   </div>
                   <div>
                     <div className="act-row">
+                      <button className="act-btn" onClick={() => navigate(`/admin/products/detail/${product.id}`)} title="Xem chi tiết">
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility</span>Xem
+                      </button>
                       <button className="act-btn" onClick={() => navigate(`/admin/products/variants/${product.id}`)}>
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>style</span>Kho
                       </button>

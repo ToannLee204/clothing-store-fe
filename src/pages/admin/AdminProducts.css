@@ -36,16 +36,20 @@
 .dot-teal{background:#1d9e75}
 .dot-gray{background:#888780}
 
-.advanced-filter-row > :nth-child(3),
-.advanced-filter-row > :nth-child(4){display:none}
+/* Advanced filters now visible */
+.advanced-filter-row > div,
+.advanced-filter-row > input,
+.advanced-filter-row > select {
+  display: flex;
+}
 
 .table-wrap{background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.05)}
-.tbl-header{display:grid;grid-template-columns:50px 1fr 140px 120px 140px 180px;gap:0;padding:12px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
+.tbl-header{display:grid;grid-template-columns:50px 1fr 120px 110px 120px 280px;gap:0;padding:12px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
 .th{font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px}
 .th.right{text-align:right}
 .th.center{text-align:center}
 
-.tbl-row{display:grid;grid-template-columns:50px 1fr 140px 120px 140px 180px;gap:0;padding:16px 20px;border-bottom:1px solid #f1f5f9;align-items:center;transition:background 0.15s}
+.tbl-row{display:grid;grid-template-columns:50px 1fr 120px 110px 120px 280px;gap:0;padding:16px 20px;border-bottom:1px solid #f1f5f9;align-items:center;transition:background 0.15s}
 .tbl-row:last-child{border-bottom:none}
 .tbl-row:hover{background:#f8fafc}
 

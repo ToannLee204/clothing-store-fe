@@ -34,6 +34,7 @@ import AdminReports from './pages/admin/AdminReports';
 import AdminChangePassword from './pages/admin/AdminChangePassword';
 import AdminProfile from './pages/admin/AdminProfile';
 import AdminInvoices from './pages/admin/AdminInvoices';
+import AdminProductDetail from './pages/admin/AdminProductDetail';
 
 // Hàm bảo vệ Route Admin
 function AdminRoute({ children }) {
@@ -111,6 +112,7 @@ function AppContent() {
             <Route index element={<AdminReports />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="products/add" element={<AdminAddProduct />} />
+            <Route path="products/detail/:id" element={<AdminProductDetail />} />
             <Route path="products/variants/:id" element={<AdminProductVariants />} />
             <Route path="products/edit/:id" element={<AdminProductEdit />} />
             <Route path="categories" element={<AdminCategories />} />

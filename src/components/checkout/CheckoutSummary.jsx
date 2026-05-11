@@ -1,4 +1,4 @@
-import React from 'react';
+import { getImageUrl } from '../../utils/format';
 
 const formatVND = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)}₫`;
 
@@ -18,7 +18,12 @@ export default function CheckoutSummary({
         {items.map((item, idx) => (
           <div key={idx} className="flex gap-4">
             <div className="w-12 h-16 bg-lumiere-blush shrink-0 overflow-hidden">
-              {item.thumbnailUrl && <img src={item.thumbnailUrl} alt={item.productName} className="w-full h-full object-cover" />}
+              <img 
+                src={getImageUrl(item.thumbnailUrl || item.imageUrl)} 
+                alt={item.productName} 
+                className="w-full h-full object-cover" 
+                onError={(e) => { e.currentTarget.src = 'https://placehold.co/400x600?text=No+Image'; }}
+              />
             </div>
             <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
               <p className="text-[13px] font-medium text-lumiere-charcoal truncate">{item.productName}</p>
