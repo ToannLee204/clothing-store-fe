@@ -20,6 +20,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import PaymentResultPage from './pages/PaymentResultPage';
 
 // Admin pages
 import AdminProducts from './pages/admin/AdminProducts';
@@ -107,6 +108,7 @@ function AppContent() {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/payment-result" element={<PaymentResultPage />} />
 
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<AdminReports />} />

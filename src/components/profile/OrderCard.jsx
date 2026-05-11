@@ -9,7 +9,7 @@ export default function OrderCard({ order, onCancel, onRetryPayment, onDetail, a
   const orderId = order.orderId ?? order.id;
 
   const canCancel = order?.status === 'pending';
-  const canRetryPayment = order?.status === 'payment_failed' && order?.paymentMethod === 'vnpay';
+  const canRetryPayment = order?.paymentMethod === 'vnpay' && order?.paymentStatus !== 'paid' && order?.status !== 'cancelled';
 
   return (
     <div className="bg-white border border-lumiere-gray/15 p-6 lg:p-8 hover:border-lumiere-gray/30 transition-all">
@@ -60,7 +60,7 @@ export default function OrderCard({ order, onCancel, onRetryPayment, onDetail, a
               disabled={actionBusyId === orderId}
               className="w-full bg-lumiere-terracotta text-white text-[11px] tracking-[0.2em] uppercase font-medium py-3 hover:opacity-90 transition-all disabled:opacity-50"
             >
-              Thanh toán lại
+              Thanh toán ngay
             </button>
           )}
 
