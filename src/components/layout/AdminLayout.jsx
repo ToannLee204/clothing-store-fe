@@ -24,11 +24,11 @@ const AdminLayout = () => {
       <AdminSidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} currentUser={user} />
 
       {/* VÙNG NỘI DUNG CO GIÃN */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${isCollapsed ? 'ml-20' : 'ml-64'}`}>
+      <div className={`flex-1 min-w-0 flex flex-col transition-all duration-300 ${isCollapsed ? 'ml-20' : 'ml-64'}`}>
         
         {/* VÙNG NỘI DUNG CHÍNH */}
         
-        <div className="p-0">
+        <div className="min-w-0 p-0">
           <Outlet /> {/* Vùng render nội dung các trang (Products, Categories...) */}
         </div>
       </div>

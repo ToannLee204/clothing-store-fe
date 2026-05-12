@@ -55,6 +55,16 @@ export function translateOrderStatus(status) {
     case 'completed': return 'Đã hoàn tất';
     case 'cancelled': return 'Đã hủy';
     case 'payment_failed': return 'Thanh toán lỗi';
+    case 'refund_requested': 
+    case 'return_requested': return 'Yêu cầu trả hàng';
+    case 'return_approved': return 'Chấp nhận trả hàng';
+    case 'returning':
+    case 'return_confirmed':
+    case 'returned': return 'Đã nhận hàng trả';
+    case 'rejected_refund': 
+    case 'rejected_return':
+    case 'recjected_refund': return 'Từ chối trả hàng';
+    case 'refunded': return 'Đã hoàn tiền';
     default: return status || '—';
   }
 }
@@ -70,6 +80,14 @@ export function getOrderStatusColor(status) {
     case 'completed': return 'text-emerald-600 bg-emerald-50';
     case 'cancelled': return 'text-rose-600 bg-rose-50';
     case 'payment_failed': return 'text-rose-600 bg-rose-50';
+    case 'refund_requested':
+    case 'return_requested': return 'text-orange-600 bg-orange-50';
+    case 'return_approved': return 'text-indigo-600 bg-indigo-50';
+    case 'returning':
+    case 'return_confirmed':
+    case 'returned': return 'text-indigo-600 bg-indigo-50';
+    case 'rejected_refund': return 'text-rose-600 bg-rose-50';
+    case 'refunded': return 'text-purple-600 bg-purple-50';
     default: return 'text-gray-600 bg-gray-50';
   }
 }
@@ -85,7 +103,11 @@ export function translatePaymentStatus(status) {
     case 'pending': return 'Chờ thanh toán';
     case 'paid': return 'Đã thanh toán';
     case 'failed': return 'Thanh toán lỗi';
-    case 'refund_requested': return 'Yêu cầu hoàn tiền';
+    case 'refund_requested':
+    case 'return_requested': return 'Yêu cầu hoàn tiền';
+    case 'rejected_refund':
+    case 'rejected_return':
+    case 'recjected_refund': return 'Từ chối hoàn tiền';
     case 'refunded': return 'Đã hoàn tiền';
     default: return status;
   }
@@ -100,7 +122,8 @@ export function translateInvoiceStatus(status) {
   switch (s) {
     case 'unpaid': return 'Chưa thanh toán';
     case 'paid': return 'Đã thanh toán';
-    case 'refund_requested': return 'Yêu cầu hoàn tiền';
+    case 'refund_requested':
+    case 'return_requested': return 'Yêu cầu hoàn tiền';
     case 'refunded': return 'Đã hoàn tiền';
     case 'pending': return 'Chờ xử lý';
     case 'cancelled': return 'Đã hủy';

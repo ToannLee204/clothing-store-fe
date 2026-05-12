@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import OrderCard from './OrderCard';
 import OrderDetailModal from './OrderDetailModal';
+import ReturnRequestModal from './ReturnRequestModal';
+import CancelOrderModal from './CancelOrderModal';
+import ReturnRequestDetailModal from './ReturnRequestDetailModal';
 
 const API_ORDERS_URL = '/api/v1/orders';
 
@@ -11,6 +14,13 @@ export default function MyOrders({ token }) {
   const [actionBusyId, setActionBusyId] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [showReturnDetailModal, setShowReturnDetailModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [orderToReturn, setOrderToReturn] = useState(null);
+  const [orderToCancel, setOrderToCancel] = useState(null);
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const fetchMyOrders = async () => {
     setLoading(true);
@@ -34,18 +44,38 @@ export default function MyOrders({ token }) {
     fetchMyOrders();
   }, [token]);
 
-  const cancelOrder = async (orderId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) return;
-    setActionBusyId(orderId);
+  const handleOpenCancel = (orderId) => {
+    setOrderToCancel(orderId);
+    setShowCancelModal(true);
+  };
+
+  const handleCancelSubmit = async (reason) => {
+    setCancelLoading(true);
     try {
-      const res = await fetch(`${API_ORDERS_URL}/${orderId}/cancel`, {
+      const res = await fetch(`${API_ORDERS_URL}/${orderToCancel}/cancel`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ reason: 'Người dùng hủy đơn từ trang cá nhân' }),
+        headers: { 
+          'Content-Type': 'application/json', 
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ reason }),
       });
-      if (res.ok) await fetchMyOrders();
-    } catch (e) { console.error(e); }
-    finally { setActionBusyId(null); }
+      
+      if (res.ok) {
+        setShowCancelModal(false);
+        setOrderToCancel(null);
+        await fetchMyOrders();
+        alert('Hủy đơn hàng thành công!');
+      } else {
+        const data = await res.json();
+        alert(data?.message || 'Có lỗi xảy ra khi hủy đơn hàng.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Lỗi kết nối.');
+    } finally {
+      setCancelLoading(false);
+    }
   };
 
   const retryVnpay = async (orderId) => {
@@ -63,6 +93,48 @@ export default function MyOrders({ token }) {
       }
     } catch (e) { console.error(e); }
     finally { setActionBusyId(null); }
+  };
+
+  const handleOpenReturn = (orderId) => {
+    setOrderToReturn(orderId);
+    setShowReturnModal(true);
+  };
+
+  const handleViewReturn = (orderId) => {
+    setOrderToReturn(orderId);
+    setShowReturnDetailModal(true);
+  };
+
+  const handleReturnSubmit = async ({ reason, images }) => {
+    setReturnLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('reason', reason);
+      images.forEach(img => formData.append('images', img));
+
+      const res = await fetch(`${API_ORDERS_URL}/${orderToReturn}/return-request`, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}` 
+        },
+        body: formData,
+      });
+      
+      if (res.ok) {
+        setShowReturnModal(false);
+        setOrderToReturn(null);
+        await fetchMyOrders();
+        alert('Gửi yêu cầu trả hàng thành công!');
+      } else {
+        const data = await res.json();
+        alert(data?.message || 'Có lỗi xảy ra khi gửi yêu cầu.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Lỗi kết nối.');
+    } finally {
+      setReturnLoading(false);
+    }
   };
 
   const handleOpenDetail = (id) => {
@@ -93,9 +165,11 @@ export default function MyOrders({ token }) {
             <OrderCard 
               key={order.id} 
               order={order} 
-              onCancel={cancelOrder}
+              onCancel={handleOpenCancel}
               onRetryPayment={retryVnpay}
+              onReturn={handleOpenReturn}
               onDetail={handleOpenDetail}
+              onViewReturn={handleViewReturn}
               actionBusyId={actionBusyId}
             />
           ))}
@@ -107,6 +181,27 @@ export default function MyOrders({ token }) {
         onClose={() => setShowDetailModal(false)}
         orderId={selectedOrderId}
         token={token}
+      />
+
+      <ReturnRequestModal 
+        show={showReturnModal}
+        loading={returnLoading}
+        onClose={() => setShowReturnModal(false)}
+        onSubmit={handleReturnSubmit}
+      />
+
+      <ReturnRequestDetailModal 
+        show={showReturnDetailModal}
+        onClose={() => setShowReturnDetailModal(false)}
+        orderId={orderToReturn}
+        token={token}
+      />
+
+      <CancelOrderModal 
+        show={showCancelModal}
+        loading={cancelLoading}
+        onClose={() => setShowCancelModal(false)}
+        onSubmit={handleCancelSubmit}
       />
     </div>
   );

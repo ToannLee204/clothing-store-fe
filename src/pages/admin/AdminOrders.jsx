@@ -47,6 +47,16 @@ function getStatusBadge(status) {
     case 'completed': return 'badge-green';
     case 'cancelled': return 'badge-red';
     case 'payment_failed': return 'badge-red';
+    case 'refund_requested':
+    case 'return_requested': return 'badge-orange';
+    case 'return_approved': return 'badge-indigo';
+    case 'returning':
+    case 'return_confirmed':
+    case 'returned': return 'badge-indigo';
+    case 'rejected_refund': 
+    case 'rejected_return':
+    case 'recjected_refund': return 'badge-red';
+    case 'refunded': return 'badge-purple';
     default: return 'badge-gray';
   }
 }
@@ -73,6 +83,10 @@ export default function AdminOrders() {
   const [detailOrder, setDetailOrder] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  const [refundInfo, setRefundInfo] = useState(null);
+  const [isRefundOpen, setIsRefundOpen] = useState(false);
+  const [refundLoading, setRefundLoading] = useState(false);
 
   const [updateOrder, setUpdateOrder] = useState(null);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
@@ -161,6 +175,105 @@ export default function AdminOrders() {
     }
   };
 
+  const openRefundInfo = async (orderId) => {
+    setRefundLoading(true);
+    setIsRefundOpen(true);
+    setRefundInfo(null);
+    try {
+      const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/return-request`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const payload = await parseJson(res);
+      if (!res.ok) throw new Error(extractMessage(payload, 'Không thể tải thông tin hoàn tiền.'));
+      setRefundInfo(payload?.data || payload);
+    } catch (e) {
+      alert(e.message);
+      setIsRefundOpen(false);
+    } finally {
+      setRefundLoading(false);
+    }
+  };
+
+  const handleConfirmReturnRequest = async (orderId) => {
+    if (!window.confirm('Xác nhận chấp nhận yêu cầu trả hàng này?')) return;
+    
+    setUpdating(true);
+    try {
+      const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/confirm-return`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const payload = await parseJson(res);
+      if (res.ok) {
+        alert('Đã chấp nhận yêu cầu trả hàng. Đang chờ khách hàng gửi lại hàng.');
+        openRefundInfo(orderId); // Refresh modal info
+        fetchOrders(pagination.current);
+      } else {
+        alert(extractMessage(payload, 'Thao tác thất bại.'));
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Lỗi kết nối.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleRejectReturnRequest = async (orderId) => {
+    const reason = window.prompt('Vui lòng nhập lý do từ chối yêu cầu trả hàng (bắt buộc):');
+    if (!reason) return;
+    
+    setUpdating(true);
+    try {
+      const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/reject-return`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ refundRejectReason: reason })
+      });
+      const payload = await parseJson(res);
+      if (res.ok) {
+        alert('Đã từ chối yêu cầu trả hàng.');
+        setIsRefundOpen(false);
+        fetchOrders(pagination.current);
+      } else {
+        alert(extractMessage(payload, 'Thao tác thất bại.'));
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Lỗi kết nối.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleRefundReturnOrder = async (orderId) => {
+    if (!window.confirm('Xác nhận đã nhận được hàng và thực hiện hoàn tiền ngay lập tức?')) return;
+    
+    setUpdating(true);
+    try {
+      const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/refund-return`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const payload = await parseJson(res);
+      if (res.ok) {
+        alert('Đã thực hiện hoàn tiền thành công!');
+        setIsRefundOpen(false);
+        fetchOrders(pagination.current);
+      } else {
+        alert(extractMessage(payload, 'Hoàn tiền thất bại.'));
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Lỗi kết nối.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const openUpdate = (order) => {
     setUpdateOrder(order);
     const nexts = getAvailableNextStatuses(order.status);
@@ -219,12 +332,15 @@ export default function AdminOrders() {
     }
   };
 
-  // Stats summary (Still using current page orders for summary, or could fetch from dashboard API)
   const summary = useMemo(() => {
-    const s = { pending: 0, confirmed: 0, shipping: 0, completed: 0, cancelled: 0, payment_failed: 0 };
+    const s = { pending: 0, confirmed: 0, shipping: 0, completed: 0, cancelled: 0, payment_failed: 0, returns: 0 };
     for (const o of orders) {
       const st = o?.status;
-      if (st in s) s[st] += 1;
+      if (['return_requested', 'refund_requested', 'return_approved', 'returning', 'return_confirmed', 'returned', 'rejected_refund', 'rejected_return', 'recjected_refund'].includes(st)) {
+        s.returns += 1;
+      } else if (st in s) {
+        s[st] += 1;
+      }
     }
     return s;
   }, [orders]);
@@ -234,18 +350,19 @@ export default function AdminOrders() {
     { label: 'Đã xác nhận', value: summary.confirmed, icon: 'inventory', tone: 'si-amber' },
     { label: 'Đang giao', value: summary.shipping, icon: 'local_shipping', tone: 'si-teal' },
     { label: 'Hoàn tất', value: summary.completed, icon: 'check_circle', tone: 'si-green' },
+    { label: 'Trả hàng', value: summary.returns, icon: 'assignment_return', tone: 'si-orange' },
     { label: 'Đã hủy', value: summary.cancelled, icon: 'cancel', tone: 'si-red' },
-    { label: 'Lỗi T.Toán', value: summary.payment_failed, icon: 'error', tone: 'si-gray' },
   ];
 
   const hasFilters = filters.status || filters.keyword || filters.fromDate || filters.toDate;
 
-  // Grid template for orders table
-  const orderGridStyle = { gridTemplateColumns: '180px 1fr 160px 140px 140px 260px', minWidth: '1000px' };
+  const orderGridStyle = {
+    gridTemplateColumns: 'minmax(170px, 1fr) minmax(220px, 1.35fr) minmax(165px, 0.95fr) minmax(140px, 0.85fr) minmax(160px, 0.95fr) minmax(220px, 1.2fr)',
+  };
 
   return (
-    <main className="flex-1 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
-      <div className="pm-wrap">
+    <main className="flex-1 min-w-0 overflow-y-auto p-8 bg-[#f8f6f6] font-sans">
+      <div className="pm-wrap min-w-0">
         <div className="pm-topbar">
           <div className="pm-title-block">
             <div className="pm-title">Quản lý đơn hàng</div>
@@ -271,10 +388,9 @@ export default function AdminOrders() {
           ))}
         </div>
 
-        {/* ── FILTER BAR ── */}
+        {/* FILTER BAR */}
         <div className="filter-bar">
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* Search keyword */}
             <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
               <span className="material-symbols-outlined" style={{
                 position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)',
@@ -303,7 +419,6 @@ export default function AdminOrders() {
               )}
             </div>
 
-            {/* Trạng thái */}
             <select className="fselect" value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
               <option value="">Tất cả trạng thái</option>
               <option value="pending">Chờ xác nhận</option>
@@ -312,9 +427,10 @@ export default function AdminOrders() {
               <option value="completed">Hoàn tất</option>
               <option value="cancelled">Đã hủy</option>
               <option value="payment_failed">Thanh toán lỗi</option>
+              <option value="return_requested">Yêu cầu trả hàng</option>
+              <option value="rejected_refund">Từ chối trả hàng</option>
             </select>
 
-            {/* Date Filters */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Từ:</span>
               <input 
@@ -345,8 +461,8 @@ export default function AdminOrders() {
           </div>
         </div>
 
-        {/* Table Content */}
-        <div className="table-wrap">
+        <div className="table-wrap table-wrap-scroll table-wrap-orders">
+          <div className="table-wrap-orders-inner" style={{ minWidth: '1080px', width: 'max(100%, 1080px)' }}>
           <div className="tbl-header" style={orderGridStyle}>
             <div className="th">Mã đơn hàng</div>
             <div className="th">Khách hàng</div>
@@ -356,57 +472,64 @@ export default function AdminOrders() {
             <div className="th right">Thao tác</div>
           </div>
 
-          {loading ? (
-             <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Đang tải dữ liệu...</div>
-          ) : orders.length === 0 ? (
-             <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Không tìm thấy đơn hàng nào.</div>
-          ) : (
-            orders.map((o) => {
-              const orderId = o?.orderId ?? o?.id;
-              const nextStatuses = getAvailableNextStatuses(o.status);
-              return (
-                <div className="tbl-row" key={String(orderId)} style={orderGridStyle}>
-                  <div>
-                    <div className="prod-name" style={{ color: '#0066A2', fontWeight: 900 }}>{o?.orderCode || `#${orderId}`}</div>
-                    <div className="price-note" style={{ textAlign: 'left' }}>{o?.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN') : '—'}</div>
-                  </div>
-                  <div>
-                    <div className="prod-name" style={{ fontSize: '13px' }}>{o?.customerName || '—'}</div>
-                    <div className="prod-meta" style={{ textTransform: 'none', letterSpacing: 'normal' }}>{o?.customerEmail || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155', textTransform: 'uppercase' }}>{o?.paymentMethod}</div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{translatePaymentStatus(o?.paymentStatus)}</div>
-                  </div>
-                  <div className="right">
-                    <div className="price-val" style={{ color: '#0f172a' }}>{formatVND(o?.total)}</div>
-                  </div>
-                  <div className="center">
-                    <span className={`badge ${getStatusBadge(o?.status)}`}>
-                      {humanStatus(o?.status)}
-                    </span>
-                  </div>
-                  <div className="right">
-                    <div className="act-row">
-                      <button className="act-btn" onClick={() => handleExportInvoice(orderId, o?.orderCode)} title="Xuất hóa đơn PDF">
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>receipt_long</span> In HĐ
-                      </button>
-                      <button className="act-btn" onClick={() => openDetail(orderId)}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility</span> Chi tiết
-                      </button>
-                      {nextStatuses.length > 0 && (
-                        <button className="act-btn edit" onClick={() => openUpdate(o)}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit_square</span> Cập nhật
+            {loading ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Đang tải dữ liệu...</div>
+            ) : orders.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Không tìm thấy đơn hàng nào.</div>
+            ) : (
+              orders.map((o) => {
+                const orderId = o?.orderId ?? o?.id;
+                const nextStatuses = getAvailableNextStatuses(o.status);
+                const statusKey = (o.status || '').toLowerCase();
+                const isRefundRelated = ['return_requested', 'refund_requested', 'refunded', 'return_approved', 'returning', 'return_confirmed', 'returned', 'rejected_refund', 'rejected_return', 'recjected_refund'].includes(statusKey);
+
+                return (
+                  <div className="tbl-row" key={String(orderId)} style={orderGridStyle}>
+                    <div>
+                      <div className="prod-name" style={{ color: '#0066A2', fontWeight: 900 }}>{o?.orderCode || `#${orderId}`}</div>
+                      <div className="price-note" style={{ textAlign: 'left' }}>{o?.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN') : '—'}</div>
+                    </div>
+                    <div>
+                      <div className="prod-name" style={{ fontSize: '13px' }}>{o?.customerName || '—'}</div>
+                      <div className="prod-meta" style={{ textTransform: 'none', letterSpacing: 'normal' }}>{o?.customerEmail || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155', textTransform: 'uppercase' }}>{o?.paymentMethod}</div>
+                      <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{translatePaymentStatus(o?.paymentStatus)}</div>
+                    </div>
+                    <div className="right">
+                      <div className="price-val" style={{ color: '#0f172a' }}>{formatVND(o?.total)}</div>
+                    </div>
+                    <div className="center">
+                      <span className={`badge ${getStatusBadge(o?.status)}`}>
+                        {humanStatus(o?.status)}
+                      </span>
+                    </div>
+                    <div className="right">
+                      <div className="act-row order-actions">
+                        {isRefundRelated && (
+                          <button className="act-btn" onClick={() => openRefundInfo(orderId)} style={{ color: '#C4714A', borderColor: '#F8D5C8' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>info</span> {['return_requested', 'refund_requested'].includes(statusKey) ? 'Xử lý hoàn' : 'Chi tiết hoàn'}
+                          </button>
+                        )}
+                        <button className="act-btn" onClick={() => handleExportInvoice(orderId, o?.orderCode)} title="Xuất hóa đơn PDF">
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>receipt_long</span> In HĐ
                         </button>
-                      )}
+                        <button className="act-btn" onClick={() => openDetail(orderId)}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility</span> Chi tiết
+                        </button>
+                        {nextStatuses.length > 0 && (
+                          <button className="act-btn edit" onClick={() => openUpdate(o)}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit_square</span> Cập nhật
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
-          )}
+                );
+              })
+            )}
 
-          {/* Footer Pagination */}
           <div className="tbl-footer">
             <span className="footer-text">
               Tổng số: <strong>{pagination.total}</strong> đơn hàng
@@ -415,18 +538,30 @@ export default function AdminOrders() {
               <button className="page-btn" disabled={pagination.current <= 1} onClick={() => setPagination(p => ({ ...p, current: p.current - 1 }))}>
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_left</span>
               </button>
-              {Array.from({ length: Math.min(pagination.pages, 5) }, (_, i) => {
-                const p = i + 1;
-                return (
+              {(() => {
+                const pages = [];
+                const maxVisible = 5;
+                let start = Math.max(1, pagination.current - 2);
+                let end = Math.min(pagination.pages, start + maxVisible - 1);
+                
+                if (end - start + 1 < maxVisible) {
+                  start = Math.max(1, end - maxVisible + 1);
+                }
+
+                for (let i = start; i <= end; i++) {
+                  pages.push(i);
+                }
+                return pages.map(p => (
                   <button key={p} className={`page-btn ${pagination.current === p ? 'active' : ''}`} onClick={() => setPagination(prev => ({ ...prev, current: p }))}>
                     {p}
                   </button>
-                );
-              })}
+                ));
+              })()}
               <button className="page-btn" disabled={pagination.current >= pagination.pages} onClick={() => setPagination(p => ({ ...p, current: p.current + 1 }))}>
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
               </button>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -471,18 +606,6 @@ export default function AdminOrders() {
                             {translatePaymentStatus(detailOrder.payment?.status || detailOrder.paymentStatus)}
                           </span>
                         </div>
-                        {detailOrder.payment?.paidAt && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-slate-500">Ngày trả:</span>
-                            <span className="text-[10px] text-slate-600">{new Date(detailOrder.payment.paidAt).toLocaleString('vi-VN')}</span>
-                          </div>
-                        )}
-                        {detailOrder.payment?.vnpayTransactionNo && (
-                          <div className="pt-2 border-t border-slate-100">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase">Mã GD VNPAY:</span>
-                            <div className="text-[11px] font-mono text-slate-600">{detailOrder.payment.vnpayTransactionNo}</div>
-                          </div>
-                        )}
                       </div>
                     </div>
 
@@ -505,12 +628,6 @@ export default function AdminOrders() {
                             <div className="text-sm font-mono font-bold text-[#0066A2]">{detailOrder.trackingCode}</div>
                           </div>
                         )}
-                        {detailOrder.cancelReason && (
-                          <div className="mt-2 pt-2 border-t border-slate-200">
-                            <span className="text-[10px] text-rose-400 uppercase font-bold">Lý do hủy:</span>
-                            <div className="text-xs text-rose-600">{detailOrder.cancelReason}</div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -531,34 +648,30 @@ export default function AdminOrders() {
                           <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50/50 transition">
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">
-                                <img 
-                                  src={getImageUrl(item.thumbnailUrl)} 
-                                  alt={item.productName}
-                                  className="size-12 rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0 object-cover" 
-                                />
+                                <img src={getImageUrl(item.thumbnailUrl)} alt={item.productName} className="size-12 rounded-lg object-cover" />
                                 <div>
                                   <div className="text-sm font-bold text-slate-900">{item.productName}</div>
-                                  <div className="text-[10px] text-slate-500 uppercase tracking-tighter">Màu: {item.color} · Size: {item.size}</div>
+                                  <div className="text-[10px] text-slate-500 uppercase">Màu: {item.color} · Size: {item.size}</div>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-center text-sm font-bold text-slate-700">{item.quantity}</td>
-                            <td className="px-4 py-3 text-right text-sm font-medium text-slate-600">{formatVND(item.unitPrice || item.price)}</td>
-                            <td className="px-4 py-3 text-right text-sm font-bold text-slate-900">{formatVND(item.lineTotal || (item.price * item.quantity))}</td>
+                            <td className="px-4 py-3 text-center text-sm font-bold">{item.quantity}</td>
+                            <td className="px-4 py-3 text-right text-sm">{formatVND(item.unitPrice || item.price)}</td>
+                            <td className="px-4 py-3 text-right text-sm font-bold">{formatVND(item.lineTotal || (item.price * item.quantity))}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
 
-                  <div className="flex justify-end">
-                    <div className="w-full max-w-xs space-y-2">
+                  <div className="flex justify-end pt-4">
+                    <div className="w-full max-w-xs space-y-2 text-right">
                       <div className="flex justify-between text-sm text-slate-500">
                         <span>Tạm tính:</span>
                         <span>{formatVND(detailOrder.subTotal)}</span>
                       </div>
-                      <div className="flex justify-between text-sm text-rose-500">
-                        <span>Giảm giá ({detailOrder.voucherCode || '—'}):</span>
+                      <div className="flex justify-between text-sm text-rose-500 font-bold">
+                        <span>Giảm giá:</span>
                         <span>-{formatVND(detailOrder.discountAmount)}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-200">
@@ -572,14 +685,114 @@ export default function AdminOrders() {
             </div>
 
             <div className="border-t border-slate-100 px-6 py-4 flex justify-end gap-3 bg-slate-50/30">
-              <button 
-                onClick={() => handleExportInvoice(detailOrder?.orderId, detailOrder?.orderCode)} 
-                className="btn-ghost"
-                style={{ color: '#0066A2' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>receipt_long</span> Xuất hóa đơn PDF
+              <button onClick={() => handleExportInvoice(detailOrder?.orderId, detailOrder?.orderCode)} className="btn-ghost" style={{ color: '#0066A2' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>receipt_long</span> Xuất hóa đơn
               </button>
               <button onClick={() => setIsDetailOpen(false)} className="btn-ghost">Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REFUND INFO MODAL */}
+      {isRefundOpen && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsRefundOpen(false)} />
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-orange-50/50">
+              <div>
+                <h2 className="text-xl font-black text-orange-900">Thông tin hoàn tiền</h2>
+                <p className="text-xs text-orange-700 mt-0.5">Yêu cầu cho đơn hàng {refundInfo?.orderCode}</p>
+              </div>
+              <button onClick={() => setIsRefundOpen(false)} className="p-2 hover:bg-orange-100 rounded-full transition">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              {refundLoading ? (
+                <div className="text-center py-20 text-slate-500 font-bold">Đang tải dữ liệu...</div>
+              ) : !refundInfo ? (
+                <div className="text-center py-20 text-rose-500 font-bold">Không tìm thấy thông tin hoàn tiền.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Khách hàng</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-[10px] text-slate-400 uppercase font-bold">Họ tên</div>
+                        <div className="text-sm font-bold text-slate-900">{refundInfo.customerName}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-400 uppercase font-bold">Email</div>
+                        <div className="text-sm text-slate-700">{refundInfo.customerEmail}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Chi tiết</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-[10px] text-slate-400 uppercase font-bold">Lý do hoàn hàng</div>
+                        <div className="text-sm p-3 bg-orange-50 text-orange-800 rounded-xl border border-orange-100 italic">
+                          "{refundInfo.refundReason}"
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="text-right w-full">
+                          <div className="text-[10px] text-slate-400 uppercase font-bold">Số tiền hoàn</div>
+                          <div className="text-lg font-black text-rose-600">{formatVND(refundInfo.refundAmount || refundInfo.orderTotal)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-span-1 md:col-span-2 space-y-4">
+                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Hình ảnh minh chứng</h3>
+                    {refundInfo.imageUrls && refundInfo.imageUrls.length > 0 ? (
+                      <div className="flex flex-wrap gap-4">
+                        {refundInfo.imageUrls.map((url, index) => (
+                          <img key={index} src={getImageUrl(url)} alt="proof" className="w-32 h-32 object-cover rounded-xl border border-slate-200 cursor-pointer" onClick={() => window.open(getImageUrl(url), '_blank')} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-slate-400 italic">Không có hình ảnh đính kèm.</div>
+                    )}
+                  </div>
+                  
+                  {refundInfo.refundApprovedAt && (
+                    <div className="col-span-2 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                       <div className="text-[10px] text-emerald-600 uppercase font-bold">Đã duyệt hoàn tiền lúc</div>
+                       <div className="text-sm font-bold text-emerald-900">{new Date(refundInfo.refundApprovedAt).toLocaleString('vi-VN')}</div>
+                    </div>
+                  )}
+
+                  {['rejected_refund', 'rejected_return', 'recjected_refund'].includes(refundInfo.orderStatus) && (
+                    <div className="col-span-2 p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                       <div className="text-[10px] text-rose-600 uppercase font-bold">Lý do từ chối trả hàng</div>
+                       <div className="text-sm font-bold text-rose-900 italic">"{refundInfo.refundRejectReason || 'Không có lý do cụ thể'}"</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-slate-100 px-6 py-4 flex justify-end gap-3 bg-slate-50/30">
+              <button onClick={() => setIsRefundOpen(false)} className="btn-ghost">Đóng</button>
+              {!refundInfo?.refundApprovedAt && (
+                <>
+                  {['return_requested', 'refund_requested'].includes(refundInfo?.orderStatus) && (
+                    <>
+                      <button onClick={() => handleRejectReturnRequest(refundInfo?.orderId)} disabled={updating} className="bg-rose-100 text-rose-700 text-[11px] uppercase font-bold px-8 py-3">Từ chối</button>
+                      <button onClick={() => handleConfirmReturnRequest(refundInfo?.orderId)} disabled={updating} className="bg-slate-900 text-white text-[11px] uppercase font-bold px-8 py-3">Chấp nhận trả hàng</button>
+                    </>
+                  )}
+                  {['returning', 'return_confirmed', 'return_approved', 'returned'].includes(refundInfo?.orderStatus) && (
+                    <button onClick={() => handleRefundReturnOrder(refundInfo?.orderId)} disabled={updating} className="bg-emerald-600 text-white text-[11px] uppercase font-bold px-8 py-3">Xác nhận & Hoàn tiền</button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -591,59 +804,24 @@ export default function AdminOrders() {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsUpdateOpen(false)} />
           <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="border-b border-slate-100 px-6 py-4">
-              <h2 className="text-lg font-black text-slate-900">Cập nhật đơn hàng {updateOrder?.orderCode}</h2>
-              <p className="text-xs text-slate-500">Chuyển trạng thái theo quy trình vận hành.</p>
+              <h2 className="text-lg font-black text-slate-900">Cập nhật đơn hàng</h2>
             </div>
-
             <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2">Trạng thái tiếp theo</label>
-                <select
-                  className="fselect w-full"
-                  value={updateForm.status}
-                  onChange={(e) => setUpdateForm({ ...updateForm, status: e.target.value })}
-                >
-                  {getAvailableNextStatuses(updateOrder?.status).map(st => (
-                    <option key={st} value={st}>{humanStatus(st)}</option>
-                  ))}
-                </select>
-              </div>
-
+              <select className="fselect w-full" value={updateForm.status} onChange={(e) => setUpdateForm({ ...updateForm, status: e.target.value })}>
+                {getAvailableNextStatuses(updateOrder?.status).map(st => (
+                  <option key={st} value={st}>{humanStatus(st)}</option>
+                ))}
+              </select>
               {updateForm.status === 'shipping' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2">Mã vận đơn (Tracking Code)</label>
-                  <input
-                    type="text"
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-[#0066A2] outline-none"
-                    placeholder="VD: VNPOST123..."
-                    value={updateForm.trackingCode}
-                    onChange={(e) => setUpdateForm({ ...updateForm, trackingCode: e.target.value })}
-                  />
-                </div>
+                <input type="text" className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="Mã vận đơn" value={updateForm.trackingCode} onChange={(e) => setUpdateForm({ ...updateForm, trackingCode: e.target.value })} />
               )}
-
               {updateForm.status === 'cancelled' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 text-rose-500">Lý do hủy đơn</label>
-                  <textarea
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-rose-400 outline-none min-h-[100px]"
-                    placeholder="VD: Khách thay đổi ý định, hết hàng..."
-                    value={updateForm.reason}
-                    onChange={(e) => setUpdateForm({ ...updateForm, reason: e.target.value })}
-                  />
-                </div>
+                <textarea className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm min-h-[100px]" placeholder="Lý do hủy" value={updateForm.reason} onChange={(e) => setUpdateForm({ ...updateForm, reason: e.target.value })} />
               )}
             </div>
-
             <div className="border-t border-slate-100 px-6 py-4 flex gap-3">
               <button onClick={() => setIsUpdateOpen(false)} className="btn-ghost flex-1">Hủy</button>
-              <button 
-                onClick={handleUpdateStatus} 
-                disabled={updating}
-                className="btn-primary flex-1"
-              >
-                {updating ? 'Đang cập nhật...' : 'Xác nhận thay đổi'}
-              </button>
+              <button onClick={handleUpdateStatus} disabled={updating} className="btn-primary flex-1">{updating ? 'Đang lưu...' : 'Xác nhận'}</button>
             </div>
           </div>
         </div>

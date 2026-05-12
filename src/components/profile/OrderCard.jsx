@@ -5,11 +5,14 @@ import { translateOrderStatus, getOrderStatusColor } from '../../utils/format';
 
 const formatPrice = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)} ₫`;
 
-export default function OrderCard({ order, onCancel, onRetryPayment, onDetail, actionBusyId }) {
+export default function OrderCard({ order, onCancel, onRetryPayment, onReturn, onDetail, onViewReturn, actionBusyId }) {
   const orderId = order.orderId ?? order.id;
 
   const canCancel = order?.status === 'pending';
   const canRetryPayment = order?.paymentMethod === 'vnpay' && order?.paymentStatus !== 'paid' && order?.status !== 'cancelled';
+  const statusKey = (order?.status || '').toLowerCase();
+  const canReturn = order?.status === 'completed' && !['refund_requested', 'return_requested', 'return_approved', 'returning', 'return_confirmed', 'returned', 'refunded', 'rejected_refund', 'rejected_return', 'recjected_refund'].includes(statusKey);
+  const isRefundRequested = ['refund_requested', 'return_requested', 'return_approved', 'returning', 'return_confirmed', 'returned', 'refunded', 'rejected_refund', 'rejected_return', 'recjected_refund'].includes(statusKey);
 
   return (
     <div className="bg-white border border-lumiere-gray/15 p-6 lg:p-8 hover:border-lumiere-gray/30 transition-all">
@@ -61,6 +64,25 @@ export default function OrderCard({ order, onCancel, onRetryPayment, onDetail, a
               className="w-full bg-lumiere-terracotta text-white text-[11px] tracking-[0.2em] uppercase font-medium py-3 hover:opacity-90 transition-all disabled:opacity-50"
             >
               Thanh toán ngay
+            </button>
+          )}
+
+          {isRefundRequested && (
+            <button 
+              onClick={() => onViewReturn(orderId)}
+              className="w-full border border-lumiere-gold/30 text-lumiere-gold text-[11px] tracking-[0.2em] uppercase font-medium py-3 hover:bg-lumiere-gold hover:text-white transition-all"
+            >
+              Xem yêu cầu trả hàng
+            </button>
+          )}
+
+          {canReturn && (
+            <button 
+              onClick={() => onReturn(orderId)}
+              disabled={actionBusyId === orderId}
+              className="w-full border border-lumiere-gray/20 text-lumiere-gray text-[11px] tracking-[0.2em] uppercase font-medium py-3 hover:border-lumiere-charcoal hover:text-lumiere-charcoal transition-all disabled:opacity-50"
+            >
+              Trả hàng
             </button>
           )}
 

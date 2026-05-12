@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from "react-dom";
 import ReviewModal from './ReviewModal';
-import { getImageUrl, translateOrderStatus } from '../../utils/format';
-
-const formatVND = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)}₫`;
+import ReturnRequestDetailModal from './ReturnRequestDetailModal';
+import { getImageUrl, translateOrderStatus, formatVND } from '../../utils/format';
 
 export default function OrderDetailModal({ show, onClose, orderId, token }) {
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
-  
-  // Review Modal State
+
+  // Modals State
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showReturnDetailModal, setShowReturnDetailModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [myReviews, setMyReviews] = useState({});
 
@@ -31,7 +32,6 @@ export default function OrderDetailModal({ show, onClose, orderId, token }) {
       if (!res.ok) throw new Error(payload?.message || 'Không thể tải chi tiết đơn hàng.');
       setOrder(payload?.data ?? payload);
       
-      // Also fetch my reviews to check which items are already reviewed
       fetchMyReviews();
     } catch (e) {
       setError(e?.message || 'Lỗi tải dữ liệu.');
@@ -64,65 +64,94 @@ export default function OrderDetailModal({ show, onClose, orderId, token }) {
 
   if (!show) return null;
 
-  return (
-    <>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-        <div className="absolute inset-0 bg-lumiere-charcoal/40 backdrop-blur-sm" onClick={onClose} />
-        
-        <div className="relative bg-lumiere-cream w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-lumiere-gray/20 shadow-2xl animate-slide-up">
-          <div className="sticky top-0 bg-lumiere-cream z-10 flex justify-between items-center p-6 lg:px-10 border-b border-lumiere-gray/10">
+  const statusKey = (order?.status || '').toLowerCase();
+  const isRefundRelated = ['refund_requested', 'return_requested', 'return_approved', 'returning', 'return_confirmed', 'returned', 'refunded', 'rejected_refund', 'rejected_return', 'recjected_refund'].includes(statusKey);
+
+  const modalContent = (
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-fade-in"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        zIndex: 99999,
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white w-full max-w-5xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-fade-up border border-lumiere-gray/5 overflow-hidden flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-8 lg:p-12 flex flex-col h-full overflow-hidden">
+          <div className="flex justify-between items-start mb-8 shrink-0">
             <div>
-              <h3 className="serif text-2xl text-lumiere-charcoal">Chi tiết đơn hàng</h3>
-              {order && <p className="text-[12px] tracking-widest text-lumiere-gray uppercase mt-1">Mã: {order.orderCode}</p>}
+              <h3 className="serif text-3xl text-lumiere-charcoal mb-2">
+                Chi tiết đơn hàng
+              </h3>
+              <div className="w-12 h-[1px] bg-lumiere-gold mb-4"></div>
+              {order && <p className="text-[11px] tracking-widest text-lumiere-gray uppercase">Mã: {order.orderCode}</p>}
             </div>
-            <button onClick={onClose} className="text-lumiere-gray hover:text-lumiere-charcoal transition-all">
-              <span className="material-symbols-outlined text-3xl">close</span>
+            <button
+              onClick={onClose}
+              className="text-lumiere-gray hover:text-lumiere-charcoal transition-all"
+            >
+              <span className="material-symbols-outlined">close</span>
             </button>
           </div>
 
-          <div className="p-6 lg:p-10">
+          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {loading ? (
               <div className="py-20 text-center">
-                <div className="w-10 h-10 border-2 border-lumiere-terracotta border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <div className="w-8 h-8 border-2 border-lumiere-gold border-t-transparent rounded-full animate-spin mx-auto"></div>
               </div>
             ) : error ? (
               <div className="p-6 bg-rose-50 border border-rose-100 text-rose-600 text-center serif italic">{error}</div>
             ) : order ? (
-              <div className="grid lg:grid-cols-[1fr_300px] gap-12">
-                {/* Items List */}
-                <div className="space-y-8">
-                  <div className="bg-white border border-lumiere-gray/15 p-6 md:p-8">
-                    <h4 className="serif text-xl text-lumiere-charcoal mb-6">Sản phẩm đã mua</h4>
+              <div className="space-y-12 pb-8">
+                <div className="grid lg:grid-cols-[1fr_300px] gap-12">
+                  <div className="space-y-8">
+                    <div className="flex justify-between items-center">
+                       <label className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-gray">Sản phẩm</label>
+                       {isRefundRelated && (
+                        <button 
+                          onClick={() => setShowReturnDetailModal(true)}
+                          className="text-[10px] tracking-widest uppercase font-bold text-lumiere-gold hover:text-lumiere-charcoal transition-all border-b border-lumiere-gold/30 pb-1"
+                        >
+                          Xem yêu cầu trả hàng
+                        </button>
+                      )}
+                    </div>
                     <div className="divide-y divide-lumiere-gray/10">
                       {(order.items || []).map((item, idx) => {
                         const isReviewed = !!myReviews[String(item.orderItemId)];
                         const canReview = order.status === 'completed';
 
                         return (
-                          <div key={idx} className="py-6 flex flex-col sm:flex-row gap-6">
-                            <div className="w-20 h-24 bg-lumiere-blush shrink-0 overflow-hidden">
+                          <div key={idx} className="py-6 flex gap-6">
+                            <div className="w-20 h-24 bg-lumiere-blush shrink-0 overflow-hidden border border-lumiere-gray/5">
                               {item.thumbnailUrl && <img src={getImageUrl(item.thumbnailUrl)} alt={item.productName} className="w-full h-full object-cover" />}
                             </div>
-                            <div className="flex-1 min-w-0 flex flex-col justify-between">
+                            <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                               <div>
-                                <p className="font-semibold text-lumiere-charcoal truncate">{item.productName}</p>
-                                <p className="text-[11px] text-lumiere-gray uppercase tracking-wider mt-1">
-                                  Màu: {item.color || '—'} / Size: {item.size || '—'}
-                                </p>
+                                <p className="font-semibold text-lumiere-charcoal mb-1">{item.productName}</p>
+                                <p className="text-[11px] text-lumiere-gray uppercase tracking-wider">{item.color} / {item.size}</p>
                               </div>
-                              <div className="flex justify-between items-end mt-4">
-                                <p className="text-[12px] text-lumiere-gray">SL: {item.quantity}</p>
-                                <p className="text-[14px] font-bold text-lumiere-charcoal">{formatVND(item.lineTotal)}</p>
+                              <div className="flex justify-between items-end">
+                                <p className="text-[12px] text-lumiere-gray italic">x{item.quantity}</p>
+                                <p className="text-[15px] font-bold text-lumiere-charcoal">{formatVND(item.lineTotal)}</p>
                               </div>
                             </div>
-                            <div className="sm:w-32 flex sm:flex-col justify-end gap-2">
+                            <div className="w-32 flex flex-col justify-center">
                               {isReviewed ? (
-                                <span className="text-[11px] text-emerald-600 font-bold uppercase tracking-widest text-center py-2 px-3 bg-emerald-50 border border-emerald-100">Đã đánh giá</span>
+                                <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest text-center py-2 bg-emerald-50 border border-emerald-100">Đã đánh giá</span>
                               ) : (
                                 <button
                                   disabled={!canReview}
                                   onClick={() => handleOpenReview(item)}
-                                  className={`text-[11px] tracking-widest uppercase font-bold py-2 px-3 border transition-all ${
+                                  className={`text-[10px] tracking-widest uppercase font-bold py-2 border transition-all ${
                                     canReview 
                                       ? 'border-lumiere-charcoal text-lumiere-charcoal hover:bg-lumiere-charcoal hover:text-white' 
                                       : 'border-lumiere-gray/20 text-lumiere-gray/40 cursor-not-allowed'
@@ -136,75 +165,72 @@ export default function OrderDetailModal({ show, onClose, orderId, token }) {
                         );
                       })}
                     </div>
-                    
-                    <div className="mt-8 pt-6 border-t border-lumiere-gray/15 space-y-3">
-                      <div className="flex justify-between text-[14px]">
-                        <span className="text-lumiere-gray">Tạm tính</span>
-                        <span className="text-lumiere-charcoal font-medium">{formatVND(order.subTotal || order.total)}</span>
-                      </div>
-                      {order.discountAmount > 0 && (
-                        <div className="flex justify-between text-[14px]">
-                          <span className="text-lumiere-gray">Giảm giá</span>
-                          <span className="text-lumiere-terracotta font-medium">-{formatVND(order.discountAmount)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-baseline pt-4 border-t border-lumiere-gray/5">
-                        <span className="serif text-lg text-lumiere-charcoal">Tổng thanh toán</span>
-                        <span className="text-xl font-bold text-lumiere-terracotta">{formatVND(order.total)}</span>
+                  </div>
+
+                  <div className="space-y-10">
+                    <div className="space-y-4">
+                      <label className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-gray">Thông tin nhận hàng</label>
+                      <div className="text-sm space-y-1">
+                        <p className="font-bold">{order.recipientName}</p>
+                        <p>{order.recipientPhone}</p>
+                        <p className="text-lumiere-gray leading-relaxed mt-2 italic text-[13px]">"{order.addressLine}"</p>
                       </div>
                     </div>
+
+                    <div className="space-y-4">
+                      <label className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-gray">Trạng thái đơn hàng</label>
+                      <div className="text-sm space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-lumiere-gray">Trạng thái:</span>
+                          <span className="font-bold text-lumiere-gold uppercase">{translateOrderStatus(order.status)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-lumiere-gray/5 pt-2">
+                          <span className="text-lumiere-gray">Thanh toán:</span>
+                          <span className={`font-bold ${order.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {order.paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {order.trackingCode && (
+                      <div className="p-5 bg-lumiere-charcoal text-white rounded-sm shadow-lg shadow-lumiere-charcoal/10">
+                        <p className="text-[10px] uppercase tracking-[0.2em] opacity-60 mb-1 font-bold">Mã vận đơn</p>
+                        <p className="font-mono font-bold tracking-wider text-base">{order.trackingCode}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Order Info */}
-                <div className="space-y-6">
-                  <div className="bg-white border border-lumiere-gray/15 p-6">
-                    <h4 className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-charcoal mb-4">Thông tin nhận hàng</h4>
-                    <div className="space-y-4 text-[13px]">
-                      <div>
-                        <p className="text-lumiere-gray mb-1">Người nhận:</p>
-                        <p className="font-semibold text-lumiere-charcoal">{order.recipientName}</p>
+                <div className="pt-10 border-t border-lumiere-gray/10 flex justify-end">
+                  <div className="w-full max-w-xs space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-lumiere-gray italic">Tạm tính:</span>
+                      <span className="font-medium">{formatVND(order.subTotal || order.total)}</span>
+                    </div>
+                    {order.discountAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-lumiere-gray italic">Giảm giá:</span>
+                        <span className="text-lumiere-terracotta">-{formatVND(order.discountAmount)}</span>
                       </div>
-                      <div>
-                        <p className="text-lumiere-gray mb-1">Số điện thoại:</p>
-                        <p className="font-semibold text-lumiere-charcoal">{order.recipientPhone}</p>
-                      </div>
-                      <div>
-                        <p className="text-lumiere-gray mb-1">Địa chỉ:</p>
-                        <p className="text-lumiere-charcoal leading-relaxed">{order.addressLine}</p>
-                      </div>
+                    )}
+                    <div className="flex justify-between items-baseline pt-4 border-t border-lumiere-gray/10">
+                      <span className="serif text-xl text-lumiere-charcoal">Tổng cộng:</span>
+                      <span className="text-2xl font-bold text-lumiere-terracotta">{formatVND(order.total)}</span>
                     </div>
                   </div>
-
-                  <div className="bg-white border border-lumiere-gray/15 p-6">
-                    <h4 className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-charcoal mb-4">Thanh toán</h4>
-                    <div className="space-y-4 text-[13px]">
-                      <div className="flex justify-between">
-                        <span className="text-lumiere-gray">Trạng thái đơn:</span>
-                        <span className="font-semibold text-lumiere-terracotta uppercase">{translateOrderStatus(order.status)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-lumiere-gray">Phương thức:</span>
-                        <span className="font-semibold text-lumiere-charcoal uppercase">{order.paymentMethod}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-lumiere-gray">Trạng thái:</span>
-                        <span className={`font-semibold ${order.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                          {order.paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {order.status === 'shipping' && order.trackingCode && (
-                    <div className="bg-lumiere-charcoal text-white p-6">
-                      <h4 className="text-[11px] tracking-[0.2em] uppercase font-bold mb-2">Mã vận đơn</h4>
-                      <p className="text-lg font-mono tracking-wider">{order.trackingCode}</p>
-                    </div>
-                  )}
                 </div>
               </div>
             ) : null}
+          </div>
+
+          <div className="mt-8 flex justify-end shrink-0 pt-4 border-t border-lumiere-gray/5">
+            <button
+              onClick={onClose}
+              className="bg-lumiere-charcoal text-white text-[11px] tracking-[0.2em] uppercase font-bold px-12 py-4 hover:bg-lumiere-terracotta transition-all shadow-xl shadow-lumiere-charcoal/20"
+            >
+              Đóng
+            </button>
           </div>
         </div>
       </div>
@@ -216,6 +242,15 @@ export default function OrderDetailModal({ show, onClose, orderId, token }) {
         token={token}
         onSuccess={fetchMyReviews}
       />
-    </>
+
+      <ReturnRequestDetailModal 
+        show={showReturnDetailModal}
+        onClose={() => setShowReturnDetailModal(false)}
+        orderId={orderId}
+        token={token}
+      />
+    </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
