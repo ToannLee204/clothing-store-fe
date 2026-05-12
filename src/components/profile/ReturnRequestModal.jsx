@@ -6,11 +6,15 @@ export default function ReturnRequestModal({
   onClose,
   onSubmit,
   loading,
+  order,
 }) {
   const [reason, setReason] = useState("");
+  const [refundBankInfo, setRefundBankInfo] = useState("");
   const [images, setImages] = useState([]);
   const [previews, setPreviews] = useState([]);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState({});
+
+  const isCod = order?.paymentMethod === "cod";
 
   if (!show) return null;
 
@@ -38,11 +42,20 @@ export default function ReturnRequestModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const newErrors = {};
     if (!reason.trim()) {
-      setError("Vui lòng nhập lý do hoàn hàng");
+      newErrors.reason = "Vui lòng nhập lý do hoàn hàng";
+    }
+    if (isCod && !refundBankInfo.trim()) {
+      newErrors.bankInfo = "Vui lòng cung cấp thông tin ngân hàng";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
-    onSubmit({ reason, images });
+
+    onSubmit({ reason, images, refundBankInfo });
   };
 
   const modalContent = (
@@ -59,10 +72,10 @@ export default function ReturnRequestModal({
       }}
     >
       <div
-        className="bg-white w-full max-w-lg shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-fade-up border border-lumiere-gray/5"
+        className="bg-white w-full max-w-lg shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-fade-up border border-lumiere-gray/5 overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-10 lg:p-14 text-center">
+        <div className="p-10 lg:p-14 text-center overflow-y-auto custom-scrollbar flex-1">
           <div className="mb-8">
             <h3 className="serif text-4xl text-lumiere-charcoal mb-4">
               Yêu cầu trả hàng
@@ -78,29 +91,61 @@ export default function ReturnRequestModal({
             <div className="space-y-3">
               <label className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-charcoal flex justify-between">
                 Lý do hoàn hàng
-                {error && (
+                {errors.reason && (
                   <span className="text-rose-500 normal-case font-medium italic">
                     (*)
                   </span>
                 )}
               </label>
-              <textarea
+                <textarea
                 required
                 rows={5}
                 value={reason}
                 onChange={(e) => {
                   setReason(e.target.value);
-                  setError("");
+                  setErrors(prev => ({ ...prev, reason: "" }));
                 }}
                 className="w-full bg-lumiere-cream/20 border border-lumiere-gray/10 px-5 py-4 text-[15px] outline-none focus:border-lumiere-gold transition-all resize-none placeholder:text-lumiere-gray/40"
                 placeholder="Ví dụ: Sản phẩm không đúng mô tả, lỗi kỹ thuật..."
               />
-              {error && (
+              {errors.reason && (
                 <p className="text-[12px] text-rose-500 italic mt-1 font-medium">
-                  {error}
+                  {errors.reason}
                 </p>
               )}
             </div>
+
+            {isCod && (
+              <div className="space-y-3">
+                <label className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-charcoal flex justify-between">
+                  Thông tin ngân hàng nhận hoàn tiền
+                  {errors.bankInfo && (
+                    <span className="text-rose-500 normal-case font-medium italic">
+                      (*)
+                    </span>
+                  )}
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={refundBankInfo}
+                  onChange={(e) => {
+                    setRefundBankInfo(e.target.value);
+                    setErrors(prev => ({ ...prev, bankInfo: "" }));
+                  }}
+                  className="w-full bg-lumiere-cream/20 border border-lumiere-gray/10 px-5 py-4 text-[15px] outline-none focus:border-lumiere-gold transition-all resize-none placeholder:text-lumiere-gray/40 font-mono"
+                  placeholder="Số tài khoản - Ngân hàng - Tên chủ tài khoản"
+                />
+                <p className="text-[11px] text-lumiere-gray italic mt-1">
+                  * Dành cho đơn hàng thanh toán COD. Ví dụ: 123456789 - BIDV - Nguyễn Văn An
+                </p>
+                {errors.bankInfo && (
+                  <p className="text-[12px] text-rose-500 italic mt-1 font-medium">
+                    {errors.bankInfo}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-4">
               <label className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-charcoal flex justify-between">

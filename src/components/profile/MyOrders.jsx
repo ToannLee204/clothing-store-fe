@@ -95,24 +95,28 @@ export default function MyOrders({ token }) {
     finally { setActionBusyId(null); }
   };
 
-  const handleOpenReturn = (orderId) => {
-    setOrderToReturn(orderId);
+  const handleOpenReturn = (order) => {
+    setOrderToReturn(order);
     setShowReturnModal(true);
   };
 
-  const handleViewReturn = (orderId) => {
-    setOrderToReturn(orderId);
+  const handleViewReturn = (order) => {
+    setOrderToReturn(order);
     setShowReturnDetailModal(true);
   };
 
-  const handleReturnSubmit = async ({ reason, images }) => {
+  const handleReturnSubmit = async ({ reason, images, refundBankInfo }) => {
     setReturnLoading(true);
     try {
       const formData = new FormData();
       formData.append('reason', reason);
+      if (refundBankInfo) {
+        formData.append('refundBankInfo', refundBankInfo);
+      }
       images.forEach(img => formData.append('images', img));
 
-      const res = await fetch(`${API_ORDERS_URL}/${orderToReturn}/return-request`, {
+      const orderId = orderToReturn.orderId ?? orderToReturn.id;
+      const res = await fetch(`${API_ORDERS_URL}/${orderId}/return-request`, {
         method: 'POST',
         headers: { 
           Authorization: `Bearer ${token}` 
@@ -167,9 +171,9 @@ export default function MyOrders({ token }) {
               order={order} 
               onCancel={handleOpenCancel}
               onRetryPayment={retryVnpay}
-              onReturn={handleOpenReturn}
+              onReturn={() => handleOpenReturn(order)}
               onDetail={handleOpenDetail}
-              onViewReturn={handleViewReturn}
+              onViewReturn={() => handleViewReturn(order)}
               actionBusyId={actionBusyId}
             />
           ))}
@@ -186,6 +190,7 @@ export default function MyOrders({ token }) {
       <ReturnRequestModal 
         show={showReturnModal}
         loading={returnLoading}
+        order={orderToReturn}
         onClose={() => setShowReturnModal(false)}
         onSubmit={handleReturnSubmit}
       />
@@ -193,7 +198,7 @@ export default function MyOrders({ token }) {
       <ReturnRequestDetailModal 
         show={showReturnDetailModal}
         onClose={() => setShowReturnDetailModal(false)}
-        orderId={orderToReturn}
+        orderId={orderToReturn?.orderId ?? orderToReturn?.id}
         token={token}
       />
 

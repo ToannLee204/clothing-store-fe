@@ -54,10 +54,10 @@ export default function ReturnRequestDetailModal({
       }}
     >
       <div
-        className="bg-white w-full max-w-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-fade-up border border-lumiere-gray/5 overflow-hidden"
+        className="bg-white w-full max-w-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-fade-up border border-lumiere-gray/5 overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-8 lg:p-12">
+        <div className="p-8 lg:p-12 overflow-y-auto custom-scrollbar flex-1">
           <div className="flex justify-between items-start mb-8">
             <div>
               <h3 className="serif text-3xl text-lumiere-charcoal mb-2">
@@ -117,6 +117,17 @@ export default function ReturnRequestDetailModal({
                 </div>
               </div>
 
+              {data.refundBankInfo && (
+                <div className="space-y-4">
+                  <label className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-gray">
+                    Thông tin nhận hoàn tiền
+                  </label>
+                  <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-sm font-mono text-emerald-800 text-sm">
+                    {data.refundBankInfo}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4">
                 <label className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-gray">
                   Lý do của bạn
@@ -172,10 +183,23 @@ export default function ReturnRequestDetailModal({
                       Yêu cầu đã được chấp nhận
                     </span>
                   </div>
-                  <p className="text-sm text-emerald-600/80">
+                  <p className="text-sm text-emerald-600/80 mb-4">
                     Khoản tiền đã được hoàn trả vào tài khoản của bạn vào lúc{" "}
                     {new Date(data.refundApprovedAt).toLocaleString("vi-VN")}.
                   </p>
+                  {data.refundTransferProofUrl && (
+                    <div className="mt-4 border-t border-emerald-200 pt-4">
+                      <p className="text-[11px] uppercase font-bold text-emerald-700 mb-3 tracking-widest">
+                        Minh chứng hoàn tiền
+                      </p>
+                      <img
+                        src={getImageUrl(data.refundTransferProofUrl)}
+                        alt="Refund Bill"
+                        className="w-full max-w-sm rounded-sm border border-emerald-200 cursor-pointer hover:opacity-90 transition-all"
+                        onClick={() => window.open(getImageUrl(data.refundTransferProofUrl), "_blank")}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

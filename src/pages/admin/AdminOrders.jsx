@@ -92,6 +92,8 @@ export default function AdminOrders() {
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [updateForm, setUpdateForm] = useState({ status: '', trackingCode: '', reason: '' });
   const [updating, setUpdating] = useState(false);
+  const [billImage, setBillImage] = useState(null);
+  const [billPreview, setBillPreview] = useState(null);
 
   const fetchOrders = useCallback(async (page = 1) => {
     setLoading(true);
@@ -179,6 +181,8 @@ export default function AdminOrders() {
     setRefundLoading(true);
     setIsRefundOpen(true);
     setRefundInfo(null);
+    setBillImage(null);
+    setBillPreview(null);
     try {
       const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/return-request`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -231,7 +235,7 @@ export default function AdminOrders() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}` 
         },
-        body: JSON.stringify({ refundRejectReason: reason })
+        body: JSON.stringify({ reason })
       });
       const payload = await parseJson(res);
       if (res.ok) {
@@ -250,18 +254,32 @@ export default function AdminOrders() {
   };
 
   const handleRefundReturnOrder = async (orderId) => {
+    const isCod = refundInfo?.paymentMethod === 'cod';
+    if (isCod && !billImage) {
+      alert('Vui lòng tải lên ảnh bill chuyển khoản cho đơn COD.');
+      return;
+    }
+
     if (!window.confirm('Xác nhận đã nhận được hàng và thực hiện hoàn tiền ngay lập tức?')) return;
     
     setUpdating(true);
     try {
+      const formData = new FormData();
+      if (billImage) {
+        formData.append('billImage', billImage);
+      }
+
       const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/refund-return`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
       });
       const payload = await parseJson(res);
       if (res.ok) {
         alert('Đã thực hiện hoàn tiền thành công!');
         setIsRefundOpen(false);
+        setBillImage(null);
+        setBillPreview(null);
         fetchOrders(pagination.current);
       } else {
         alert(extractMessage(payload, 'Hoàn tiền thất bại.'));
@@ -697,19 +715,27 @@ export default function AdminOrders() {
       {/* REFUND INFO MODAL */}
       {isRefundOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsRefundOpen(false)} />
-          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl flex flex-col">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => {
+            setIsRefundOpen(false);
+            setBillImage(null);
+            setBillPreview(null);
+          }} />
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-orange-50/50">
               <div>
                 <h2 className="text-xl font-black text-orange-900">Thông tin hoàn tiền</h2>
                 <p className="text-xs text-orange-700 mt-0.5">Yêu cầu cho đơn hàng {refundInfo?.orderCode}</p>
               </div>
-              <button onClick={() => setIsRefundOpen(false)} className="p-2 hover:bg-orange-100 rounded-full transition">
+              <button onClick={() => {
+                setIsRefundOpen(false);
+                setBillImage(null);
+                setBillPreview(null);
+              }} className="p-2 hover:bg-orange-100 rounded-full transition">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
-            <div className="p-8 space-y-6">
+            <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
               {refundLoading ? (
                 <div className="text-center py-20 text-slate-500 font-bold">Đang tải dữ liệu...</div>
               ) : !refundInfo ? (
@@ -748,6 +774,56 @@ export default function AdminOrders() {
                     </div>
                   </div>
 
+                  {refundInfo.refundBankInfo && (
+                    <div className="col-span-1 md:col-span-2 space-y-4">
+                      <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Thông tin ngân hàng nhận hoàn (COD)</h3>
+                      <div className="p-4 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-100 font-mono text-sm">
+                        {refundInfo.refundBankInfo}
+                      </div>
+                    </div>
+                  )}
+
+                  {refundInfo.refundTransferProofUrl && (
+                    <div className="col-span-1 md:col-span-2 space-y-4">
+                      <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Minh chứng hoàn tiền (Admin)</h3>
+                      <img 
+                        src={getImageUrl(refundInfo.refundTransferProofUrl)} 
+                        alt="Bill" 
+                        className="w-full max-w-sm object-contain rounded-xl border border-slate-200 cursor-pointer" 
+                        onClick={() => window.open(getImageUrl(refundInfo.refundTransferProofUrl), '_blank')} 
+                      />
+                    </div>
+                  )}
+
+                  {!refundInfo.refundApprovedAt && refundInfo.paymentMethod === 'cod' && ['returning', 'return_confirmed', 'return_approved', 'returned'].includes(refundInfo.orderStatus) && (
+                    <div className="col-span-1 md:col-span-2 space-y-4 p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 text-orange-600">Tải lên ảnh Bill chuyển khoản (Bắt buộc cho COD)</h3>
+                      <div className="flex items-center gap-4">
+                        <label className="cursor-pointer bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition text-slate-700">
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              setBillImage(file);
+                              setBillPreview(URL.createObjectURL(file));
+                            }
+                          }} />
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[18px]">upload</span>
+                            Chọn ảnh bill
+                          </div>
+                        </label>
+                        {billPreview && (
+                          <div className="relative group">
+                            <img src={billPreview} alt="Preview" className="size-24 object-cover rounded-lg border border-slate-200" />
+                            <button onClick={() => { setBillImage(null); setBillPreview(null); }} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition shadow-lg">
+                              <span className="material-symbols-outlined text-[14px]">close</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="col-span-1 md:col-span-2 space-y-4">
                     <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Hình ảnh minh chứng</h3>
                     {refundInfo.imageUrls && refundInfo.imageUrls.length > 0 ? (
@@ -779,7 +855,11 @@ export default function AdminOrders() {
             </div>
 
             <div className="border-t border-slate-100 px-6 py-4 flex justify-end gap-3 bg-slate-50/30">
-              <button onClick={() => setIsRefundOpen(false)} className="btn-ghost">Đóng</button>
+              <button onClick={() => {
+                setIsRefundOpen(false);
+                setBillImage(null);
+                setBillPreview(null);
+              }} className="btn-ghost">Đóng</button>
               {!refundInfo?.refundApprovedAt && (
                 <>
                   {['return_requested', 'refund_requested'].includes(refundInfo?.orderStatus) && (
