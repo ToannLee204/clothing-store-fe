@@ -11,6 +11,8 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, isBusy }) {
       {/* Product Image */}
       <Link 
         to={`/product/${item.productId}`}
+        target="_blank"
+        rel="noopener noreferrer"
         className="w-full md:w-[120px] aspect-[3/4] bg-lumiere-blush overflow-hidden shrink-0"
       >
         <img 
@@ -27,6 +29,8 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, isBusy }) {
           <div>
             <Link 
               to={`/product/${item.productId}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="serif text-[20px] text-lumiere-charcoal hover:text-lumiere-terracotta transition-colors leading-tight"
             >
               {item.productName}

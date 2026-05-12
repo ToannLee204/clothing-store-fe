@@ -1,10 +1,23 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { getImageUrl } from '../../utils/format';
+
+function resolveProductId(item, review) {
+  const candidate = review?.productId
+    ?? item?.productId
+    ?? item?.product?.id
+    ?? item?.product?.productId
+    ?? item?.variant?.productId
+    ?? item?.orderDetail?.productId;
+
+  return candidate != null ? String(candidate) : '';
+}
 
 export default function ViewReviewModal({ show, onClose, item }) {
   if (!show || !item || !item.review) return null;
 
   const { review } = item;
+  const productId = resolveProductId(item, review);
   const productTitle = item.productName || `San pham #${review.productId ?? review.orderItemId}`;
   const variantLabel = `${item.color || '--'} / ${item.size || '--'}`;
 
@@ -30,7 +43,16 @@ export default function ViewReviewModal({ show, onClose, item }) {
             )}
           </div>
           <div className="min-w-0">
-            <h4 className="font-semibold text-lumiere-charcoal truncate">{productTitle}</h4>
+            <h4 className="truncate">
+              <Link
+                to={`/product/${productId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-lumiere-charcoal hover:text-lumiere-terracotta transition-colors"
+              >
+                {productTitle}
+              </Link>
+            </h4>
             <p className="text-[12px] text-lumiere-gray mt-1">Phan loai: {variantLabel}</p>
           </div>
         </div>

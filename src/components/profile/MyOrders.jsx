@@ -22,17 +22,28 @@ export default function MyOrders({ token }) {
   const [returnLoading, setReturnLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
 
-  const fetchMyOrders = async () => {
+  const [pagination, setPagination] = useState({ totalPages: 1, totalElements: 0 });
+  const [currentPage, setCurrentPage] = useState(0);
+  const pageSize = 10;
+
+  const fetchMyOrders = async (page = 0) => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(API_ORDERS_URL, {
+      const res = await fetch(`${API_ORDERS_URL}?page=${page}&pageSize=${pageSize}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.message || 'Không thể tải đơn hàng.');
+      
       const data = payload.result || payload.data?.result || payload.content || payload.data?.content || [];
+      const meta = payload.meta || payload.data?.meta || {};
+      
       setOrders(data);
+      setPagination({
+        totalPages: meta.pages || meta.totalPages || 1,
+        totalElements: meta.totals || meta.totalElements || data.length
+      });
     } catch (e) {
       setError(e.message);
     } finally {
@@ -41,8 +52,8 @@ export default function MyOrders({ token }) {
   };
 
   useEffect(() => {
-    fetchMyOrders();
-  }, [token]);
+    if (token) fetchMyOrders(currentPage);
+  }, [token, currentPage]);
 
   const handleOpenCancel = (orderId) => {
     setOrderToCancel(orderId);
@@ -164,19 +175,57 @@ export default function MyOrders({ token }) {
           <p className="serif text-xl text-lumiere-gray italic">Bạn chưa có đơn hàng nào.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
-          {orders.map(order => (
-            <OrderCard 
-              key={order.id} 
-              order={order} 
-              onCancel={handleOpenCancel}
-              onRetryPayment={retryVnpay}
-              onReturn={() => handleOpenReturn(order)}
-              onDetail={handleOpenDetail}
-              onViewReturn={() => handleViewReturn(order)}
-              actionBusyId={actionBusyId}
-            />
-          ))}
+        <div className="space-y-10">
+          <div className="flex flex-col gap-6">
+            {orders.map(order => (
+              <OrderCard 
+                key={order.id} 
+                order={order} 
+                onCancel={handleOpenCancel}
+                onRetryPayment={retryVnpay}
+                onReturn={() => handleOpenReturn(order)}
+                onDetail={handleOpenDetail}
+                onViewReturn={() => handleViewReturn(order)}
+                actionBusyId={actionBusyId}
+              />
+            ))}
+          </div>
+
+          {pagination.totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 pt-6 border-t border-lumiere-gray/10">
+              <button
+                disabled={currentPage === 0}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                className="w-10 h-10 flex items-center justify-center border border-lumiere-gray/20 text-lumiere-gray hover:border-lumiere-charcoal hover:text-lumiere-charcoal transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                {Array.from({ length: pagination.totalPages }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i)}
+                    className={`w-10 h-10 flex items-center justify-center text-[13px] font-bold tracking-widest transition-all ${
+                      currentPage === i
+                        ? 'bg-lumiere-charcoal text-white'
+                        : 'text-lumiere-gray hover:bg-lumiere-blush/50'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                disabled={currentPage === pagination.totalPages - 1}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                className="w-10 h-10 flex items-center justify-center border border-lumiere-gray/20 text-lumiere-gray hover:border-lumiere-charcoal hover:text-lumiere-charcoal transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 

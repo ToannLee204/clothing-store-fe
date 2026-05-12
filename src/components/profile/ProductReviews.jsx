@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import ReviewModal from './ReviewModal';
 import ViewReviewModal from './ViewReviewModal';
 import { authHeaders, extractMessage, parseResponseBody } from '../../api/http';
@@ -25,6 +26,18 @@ function normalizePagination(payload) {
     meta: base?.meta ?? base?.data?.meta ?? null,
     result: normalizeList(base),
   };
+}
+
+function resolveProductId(item) {
+  if (!item || typeof item !== 'object') return '';
+
+  const candidate = item.productId
+    ?? item.product?.id
+    ?? item.product?.productId
+    ?? item.variant?.productId
+    ?? item.orderDetail?.productId;
+
+  return candidate != null ? String(candidate) : '';
 }
 
 export default function ProductReviews({ token }) {
@@ -135,7 +148,7 @@ export default function ProductReviews({ token }) {
           orderItemId: item.orderItemId || item.id,
           orderId: item.orderId,
           orderCode: item.orderCode,
-          productId: item.productId,
+          productId: resolveProductId(item),
           productName: item.productName,
           color: item.color,
           size: item.size,
@@ -177,6 +190,7 @@ export default function ProductReviews({ token }) {
               allItems.push({
                 ...item,
                 orderItemId: item.orderItemId || item.id,
+                productId: resolveProductId(item),
                 orderId,
                 orderCode: order.orderCode,
                 orderStatus: status,
@@ -218,6 +232,7 @@ export default function ProductReviews({ token }) {
       return {
         ...(matchedItem || {}),
         orderItemId: review.orderItemId,
+        productId: resolveProductId(matchedItem) || resolveProductId(review),
         orderCode: matchedItem?.orderCode || `Order item #${review.orderItemId}`,
         productName: matchedItem?.productName || productMeta?.productName || `San pham #${review.productId ?? review.orderItemId}`,
         color: matchedItem?.color || '--',
@@ -278,13 +293,28 @@ export default function ProductReviews({ token }) {
           ) : (
             (activeSubTab === 'pending' ? pendingItems : reviewedItems).map((item, idx) => (
               <div key={idx} className="bg-lumiere-cream/20 border border-lumiere-gray/10 p-6 flex flex-col md:flex-row gap-6 hover:border-lumiere-gray/30 transition-all">
-                <div className="w-20 h-28 bg-lumiere-blush shrink-0 overflow-hidden">
+                <div 
+                  onClick={() => {
+                    const pid = item.productId;
+                    if (pid) window.open(`/product/${pid}`, '_blank');
+                  }}
+                  className="w-20 h-28 bg-lumiere-blush shrink-0 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                >
                   {item.thumbnailUrl && <img src={getImageUrl(item.thumbnailUrl)} alt={item.productName} className="w-full h-full object-cover" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="mb-4">
                     <p className="text-[11px] tracking-widest text-lumiere-gray uppercase mb-1">Don hang: {item.orderCode}</p>
-                    <h4 className="font-semibold text-lumiere-charcoal text-lg truncate">{item.productName}</h4>
+                    <h4 className="text-lg truncate">
+                      <Link
+                        to={`/product/${item.productId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-lumiere-charcoal hover:text-lumiere-terracotta transition-colors"
+                      >
+                      {item.productName}
+                      </Link>
+                    </h4>
                     <p className="text-[12px] text-lumiere-gray mt-1">Mau: {item.color} / Size: {item.size}</p>
                     {activeSubTab === 'pending' ? (
                       <p className="text-[12px] text-lumiere-gray mt-1">

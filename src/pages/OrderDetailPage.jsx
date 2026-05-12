@@ -29,6 +29,19 @@ function formatVND(value) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(value) || 0)}₫`;
 }
 
+function resolveProductId(item) {
+  if (!item || typeof item !== "object") return "";
+
+  const candidate =
+    item.productId ??
+    item.product?.id ??
+    item.product?.productId ??
+    item.variant?.productId ??
+    item.orderDetail?.productId;
+
+  return candidate != null ? String(candidate) : "";
+}
+
 function StarRow({ value, size = 16 }) {
   const starValue = Math.max(0, Math.min(5, Number(value) || 0));
   const fullStars = Math.round(starValue * 2) / 2; // allow halves if any
@@ -483,6 +496,7 @@ export default function OrderDetailPage() {
                   {orderItems.map((item) => {
                     const orderItemIdValue = item?.orderItemId;
                     const review = myReviewByOrderItemId[String(orderItemIdValue)] ?? null;
+                    const productId = resolveProductId(item);
 
                     return (
                       <div key={String(orderItemIdValue ?? item.variantId)} className="rounded-2xl border border-slate-100 p-3">
@@ -498,7 +512,14 @@ export default function OrderDetailPage() {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <div className="font-black text-slate-900 truncate">{item.productName}</div>
+                                <Link
+                                  to={`/product/${productId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block truncate font-black text-slate-900 hover:text-[#0066A2] transition-colors"
+                                >
+                                  {item.productName}
+                                </Link>
                                 <div className="text-xs text-slate-500 mt-1">
                                   Màu: {item.color || "—"} · Size: {item.size || "—"}
                                 </div>

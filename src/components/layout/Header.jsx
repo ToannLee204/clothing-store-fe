@@ -137,7 +137,7 @@ export default function Header() {
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
-                {currentUser && <span className="hidden lg:block text-[10px] tracking-widest">{currentUser.fullName.split(' ').pop()}</span>}
+                {currentUser && <span className="hidden lg:block text-[10px] tracking-widest uppercase">{currentUser.fullName}</span>}
               </button>
 
               {/* User Dropdown */}

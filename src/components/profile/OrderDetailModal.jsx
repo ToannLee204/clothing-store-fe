@@ -1,8 +1,21 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { createPortal } from "react-dom";
 import ReviewModal from './ReviewModal';
 import ReturnRequestDetailModal from './ReturnRequestDetailModal';
 import { getImageUrl, translateOrderStatus, formatVND } from '../../utils/format';
+
+function resolveProductId(item) {
+  if (!item || typeof item !== 'object') return '';
+
+  const candidate = item.productId
+    ?? item.product?.id
+    ?? item.product?.productId
+    ?? item.variant?.productId
+    ?? item.orderDetail?.productId;
+
+  return candidate != null ? String(candidate) : '';
+}
 
 export default function OrderDetailModal({ show, onClose, orderId, token }) {
   const [loading, setLoading] = useState(false);
@@ -128,15 +141,29 @@ export default function OrderDetailModal({ show, onClose, orderId, token }) {
                       {(order.items || []).map((item, idx) => {
                         const isReviewed = !!myReviews[String(item.orderItemId)];
                         const canReview = order.status === 'completed';
+                        const productId = resolveProductId(item);
 
                         return (
                           <div key={idx} className="py-6 flex gap-6">
-                            <div className="w-20 h-24 bg-lumiere-blush shrink-0 overflow-hidden border border-lumiere-gray/5">
+                            <div 
+                              onClick={() => {
+                                const pid = resolveProductId(item);
+                                if (pid) window.open(`/product/${pid}`, '_blank');
+                              }}
+                              className="w-20 h-24 bg-lumiere-blush shrink-0 overflow-hidden border border-lumiere-gray/5 cursor-pointer hover:opacity-80 transition-opacity"
+                            >
                               {item.thumbnailUrl && <img src={getImageUrl(item.thumbnailUrl)} alt={item.productName} className="w-full h-full object-cover" />}
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                               <div>
-                                <p className="font-semibold text-lumiere-charcoal mb-1">{item.productName}</p>
+                                <Link
+                                  to={`/product/${productId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-block font-semibold text-lumiere-charcoal mb-1 hover:text-lumiere-terracotta transition-colors"
+                                >
+                                  {item.productName}
+                                </Link>
                                 <p className="text-[11px] text-lumiere-gray uppercase tracking-wider">{item.color} / {item.size}</p>
                               </div>
                               <div className="flex justify-between items-end">
