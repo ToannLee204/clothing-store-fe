@@ -206,7 +206,7 @@ export default function AuthPage() {
         <div className="absolute inset-0">
           <img
             src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop"
-            alt="LUMIÈRE Fashion"
+            alt="CLOTHING STORE Fashion"
             className="h-full w-full object-cover opacity-60 grayscale hover:grayscale-0 transition-all duration-1000"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-lumiere-charcoal via-lumiere-charcoal/20 to-transparent" />
@@ -216,13 +216,13 @@ export default function AuthPage() {
           <div className="serif text-white text-[120px] leading-none mb-8 opacity-10 select-none pointer-events-none absolute -top-32 -left-10">L</div>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-lumiere-terracotta animate-pulse"></span>
-            LUMIÈRE COLLECTION 2026
+            CLOTHING STORE COLLECTION 2026
           </div>
           <h1 className="serif text-5xl text-white leading-tight mb-6">
             Khám phá tinh hoa<br />phong cách.
           </h1>
           <p className="text-white/60 text-sm font-medium leading-relaxed tracking-wide">
-            Đăng nhập để trải nghiệm đặc quyền dành riêng cho thành viên của LUMIÈRE, nhận thông tin về các bộ sưu tập giới hạn sớm nhất.
+            Đăng nhập để trải nghiệm đặc quyền dành riêng cho thành viên của CLOTHING STORE, nhận thông tin về các bộ sưu tập giới hạn sớm nhất.
           </p>
         </div>
       </div>
@@ -237,7 +237,7 @@ export default function AuthPage() {
           {/* Header Form */}
           <div className="mb-12">
             <Link to="/" className="serif text-4xl text-lumiere-charcoal mb-10 block tracking-tighter">
-              LUMIÈRE<span className="text-lumiere-terracotta">.</span>
+              CLOTHING STORE<span className="text-lumiere-terracotta">.</span>
             </Link>
             <h2 className="serif text-3xl text-lumiere-charcoal mb-3">
               {isLogin ? 'Chào mừng trở lại' : 'Tạo hành trình mới'}
@@ -245,7 +245,7 @@ export default function AuthPage() {
             <p className="text-lumiere-gray text-[14px] leading-relaxed">
               {isLogin
                 ? 'Vui lòng điền thông tin bên dưới để tiếp tục hành trình mua sắm.'
-                : 'Tham gia cùng cộng đồng LUMIÈRE để nhận nhiều ưu đãi độc quyền.'}
+                : 'Tham gia cùng cộng đồng CLOTHING STORE để nhận nhiều ưu đãi độc quyền.'}
             </p>
           </div>
 
@@ -284,7 +284,7 @@ export default function AuthPage() {
 
           <div className="mt-12 pt-8 border-t border-lumiere-gray/5 text-center lg:text-left">
              <p className="text-[11px] text-lumiere-gray leading-relaxed uppercase tracking-widest">
-                © 2026 LUMIÈRE STORE. ALL RIGHTS RESERVED.
+                © 2026 CLOTHING STORE. ALL RIGHTS RESERVED.
              </p>
           </div>
         </div>

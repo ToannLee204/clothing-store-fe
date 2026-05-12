@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProductCard from '../common/ProductCard';
+import QuickAddModal from '../products/QuickAddModal';
 
 export default function FeaturedProducts({ products }) {
   const navigate = useNavigate();
+  const [quickAddProduct, setQuickAddProduct] = useState(null);
 
   return (
     <section className="py-20 lg:py-24 bg-gradient-to-b from-lumiere-cream to-lumiere-blush/30">
@@ -31,6 +33,7 @@ export default function FeaturedProducts({ products }) {
             <ProductCard 
               key={product.id} 
               product={{...product, isNew: true}} // Mocking isNew for visual
+              onAddToCart={(prod) => setQuickAddProduct(prod)}
             />
           ))}
         </div>
@@ -44,6 +47,13 @@ export default function FeaturedProducts({ products }) {
           </button>
         </div>
       </div>
+
+      {quickAddProduct && (
+        <QuickAddModal 
+          product={quickAddProduct} 
+          onClose={() => setQuickAddProduct(null)} 
+        />
+      )}
     </section>
   );
 }

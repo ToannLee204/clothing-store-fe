@@ -1,29 +1,10 @@
 import React from 'react';
 
-export default function SortBar({ sortBy, onSortChange }) {
-  const chips = [
-    { label: 'Tất cả', value: 'all' },
-    { label: 'Mới về', value: 'newest' },
-    { label: 'Đang giảm giá', value: 'sale' },
-    { label: 'Bestseller', value: 'bestseller' }
-  ];
-
+export default function SortBar({ sortBy, onSortChange, totalCount }) {
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-10">
-      <div className="flex flex-wrap gap-2">
-        {chips.map(chip => (
-          <button 
-            key={chip.value}
-            className={`text-[11px] tracking-[0.15em] uppercase font-medium px-5 py-2.5 border transition-all ${
-              sortBy === chip.value 
-                ? 'bg-lumiere-charcoal text-lumiere-cream border-lumiere-charcoal' 
-                : 'text-lumiere-gray border-lumiere-gray/30 hover:border-lumiere-charcoal hover:text-lumiere-charcoal'
-            }`}
-            onClick={() => onSortChange(chip.value)}
-          >
-            {chip.label}
-          </button>
-        ))}
+    <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-10 border-b border-lumiere-gray/10 pb-6">
+      <div className="text-[12px] tracking-[0.1em] text-lumiere-gray uppercase font-medium">
+        Hiển thị <span className="text-lumiere-charcoal font-bold">{totalCount}</span> sản phẩm
       </div>
 
       <div className="relative w-full sm:w-auto">

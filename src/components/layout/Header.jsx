@@ -108,17 +108,15 @@ export default function Header() {
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-10">
             <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Trang chủ</Link>
-            <Link to="/products?gender=nu" className="nav-link">Nữ</Link>
-            <Link to="/products?gender=nam" className="nav-link">Nam</Link>
-            <Link to="/products?collection=new" className="nav-link">Bộ sưu tập</Link>
+            <Link to="/products" className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`}>Sản phẩm</Link>
           </div>
 
           {/* Logo */}
           <Link 
             to="/" 
-            className="logo absolute left-1/2 -translate-x-1/2 text-[26px] font-light tracking-[0.3em] text-lumiere-charcoal serif"
+            className="logo absolute left-1/2 -translate-x-1/2 text-[26px] font-light tracking-[0.3em] text-lumiere-charcoal serif uppercase"
           >
-            LUMIÈ<span className="text-lumiere-terracotta">RE</span>
+            Clothing <span className="text-lumiere-terracotta">Store</span>
           </Link>
 
           {/* Icons */}
@@ -179,11 +177,9 @@ export default function Header() {
       <div className={`fixed inset-0 z-[150] bg-lumiere-cream transition-transform duration-500 flex flex-col p-12 pt-24 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <button className="absolute top-8 right-8 text-2xl" onClick={() => setIsMobileMenuOpen(false)}>✕</button>
         <Link to="/" className="text-4xl serif font-light py-4 border-b border-lumiere-gray/15 hover:text-lumiere-terracotta" onClick={() => setIsMobileMenuOpen(false)}>Trang chủ</Link>
-        <Link to="/products?gender=nu" className="text-4xl serif font-light py-4 border-b border-lumiere-gray/15 hover:text-lumiere-terracotta" onClick={() => setIsMobileMenuOpen(false)}>Nữ</Link>
-        <Link to="/products?gender=nam" className="text-4xl serif font-light py-4 border-b border-lumiere-gray/15 hover:text-lumiere-terracotta" onClick={() => setIsMobileMenuOpen(false)}>Nam</Link>
-        <Link to="/products" className="text-4xl serif font-light py-4 border-b border-lumiere-gray/15 hover:text-lumiere-terracotta" onClick={() => setIsMobileMenuOpen(false)}>Bộ sưu tập</Link>
+        <Link to="/products" className="text-4xl serif font-light py-4 border-b border-lumiere-gray/15 hover:text-lumiere-terracotta" onClick={() => setIsMobileMenuOpen(false)}>Sản phẩm</Link>
         <div className="mt-auto">
-          <p className="text-[11px] tracking-widest text-lumiere-gray uppercase">© 2024 LUMIÈRE. ALL RIGHTS RESERVED.</p>
+          <p className="text-[11px] tracking-widest text-lumiere-gray uppercase">© 2024 CLOTHING STORE. ALL RIGHTS RESERVED.</p>
         </div>
       </div>
     </>

@@ -57,7 +57,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
           <p className="text-[12px] text-lumiere-cream/30">
-            © 2024 LUMIÈRE. All rights reserved.
+            © 2024 CLOTHING STORE. All rights reserved.
           </p>
           <div className="flex gap-8">
             <Link to="#" className="text-[11px] text-lumiere-cream/30 hover:text-lumiere-cream transition-colors">Bảo mật</Link>

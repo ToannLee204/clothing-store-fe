@@ -3,6 +3,7 @@ import SearchHeader from '../components/products/SearchHeader';
 import ProductSidebar from '../components/products/ProductSidebar';
 import SortBar from '../components/products/SortBar';
 import ProductCard from '../components/common/ProductCard';
+import QuickAddModal from '../components/products/QuickAddModal';
 
 const PAGE_SIZE = 12;
 
@@ -32,17 +33,19 @@ export default function ProductsPage() {
   const [error, setError] = useState('');
 
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
-  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColors, setSelectedColors] = useState([]);
+  const [selectedSizes, setSelectedSizes] = useState([]);
   const [colors, setColors] = useState([]);
   const [sizes, setSizes] = useState([]);
   const [priceRange, setPriceRange] = useState('all');
   const [sortBy, setSortBy] = useState(collection === 'new' ? 'newest' : 'newest');
   const [keyword, setKeyword] = useState('');
+  const [inStock, setInStock] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [quickAddProduct, setQuickAddProduct] = useState(null);
 
   const priceRanges = useMemo(() => ({
     all: { label: 'Tất cả sản phẩm', minPrice: null, maxPrice: null },
@@ -101,16 +104,18 @@ export default function ProductsPage() {
       setLoading(true);
       setError('');
       try {
-        const params = new URLSearchParams({
-          page: String(currentPage - 1),
-          pageSize: String(PAGE_SIZE),
-          status: '1'
-        });
-        if (keyword) params.set('keyword', keyword);
-        if (selectedCategoryId) params.set('categoryId', selectedCategoryId);
-        if (selectedColor) params.set('color', selectedColor);
-        if (selectedSize) params.set('size', selectedSize);
-        if (sortBy !== 'all') params.set('sortBy', sortBy);
+        const params = new URLSearchParams();
+        params.append('page', String(currentPage - 1));
+        params.append('pageSize', String(PAGE_SIZE));
+
+        if (keyword) params.append('keyword', keyword);
+        if (selectedCategoryId) params.append('categoryId', selectedCategoryId);
+        if (inStock) params.append('inStock', 'true');
+        
+        selectedColors.forEach(c => params.append('colors', c));
+        selectedSizes.forEach(s => params.append('sizes', s));
+        
+        if (sortBy !== 'all') params.append('sortBy', sortBy);
         
         const range = priceRanges[priceRange] ?? priceRanges.all;
         if (range.minPrice !== null) params.set('minPrice', String(range.minPrice));
@@ -130,9 +135,19 @@ export default function ProductsPage() {
       }
     };
     fetchProducts();
-  }, [currentPage, keyword, priceRange, selectedCategoryId, selectedColor, selectedSize, sortBy, priceRanges]);
+  }, [currentPage, keyword, priceRange, selectedCategoryId, selectedColors, selectedSizes, sortBy, inStock, priceRanges]);
 
-  return (
+    const handleReset = () => {
+      setKeyword(''); 
+      setPriceRange('all'); 
+      setSelectedCategoryId(''); 
+      setSelectedColors([]);
+      setSelectedSizes([]);
+      setInStock(false);
+      setCurrentPage(1);
+    };
+
+    return (
     <div className="min-h-screen bg-lumiere-cream">
       <div className="max-w-screen-xl mx-auto px-6 lg:px-12">
         {/* 1. Search Header */}
@@ -149,14 +164,27 @@ export default function ProductsPage() {
             selectedCategoryId={selectedCategoryId}
             onCategoryChange={(id) => { setSelectedCategoryId(id); setCurrentPage(1); }}
             colors={colors}
-            selectedColor={selectedColor}
-            onColorChange={(color) => { setSelectedColor(color); setCurrentPage(1); }}
+            selectedColors={selectedColors}
+            onColorChange={(color) => {
+              setSelectedColors(prev => 
+                prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]
+              );
+              setCurrentPage(1);
+            }}
             sizes={sizes}
-            selectedSize={selectedSize}
-            onSizeChange={(size) => { setSelectedSize(size); setCurrentPage(1); }}
+            selectedSizes={selectedSizes}
+            onSizeChange={(size) => {
+              setSelectedSizes(prev => 
+                prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
+              );
+              setCurrentPage(1);
+            }}
             priceRange={priceRange}
             onPriceChange={(key) => { setPriceRange(key); setCurrentPage(1); }}
             priceRanges={priceRanges}
+            inStock={inStock}
+            onInStockChange={(val) => { setInStock(val); setCurrentPage(1); }}
+            onReset={handleReset}
           />
 
           {/* 3. Product List Area */}
@@ -164,6 +192,7 @@ export default function ProductsPage() {
             <SortBar 
               sortBy={sortBy} 
               onSortChange={(val) => { setSortBy(val); setCurrentPage(1); }} 
+              totalCount={totalCount}
             />
 
             {loading ? (
@@ -188,8 +217,9 @@ export default function ProductsPage() {
                     setKeyword(''); 
                     setPriceRange('all'); 
                     setSelectedCategoryId(''); 
-                    setSelectedColor('');
-                    setSelectedSize('');
+                    setSelectedColors([]);
+                    setSelectedSizes([]);
+                    setInStock(false);
                   }}
                   className="btn-outline"
                 >
@@ -200,7 +230,11 @@ export default function ProductsPage() {
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-5 gap-y-10">
                   {products.map((p) => (
-                    <ProductCard key={p.id} product={p} />
+                    <ProductCard 
+                      key={p.id} 
+                      product={p} 
+                      onAddToCart={(prod) => setQuickAddProduct(prod)}
+                    />
                   ))}
                 </div>
 
@@ -235,7 +269,7 @@ export default function ProductsPage() {
                       className="w-10 h-10 border border-lumiere-gray/20 flex items-center justify-center text-lumiere-gray disabled:opacity-30 hover:border-lumiere-charcoal hover:text-lumiere-charcoal transition-all"
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="m9 18 6-6 6-6" />
+                        <path d="m9 18 6-6-6-6" />
                       </svg>
                     </button>
                   </div>
@@ -245,6 +279,13 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
+
+      {quickAddProduct && (
+        <QuickAddModal 
+          product={quickAddProduct} 
+          onClose={() => setQuickAddProduct(null)} 
+        />
+      )}
     </div>
   );
 }

@@ -24,14 +24,17 @@ export default function ProductSidebar({
   selectedCategoryId, 
   onCategoryChange,
   colors,
-  selectedColor,
+  selectedColors,
   onColorChange,
   sizes,
-  selectedSize,
+  selectedSizes,
   onSizeChange,
   priceRange,
   onPriceChange,
-  priceRanges
+  priceRanges,
+  inStock,
+  onInStockChange,
+  onReset
 }) {
   const COLOR_MAP = {
     "Màu đen": "#000000",
@@ -110,12 +113,13 @@ export default function ProductSidebar({
         <div className="flex flex-wrap gap-2 pt-2">
           {sizes.map(sizeObj => {
             const sizeValue = typeof sizeObj === 'object' ? (sizeObj.name || sizeObj.code) : sizeObj;
+            const isSelected = selectedSizes.includes(sizeValue);
             return (
               <button 
                 key={sizeValue}
-                onClick={() => onSizeChange(selectedSize === sizeValue ? '' : sizeValue)}
+                onClick={() => onSizeChange(sizeValue)}
                 className={`text-[11px] tracking-[0.15em] uppercase font-medium px-4 py-2 border transition-all ${
-                  selectedSize === sizeValue 
+                  isSelected 
                     ? 'bg-lumiere-charcoal text-lumiere-cream border-lumiere-charcoal' 
                     : 'border-lumiere-gray/30 text-lumiere-gray hover:border-lumiere-charcoal hover:text-lumiere-charcoal'
                 }`}
@@ -131,21 +135,21 @@ export default function ProductSidebar({
         <div className="flex flex-wrap gap-3 pt-2">
           {colors.map(colorObj => {
             const colorName = typeof colorObj === 'object' ? colorObj.name : colorObj;
-            const colorCode = typeof colorObj === 'object' ? colorObj.code : colorObj;
+            const isSelected = selectedColors.includes(colorName);
             
             return (
               <button 
                 key={colorName}
                 title={colorName}
-                onClick={() => onColorChange(selectedColor === colorName ? '' : colorName)}
+                onClick={() => onColorChange(colorName)}
                 className={`w-8 h-8 rounded-full border transition-all flex items-center justify-center ${
-                  selectedColor === colorName 
+                  isSelected 
                     ? 'border-lumiere-charcoal ring-2 ring-offset-2 ring-lumiere-charcoal/30' 
                     : 'border-lumiere-gray/20 hover:border-lumiere-charcoal'
                 }`}
                 style={{ background: COLOR_MAP[colorName] || '#EEE' }}
               >
-                 {selectedColor === colorName && (
+                 {isSelected && (
                    <span className={`material-symbols-outlined text-[16px] ${colorName === 'Màu đen' || colorName === 'Xanh navy' ? 'text-white' : 'text-stone-900'}`}>check</span>
                  )}
               </button>
@@ -154,16 +158,25 @@ export default function ProductSidebar({
         </div>
       </AccordionItem>
 
+      <div className="pt-6 border-t border-lumiere-gray/10 mt-4">
+        <label className="flex items-center gap-3 cursor-pointer group">
+          <input 
+            type="checkbox" 
+            checked={inStock}
+            onChange={(e) => onInStockChange(e.target.checked)}
+            className="accent-lumiere-charcoal w-4 h-4"
+          />
+          <span className={`text-[13px] tracking-wide transition-colors ${inStock ? 'text-lumiere-charcoal font-bold' : 'text-lumiere-gray group-hover:text-lumiere-charcoal'}`}>
+            Chỉ hiện sản phẩm còn hàng
+          </span>
+        </label>
+      </div>
+
       <button 
-        onClick={() => {
-          onCategoryChange('');
-          onPriceChange('all');
-          onColorChange('');
-          onSizeChange('');
-        }}
+        onClick={onReset}
         className="w-full mt-6 py-3 border border-lumiere-gray/30 text-[11px] tracking-[0.15em] uppercase text-lumiere-gray hover:text-lumiere-charcoal hover:border-lumiere-charcoal transition-all font-medium"
       >
-        Xóa bộ lọc
+        Xóa tất cả lọc
       </button>
     </aside>
   );

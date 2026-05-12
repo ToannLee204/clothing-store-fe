@@ -89,7 +89,7 @@ export default function PaymentResultPage() {
                 <span className="material-symbols-outlined text-5xl font-light">check_circle</span>
               </div>
               <h1 className="serif text-3xl text-lumiere-charcoal mb-3">Thanh toán thành công</h1>
-              <p className="text-lumiere-gray text-[14px]">Cảm ơn bạn đã tin tưởng và mua sắm tại LUMIÈRE.</p>
+              <p className="text-lumiere-gray text-[14px]">Cảm ơn bạn đã tin tưởng và mua sắm tại CLOTHING STORE.</p>
             </div>
           ) : (
             <div className="mb-8">

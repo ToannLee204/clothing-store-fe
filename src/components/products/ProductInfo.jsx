@@ -26,7 +26,7 @@ export default function ProductInfo({
   return (
     <div className="flex flex-col">
       <div className="flex items-center gap-3 mb-2">
-        <span className="text-[10px] tracking-[0.2em] uppercase text-lumiere-gray font-medium">LUMIÈRE Studio</span>
+        <span className="text-[10px] tracking-[0.2em] uppercase text-lumiere-gray font-medium">CLOTHING STORE Studio</span>
         <span className="w-1 h-1 rounded-full bg-lumiere-gray" />
         <div className="flex gap-0.5 text-lumiere-gold text-sm">★★★★★</div>
         <span className="text-[12px] text-lumiere-gray">(128 đánh giá)</span>
