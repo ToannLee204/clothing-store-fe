@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { parseResponseBody, extractMessage, jsonAuthHeaders, authHeaders } from '../../api/http';
+import { getImageUrl } from '../../utils/format';
 import './AdminProducts.css';
 
 export default function AdminProfile() {
@@ -14,10 +15,10 @@ export default function AdminProfile() {
   const [user, setUser] = useState({
     fullName: '',
     email: '',
-    soDienThoai: '',
-    ngaySinh: '',
+    phoneNumber: '',
+    dateOfBirth: '',
     role: '',
-    avatar: ''
+    avatar: '' // Keep in state for UI, but might not be in API
   });
 
   const [avatarFile, setAvatarFile] = useState(null);
@@ -29,7 +30,7 @@ export default function AdminProfile() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/v1/users/profile', {
+      const response = await fetch('/api/v1/auth/me', {
         headers: jsonAuthHeaders()
       });
       const payload = await parseResponseBody(response);
@@ -38,8 +39,8 @@ export default function AdminProfile() {
         const userData = {
           fullName: data.fullName || '',
           email: data.email || '',
-          soDienThoai: data.soDienThoai || '',
-          ngaySinh: data.ngaySinh ? data.ngaySinh.split('T')[0] : '',
+          phoneNumber: data.phoneNumber || '',
+          dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split('T')[0] : '',
           role: data.role || 'ADMIN',
           avatar: data.avatar || ''
         };
@@ -68,40 +69,28 @@ export default function AdminProfile() {
     setLoading(true);
 
     try {
-      // 1. Upload avatar if selected
-      let currentAvatarUrl = user.avatar;
-      if (avatarFile) {
-        const formData = new FormData();
-        formData.append('file', avatarFile);
-        const uploadRes = await fetch('/api/v1/users/avatar', {
-          method: 'POST',
-          headers: authHeaders(),
-          body: formData
-        });
-        if (uploadRes.ok) {
-          const uploadPayload = await parseResponseBody(uploadRes);
-          currentAvatarUrl = uploadPayload.data?.url || uploadPayload.url || uploadPayload;
-        } else {
-          throw new Error('Không thể tải ảnh đại diện lên.');
-        }
-      }
-
-      // 2. Update profile
-      const response = await fetch('/api/v1/users/profile', {
+      // 1. Update profile
+      const response = await fetch('/api/v1/auth/me', {
         method: 'PUT',
         headers: jsonAuthHeaders(),
         body: JSON.stringify({
           fullName: user.fullName,
-          soDienThoai: user.soDienThoai,
-          ngaySinh: user.ngaySinh,
-          avatar: currentAvatarUrl
+          phoneNumber: user.phoneNumber,
+          dateOfBirth: user.dateOfBirth
         })
       });
 
       const payload = await parseResponseBody(response);
       if (response.ok) {
+        const data = payload.data || payload;
         setSuccess('Cập nhật thông tin thành công!');
-        const updatedUserData = { ...user, avatar: currentAvatarUrl };
+        
+        const updatedUserData = { 
+          ...user, 
+          fullName: data.fullName,
+          phoneNumber: data.phoneNumber,
+          dateOfBirth: data.dateOfBirth
+        };
         setUser(updatedUserData);
         
         // Update local storage
@@ -109,7 +98,6 @@ export default function AdminProfile() {
         const finalUser = { ...storedUser, ...updatedUserData };
         localStorage.setItem('user', JSON.stringify(finalUser));
         
-        // Trigger sidebar update (if needed via state management, but here we rely on localstorage + re-render)
         window.dispatchEvent(new Event('storage')); 
       } else {
         setError(extractMessage(payload, 'Cập nhật thất bại.'));
@@ -146,7 +134,7 @@ export default function AdminProfile() {
               <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                 <div className="size-24 rounded-full bg-[#0066A2]/10 border-4 border-white shadow-md overflow-hidden flex items-center justify-center text-3xl font-bold text-[#0066A2] transition-transform group-hover:scale-105">
                   {avatarPreview ? (
-                    <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                    <img src={getImageUrl(avatarPreview)} alt="Avatar Preview" className="w-full h-full object-cover" />
                   ) : (
                     user.fullName?.charAt(0) || 'A'
                   )}
@@ -200,8 +188,8 @@ export default function AdminProfile() {
                   <input
                     type="tel"
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10 outline-none transition-all font-medium"
-                    value={user.soDienThoai}
-                    onChange={(e) => setUser({ ...user, soDienThoai: e.target.value })}
+                    value={user.phoneNumber}
+                    onChange={(e) => setUser({ ...user, phoneNumber: e.target.value })}
                   />
                 </div>
 
@@ -210,8 +198,8 @@ export default function AdminProfile() {
                   <input
                     type="date"
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#0066A2] focus:ring-4 focus:ring-[#0066A2]/10 outline-none transition-all font-medium"
-                    value={user.ngaySinh}
-                    onChange={(e) => setUser({ ...user, ngaySinh: e.target.value })}
+                    value={user.dateOfBirth}
+                    onChange={(e) => setUser({ ...user, dateOfBirth: e.target.value })}
                   />
                 </div>
               </div>

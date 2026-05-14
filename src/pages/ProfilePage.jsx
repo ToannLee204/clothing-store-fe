@@ -14,7 +14,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'personal-info');
   const token = localStorage.getItem('token');
 
-  useEffect(() => {
+  const loadUser = () => {
     const userStr = localStorage.getItem('user');
     if (!token || !userStr) {
       navigate('/auth');
@@ -25,6 +25,13 @@ export default function ProfilePage() {
         navigate('/auth');
       }
     }
+  };
+
+  useEffect(() => {
+    loadUser();
+    
+    window.addEventListener('storage', loadUser);
+    return () => window.removeEventListener('storage', loadUser);
   }, [navigate, token]);
 
   const handleLogout = () => {

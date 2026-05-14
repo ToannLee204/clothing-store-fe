@@ -61,8 +61,8 @@ export default function PersonalInfoForm({ user, token }) {
       
       setMessage({ type: 'success', text: 'Cập nhật thông tin thành công!' });
       
-      // Reload page sau 1s để cập nhật UI toàn hệ thống (nếu cần) hoặc chỉ cần set state ở cha
-      // Ở đây ta có thể trigger một event hoặc đơn giản là để user thấy thông báo
+      // Kích hoạt sự kiện để đồng bộ UI (ProfilePage, Header...)
+      window.dispatchEvent(new Event('storage'));
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     } finally {

@@ -36,7 +36,7 @@ export default function AdminChangePassword() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/v1/users/change-password', {
+      const response = await fetch('/api/v1/auth/change-password', {
         method: 'POST',
         headers: jsonAuthHeaders(),
         body: JSON.stringify({

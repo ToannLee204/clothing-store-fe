@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { getImageUrl } from '../../utils/format';
 
 export default function AdminSidebar({ isCollapsed, setIsCollapsed, currentUser }) {
   const navigate = useNavigate();
@@ -135,7 +136,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed, currentUser 
         >
           <div className="size-10 rounded-full bg-[#0066A2]/10 flex items-center justify-center text-[#0066A2] overflow-hidden flex-shrink-0 border-2 border-white group-hover:border-[#0066A2]/10 transition-colors font-bold">
              {currentUser?.avatar ? (
-               <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+               <img src={getImageUrl(currentUser.avatar)} alt="Avatar" className="w-full h-full object-cover" />
              ) : (
                currentUser?.fullName?.charAt(0) || 'A'
              )}

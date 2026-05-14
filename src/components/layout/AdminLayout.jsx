@@ -6,8 +6,7 @@ const AdminLayout = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    // Lấy thông tin user từ LocalStorage
+  const loadUser = () => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
@@ -16,6 +15,14 @@ const AdminLayout = () => {
         console.error("Lỗi parse thông tin user");
       }
     }
+  };
+
+  useEffect(() => {
+    loadUser();
+    
+    // Lắng nghe thay đổi từ storage (khi AdminProfile cập nhật)
+    window.addEventListener('storage', loadUser);
+    return () => window.removeEventListener('storage', loadUser);
   }, []);
 
   return (
