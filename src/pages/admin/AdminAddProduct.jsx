@@ -69,6 +69,16 @@ const AdminAddProduct = () => {
   const [variants, setVariants] = useState([
     { color: "", size: "", stockQty: "", salePrice: "", importPrice: "" },
   ]);
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+  useEffect(() => {
+    let timer;
+    if (alertModal.isOpen) {
+      timer = setTimeout(() => {
+        setAlertModal({ isOpen: false, message: '' });
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [alertModal.isOpen]);
 
   // File upload states
   const [thumbnailFile, setThumbnailFile] = useState(null);
@@ -234,7 +244,10 @@ const AdminAddProduct = () => {
     ]);
   };
   const removeVariant = (index) => {
-    if (variants.length === 1) return alert("Phải có ít nhất 1 biến thể!");
+    if (variants.length === 1) {
+      setAlertModal({ isOpen: true, message: "Phải có ít nhất 1 biến thể!" });
+      return;
+    }
     setVariants(variants.filter((_, i) => i !== index));
   };
 
@@ -281,7 +294,8 @@ const AdminAddProduct = () => {
       !productData.categoryId ||
       !productData.basePrice
     ) {
-      return setError("Vui lòng điền đủ Tên, Danh mục và Giá cơ bản!");
+      setAlertModal({ isOpen: true, message: "Vui lòng điền đủ Tên, Danh mục và Giá cơ bản!" });
+      return;
     }
 
     // Kiểm tra trùng lặp biến thể (Màu sắc + Kích cỡ)
@@ -301,7 +315,8 @@ const AdminAddProduct = () => {
     if (dups.length > 0) {
       setDuplicateIndices(dups);
       const firstDup = variants[dups[1]];
-      return setError(`Trùng biến thể: color=${firstDup.color}, size=${firstDup.size}. Vui lòng kiểm tra lại!`);
+      setAlertModal({ isOpen: true, message: `Trùng biến thể: color=${firstDup.color}, size=${firstDup.size}. Vui lòng kiểm tra lại!` });
+      return;
     }
     setDuplicateIndices([]);
 
@@ -352,14 +367,14 @@ const AdminAddProduct = () => {
       } catch (e) {}
 
       if (response.ok) {
-        alert("Thêm sản phẩm thành công!");
-        navigate("/admin/products");
+        setAlertModal({ isOpen: true, message: "Thêm sản phẩm thành công!" });
+        setTimeout(() => navigate("/admin/products"), 3000);
       } else {
-        setError(resData.message || "Lỗi khi thêm sản phẩm từ Server");
+        setAlertModal({ isOpen: true, message: resData.message || "Lỗi khi thêm sản phẩm từ Server" });
       }
     } catch (err) {
       console.error(err);
-      setError("Lỗi kết nối đến Backend!");
+      setAlertModal({ isOpen: true, message: "Lỗi kết nối đến Backend!" });
     } finally {
       setLoading(false);
     }
@@ -804,6 +819,23 @@ const AdminAddProduct = () => {
           </div>
         </div>
       </div>
+      {/* --- KHỐI MODAL THÔNG BÁO TỰ ĐÓNG --- */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+          <div className="bg-white p-6 max-w-sm w-full rounded-2xl shadow-2xl text-center border border-stone-200">
+            <h3 className="mb-2 text-lg font-black text-stone-900">Thông báo</h3>
+            <p className="mb-6 text-xs leading-relaxed text-stone-600">
+              {alertModal.message}
+            </p>
+            <button 
+              onClick={() => setAlertModal({ isOpen: false, message: '' })}
+              className="w-full py-2.5 text-[11px] uppercase font-bold text-white bg-stone-900 hover:bg-stone-700 transition-all rounded-xl"
+            >
+              Đã hiểu
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

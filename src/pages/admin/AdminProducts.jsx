@@ -47,6 +47,9 @@ const AdminProducts = () => {
 
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0, pages: 1 });
 
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+
   // Tất cả filter theo ProductFilterRequest
   const [filters, setFilters] = useState({
     keyword: '',
@@ -186,19 +189,28 @@ const AdminProducts = () => {
   useEffect(() => { fetchProducts(pagination.current); }, [filters, pagination.current]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Xác nhận xóa sản phẩm này?')) return;
-    try {
-      const response = await fetch(`${PRODUCT_API_URL}/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        alert('Xóa sản phẩm thành công!');
-        fetchProducts(pagination.current);
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa sản phẩm',
+      message: 'Xác nhận xóa sản phẩm này? Hành động này không thể hoàn tác.',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        try {
+          const response = await fetch(`${PRODUCT_API_URL}/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.ok) {
+            setAlertModal({ isOpen: true, message: 'Xóa sản phẩm thành công!' });
+            fetchProducts(pagination.current);
+          } else {
+            setAlertModal({ isOpen: true, message: 'Lỗi khi xóa sản phẩm.' });
+          }
+        } catch {
+          setAlertModal({ isOpen: true, message: 'Không thể kết nối Server để xóa.' });
+        }
       }
-    } catch {
-      alert('Không thể kết nối Server để xóa.');
-    }
+    });
   };
 
   const handleToggleVisibility = async (id) => {
@@ -229,11 +241,11 @@ const AdminProducts = () => {
         a.remove();
         window.URL.revokeObjectURL(url);
       } else {
-        alert('Không thể tải file mẫu.');
+        setAlertModal({ isOpen: true, message: 'Không thể tải file mẫu.' });
       }
     } catch (err) {
       console.error('Lỗi tải template:', err);
-      alert('Lỗi kết nối máy chủ.');
+      setAlertModal({ isOpen: true, message: 'Lỗi kết nối máy chủ.' });
     }
   };
 
@@ -257,11 +269,11 @@ const AdminProducts = () => {
         setImportResult(res.data || res);
         fetchProducts(pagination.current);
       } else {
-        alert(res.message || 'Lỗi khi import sản phẩm.');
+        setAlertModal({ isOpen: true, message: res.message || 'Lỗi khi import sản phẩm.' });
       }
     } catch (err) {
       console.error('Lỗi import:', err);
-      alert('Lỗi kết nối máy chủ.');
+      setAlertModal({ isOpen: true, message: 'Lỗi kết nối máy chủ.' });
     } finally {
       setImportLoading(false);
       e.target.value = ''; // Reset input
@@ -685,6 +697,53 @@ const AdminProducts = () => {
         </div>
 
       </div>
+      {/* --- KHỐI MODAL XÁC NHẬN (CONFIRM) --- */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-bold text-slate-900">{confirmModal.title}</h3>
+            <p className="mb-6 text-sm leading-relaxed text-slate-500">
+              {confirmModal.message}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+                className="btn-ghost"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 transition-all"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- KHỐI MODAL THÔNG BÁO (ALERT) --- */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setAlertModal({ isOpen: false, message: '' })} />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-bold text-slate-900">Thông báo</h3>
+            <p className="mb-6 text-sm leading-relaxed text-slate-500">
+              {alertModal.message}
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                className="btn-primary"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

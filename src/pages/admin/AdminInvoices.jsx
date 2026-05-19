@@ -55,7 +55,16 @@ export default function AdminInvoices() {
   const [detailInvoice, setDetailInvoice] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+  useEffect(() => {
+    let timer;
+    if (alertModal.isOpen) {
+      timer = setTimeout(() => {
+        setAlertModal({ isOpen: false, message: '' });
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [alertModal.isOpen]);
   const fetchInvoices = useCallback(async (page = 1) => {
     setLoading(true);
     setError('');
@@ -133,7 +142,7 @@ export default function AdminInvoices() {
       if (!res.ok) throw new Error(extractMessage(payload, 'Không thể tải chi tiết hóa đơn.'));
       setDetailInvoice(payload?.data || payload);
     } catch (e) {
-      alert(e.message);
+      setAlertModal({ isOpen: true, message: e.message });
       setIsDetailOpen(false);
     } finally {
       setDetailLoading(false);
@@ -155,7 +164,7 @@ export default function AdminInvoices() {
       a.click();
       a.remove();
     } catch (e) {
-      alert(e.message);
+      setAlertModal({ isOpen: true, message: e.message });
     }
   };
 
@@ -175,7 +184,7 @@ export default function AdminInvoices() {
       a.click();
       a.remove();
     } catch (e) {
-      alert(e.message);
+      setAlertModal({ isOpen: true, message: e.message });
     }
   };
 
@@ -448,6 +457,23 @@ export default function AdminInvoices() {
               </button>
               <button onClick={() => setIsDetailOpen(false)} className="btn-ghost">Đóng</button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* --- KHỐI MODAL THÔNG BÁO TỰ ĐÓNG --- */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white p-6 max-w-sm w-full rounded-2xl shadow-2xl text-center">
+            <h3 className="mb-2 text-lg font-black text-slate-900">Thông báo</h3>
+            <p className="mb-6 text-xs leading-relaxed text-slate-600">
+              {alertModal.message}
+            </p>
+            <button 
+              onClick={() => setAlertModal({ isOpen: false, message: '' })}
+              className="w-full py-2.5 text-[11px] uppercase font-bold text-white bg-slate-900 hover:bg-slate-700 transition-all rounded-xl"
+            >
+              Đã hiểu
+            </button>
           </div>
         </div>
       )}

@@ -42,6 +42,8 @@ const AdminProductVariants = () => {
     size: '',
     sortBy: ''
   });
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
 
   const SORT_OPTIONS = [
     { value: '', label: 'Mặc định' },
@@ -339,27 +341,33 @@ const AdminProductVariants = () => {
       return;
     }
 
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa biến thể ${variant.color} - ${variant.size}?`)) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa biến thể sản phẩm',
+      message: `Bạn có chắc chắn muốn xóa biến thể thuộc phiên bản Màu: ${variant.color} - Size: ${variant.size}? Hành động này không thể hoàn tác.`,
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        setIsSaving(true);
+        try {
+          const response = await fetch(`/api/v1/admin/products/${id}/variants/${variant.id}`, {
+            method: 'DELETE',
+            headers: jsonAuthHeaders()
+          });
 
-    setIsSaving(true);
-    try {
-      const response = await fetch(`/api/v1/admin/products/${id}/variants/${variant.id}`, {
-        method: 'DELETE',
-        headers: jsonAuthHeaders()
-      });
-
-      if (response.ok) {
-        setSuccess('Đã xóa biến thể thành công.');
-        await fetchVariants(pagination.currentPage);
-      } else {
-        const res = await parseResponseBody(response);
-        setError(extractMessage(res, 'Không thể xóa biến thể.'));
+          if (response.ok) {
+            setSuccess('Đã xóa biến thể thành công.');
+            await fetchVariants(pagination.currentPage);
+          } else {
+            const res = await parseResponseBody(response);
+            setError(extractMessage(res, 'Không thể xóa biến thể.'));
+          }
+        } catch (err) {
+          setError('Lỗi kết nối máy chủ!');
+        } finally {
+          setIsSaving(false);
+        }
       }
-    } catch (err) {
-      setError('Lỗi kết nối máy chủ!');
-    } finally {
-      setIsSaving(false);
-    }
+    });
   };
 
   const handleUpdateStock = (index, newQty) => {
@@ -369,7 +377,7 @@ const AdminProductVariants = () => {
   const handleSaveAll = async () => {
     const modifiedVariants = variants.filter(v => v.isModified);
     if (modifiedVariants.length === 0) {
-      return alert("Không có thay đổi nào để lưu.");
+      setAlertModal({ isOpen: true, message: 'Không tìm thấy thay đổi nào mới để lưu dữ liệu.' });
     }
 
     setIsSaving(true);
@@ -719,6 +727,53 @@ const AdminProductVariants = () => {
           </button>
         </div>
       </div>
+      {/* --- KHỐI MODAL XÁC NHẬN (CONFIRM) --- */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl animate-fadeIn">
+            <h3 className="mb-2 text-base font-bold text-stone-900">{confirmModal.title}</h3>
+            <p className="mb-6 text-xs leading-relaxed text-stone-500">
+              {confirmModal.message}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+                className="px-4 py-2 text-xs font-bold text-stone-500 hover:text-stone-700 bg-stone-50 rounded-xl transition-all"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 transition-all shadow-md shadow-red-100"
+              >
+                Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- KHỐI MODAL THÔNG BÁO (ALERT) --- */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={() => setAlertModal({ isOpen: false, message: '' })} />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl animate-fadeIn">
+            <h3 className="mb-2 text-base font-bold text-stone-900">Thông báo</h3>
+            <p className="mb-6 text-xs leading-relaxed text-stone-500">
+              {alertModal.message}
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                className="rounded-xl bg-stone-900 px-5 py-2 text-xs font-bold text-white hover:bg-stone-800 transition-all shadow-md"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

@@ -95,6 +95,11 @@ export default function AdminOrders() {
   const [billImage, setBillImage] = useState(null);
   const [billPreview, setBillPreview] = useState(null);
 
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+  const [promptModal, setPromptModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [promptInput, setPromptInput] = useState('');
+
   const fetchOrders = useCallback(async (page = 1) => {
     setLoading(true);
     setError('');
@@ -170,7 +175,7 @@ export default function AdminOrders() {
       if (!res.ok) throw new Error(extractMessage(payload, 'Không thể tải chi tiết đơn.'));
       setDetailOrder(payload?.data || payload);
     } catch (e) {
-      alert(e.message);
+      setAlertModal({ isOpen: true, message: e.message });
       setIsDetailOpen(false);
     } finally {
       setDetailLoading(false);
@@ -191,7 +196,7 @@ export default function AdminOrders() {
       if (!res.ok) throw new Error(extractMessage(payload, 'Không thể tải thông tin hoàn tiền.'));
       setRefundInfo(payload?.data || payload);
     } catch (e) {
-      alert(e.message);
+      setAlertModal({ isOpen: true, message: e.message });
       setIsRefundOpen(false);
     } finally {
       setRefundLoading(false);
@@ -199,97 +204,116 @@ export default function AdminOrders() {
   };
 
   const handleConfirmReturnRequest = async (orderId) => {
-    if (!window.confirm('Xác nhận chấp nhận yêu cầu trả hàng này?')) return;
-    
-    setUpdating(true);
-    try {
-      const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/confirm-return`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const payload = await parseJson(res);
-      if (res.ok) {
-        alert('Đã chấp nhận yêu cầu trả hàng. Đang chờ khách hàng gửi lại hàng.');
-        openRefundInfo(orderId); // Refresh modal info
-        fetchOrders(pagination.current);
-      } else {
-        alert(extractMessage(payload, 'Thao tác thất bại.'));
+    setConfirmModal({
+      isOpen: true,
+      title: 'Chấp nhận trả hàng',
+      message: 'Xác nhận chấp nhận yêu cầu trả hàng này? Hệ thống sẽ chuyển trạng thái chờ khách gửi lại hàng.',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        setUpdating(true);
+        try {
+          const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/confirm-return`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const payload = await parseJson(res);
+          if (res.ok) {
+            setAlertModal({ isOpen: true, message: 'Đã chấp nhận yêu cầu trả hàng. Đang chờ khách hàng gửi lại hàng.' });
+            openRefundInfo(orderId);
+            fetchOrders(pagination.current);
+          } else {
+            setAlertModal({ isOpen: true, message: extractMessage(payload, 'Thao tác thất bại.') });
+          }
+        } catch (e) {
+          console.error(e);
+          setAlertModal({ isOpen: true, message: 'Lỗi kết nối.' });
+        } finally {
+          setUpdating(false);
+        }
       }
-    } catch (e) {
-      console.error(e);
-      alert('Lỗi kết nối.');
-    } finally {
-      setUpdating(false);
-    }
+    });
   };
 
-  const handleRejectReturnRequest = async (orderId) => {
-    const reason = window.prompt('Vui lòng nhập lý do từ chối yêu cầu trả hàng (bắt buộc):');
-    if (!reason) return;
-    
-    setUpdating(true);
-    try {
-      const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/reject-return`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
-        },
-        body: JSON.stringify({ reason })
-      });
-      const payload = await parseJson(res);
-      if (res.ok) {
-        alert('Đã từ chối yêu cầu trả hàng.');
-        setIsRefundOpen(false);
-        fetchOrders(pagination.current);
-      } else {
-        alert(extractMessage(payload, 'Thao tác thất bại.'));
+  const handleRejectReturnRequest = (orderId) => {
+    setPromptInput('');
+    setPromptModal({
+      isOpen: true,
+      title: 'Từ chối yêu cầu trả hàng',
+      message: 'Vui lòng nhập lý do từ chối yêu cầu trả hàng (bắt buộc):',
+      onConfirm: async (reason) => {
+        if (!reason.trim()) return;
+        setPromptModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        setUpdating(true);
+        try {
+          const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/reject-return`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}` 
+            },
+            body: JSON.stringify({ reason })
+          });
+          const payload = await parseJson(res);
+          if (res.ok) {
+            setAlertModal({ isOpen: true, message: 'Đã từ chối yêu cầu trả hàng.' });
+            setIsRefundOpen(false);
+            fetchOrders(pagination.current);
+          } else {
+            setAlertModal({ isOpen: true, message: extractMessage(payload, 'Thao tác thất bại.') });
+          }
+        } catch (e) {
+          console.error(e);
+          setAlertModal({ isOpen: true, message: 'Lỗi kết nối.' });
+        } finally {
+          setUpdating(false);
+        }
       }
-    } catch (e) {
-      console.error(e);
-      alert('Lỗi kết nối.');
-    } finally {
-      setUpdating(false);
-    }
+    });
   };
 
   const handleRefundReturnOrder = async (orderId) => {
     const isCod = refundInfo?.paymentMethod === 'cod';
     if (isCod && !billImage) {
-      alert('Vui lòng tải lên ảnh bill chuyển khoản cho đơn COD.');
+      setAlertModal({ isOpen: true, message: 'Vui lòng tải lên ảnh bill chuyển khoản cho đơn COD.' });
       return;
     }
 
-    if (!window.confirm('Xác nhận đã nhận được hàng và thực hiện hoàn tiền ngay lập tức?')) return;
-    
-    setUpdating(true);
-    try {
-      const formData = new FormData();
-      if (billImage) {
-        formData.append('billImage', billImage);
-      }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xác nhận hoàn tiền',
+      message: 'Xác nhận đã nhận được hàng và thực hiện hoàn tiền ngay lập tức cho khách hàng?',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        setUpdating(true);
+        try {
+          const formData = new FormData();
+          if (billImage) {
+            formData.append('billImage', billImage);
+          }
 
-      const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/refund-return`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
-      const payload = await parseJson(res);
-      if (res.ok) {
-        alert('Đã thực hiện hoàn tiền thành công!');
-        setIsRefundOpen(false);
-        setBillImage(null);
-        setBillPreview(null);
-        fetchOrders(pagination.current);
-      } else {
-        alert(extractMessage(payload, 'Hoàn tiền thất bại.'));
+          const res = await fetch(`${API_ADMIN_ORDERS_URL}/${orderId}/refund-return`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData
+          });
+          const payload = await parseJson(res);
+          if (res.ok) {
+            setAlertModal({ isOpen: true, message: 'Đã thực hiện hoàn tiền thành công!' });
+            setIsRefundOpen(false);
+            setBillImage(null);
+            setBillPreview(null);
+            fetchOrders(pagination.current);
+          } else {
+            setAlertModal({ isOpen: true, message: extractMessage(payload, 'Hoàn tiền thất bại.') });
+          }
+        } catch (e) {
+          console.error(e);
+          setAlertModal({ isOpen: true, message: 'Lỗi kết nối.' });
+        } finally {
+          setUpdating(false);
+        }
       }
-    } catch (e) {
-      console.error(e);
-      alert('Lỗi kết nối.');
-    } finally {
-      setUpdating(false);
-    }
+    });
   };
 
   const openUpdate = (order) => {
@@ -323,7 +347,7 @@ export default function AdminOrders() {
       setIsUpdateOpen(false);
       fetchOrders(pagination.current);
     } catch (e) {
-      alert(e.message);
+      setAlertModal({ isOpen: true, message: e.message });
     } finally {
       setUpdating(false);
     }
@@ -346,7 +370,7 @@ export default function AdminOrders() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (e) {
-      alert(e.message);
+      setAlertModal({ isOpen: true, message: e.message });
     }
   };
 
@@ -902,6 +926,87 @@ export default function AdminOrders() {
             <div className="border-t border-slate-100 px-6 py-4 flex gap-3">
               <button onClick={() => setIsUpdateOpen(false)} className="btn-ghost flex-1">Hủy</button>
               <button onClick={handleUpdateStatus} disabled={updating} className="btn-primary flex-1">{updating ? 'Đang lưu...' : 'Xác nhận'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* --- KHỐI MODAL XÁC NHẬN (CONFIRM) --- */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} />
+          <div className="relative z-10 w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-black text-slate-900">{confirmModal.title}</h3>
+            <p className="mb-6 text-xs leading-relaxed text-slate-500">
+              {confirmModal.message}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+                className="btn-ghost"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="rounded-xl bg-[#0066A2] px-4 py-2 text-xs font-black text-white hover:bg-[#005587] transition-all"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- KHỐI MODAL NHẬP LIỆU (PROMPT) --- */}
+      {promptModal.isOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPromptModal({ isOpen: false, title: '', message: '', onConfirm: null })} />
+          <div className="relative z-10 w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-black text-slate-900">{promptModal.title}</h3>
+            <p className="mb-3 text-xs leading-relaxed text-slate-500">
+              {promptModal.message}
+            </p>
+            <textarea
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs min-h-[80px] outline-none focus:border-rose-500 mb-4"
+              placeholder="Nhập lý do bắt buộc tại đây..."
+              value={promptInput}
+              onChange={(e) => setPromptInput(e.target.value)}
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setPromptModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+                className="btn-ghost"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={() => promptModal.onConfirm(promptInput)}
+                disabled={!promptInput.trim()}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-black text-white hover:bg-rose-700 transition-all disabled:opacity-50"
+              >
+                Gửi từ chối
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- KHỐI MODAL THÔNG BÁO (ALERT) --- */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAlertModal({ isOpen: false, message: '' })} />
+          <div className="relative z-10 w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-black text-slate-900">Thông báo</h3>
+            <p className="mb-6 text-xs leading-relaxed text-slate-500">
+              {alertModal.message}
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                className="btn-primary"
+              >
+                Đã hiểu
+              </button>
             </div>
           </div>
         </div>

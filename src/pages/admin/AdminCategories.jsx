@@ -55,6 +55,9 @@ const AdminCategories = () => {
     pages: 1,
   });
 
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+
   const token = localStorage.getItem('token');
 
   const flattenCategories = (categoriesTree, prefix = '') => {
@@ -134,7 +137,10 @@ const AdminCategories = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) return alert('Tên danh mục không được để trống!');
+    if (!formData.name.trim()) {
+      setAlertModal({ isOpen: true, message: 'Tên danh mục không được để trống!' });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -160,10 +166,10 @@ const AdminCategories = () => {
         fetchCategories(pagination.current);
       } else {
         const payloadText = await parseJsonText(response);
-        alert('Lỗi từ Server: ' + getResponseMessage(payloadText, 'Không thể lưu danh mục.'));
+        setAlertModal({ isOpen: true, message: 'Lỗi từ Server: ' + getResponseMessage(payloadText, 'Không thể lưu danh mục.') });
       }
     } catch (err) {
-      alert('Lỗi kết nối đến Server!');
+      setAlertModal({ isOpen: true, message: 'Lỗi kết nối đến Server!' });
     } finally {
       setLoading(false);
     }
@@ -185,22 +191,28 @@ const AdminCategories = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa danh mục',
+      message: 'Bạn có chắc chắn muốn xóa danh mục này?',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        try {
+          const response = await fetch(`/api/v1/categories/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
 
-    try {
-      const response = await fetch(`/api/v1/categories/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        fetchCategories(pagination.current);
-      } else {
-        alert('Không thể xóa. Có thể danh mục này đang chứa danh mục con hoặc sản phẩm!');
+          if (response.ok) {
+            fetchCategories(pagination.current);
+          } else {
+            setAlertModal({ isOpen: true, message: 'Không thể xóa. Có thể danh mục này đang chứa danh mục con hoặc sản phẩm!' });
+          }
+        } catch (err) {
+          console.error(err);
+        }
       }
-    } catch (err) {
-      console.error(err);
-    }
+    });
   };
 
   const handleToggleVisibility = async (id) => {
@@ -213,7 +225,7 @@ const AdminCategories = () => {
       if (response.ok) {
         fetchCategories(pagination.current);
       } else {
-        alert('Chưa cấu hình API đổi trạng thái ở Backend!');
+        setAlertModal({ isOpen: true, message: 'Chưa cấu hình API đổi trạng thái ở Backend!' });
       }
     } catch (err) {
       console.error('Lỗi khi thay đổi trạng thái:', err);
@@ -595,6 +607,51 @@ const AdminCategories = () => {
           </div>
         </div>
       </div>
+      {/* --- KHỐI MODAL XÁC NHẬN (CONFIRM) --- */}
+      {confirmModal.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: '#fff', padding: '24px', width: '100%', maxWidth: '380px', margin: '0 16px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 900, color: '#0f172a' }}>{confirmModal.title}</h3>
+            <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#64748b', lineHeight: 1.5 }}>
+              {confirmModal.message}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+                className="btn-ghost"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                style={{ padding: '8px 16px', borderRadius: '8px', background: '#e11d48', color: '#fff', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- KHỐI MODAL THÔNG BÁO (ALERT) --- */}
+      {alertModal.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: '#fff', padding: '24px', width: '100%', maxWidth: '380px', margin: '0 16px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 900, color: '#0f172a' }}>Thông báo</h3>
+            <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#64748b', lineHeight: 1.5 }}>
+              {alertModal.message}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                className="btn-primary"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

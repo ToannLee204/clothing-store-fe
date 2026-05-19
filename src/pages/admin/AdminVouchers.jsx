@@ -34,6 +34,9 @@ const AdminVouchers = () => {
   const token = localStorage.getItem('token');
   const API_URL = '/api/v1/admin/vouchers';
 
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+
   const fetchVouchers = async () => {
     try {
       setLoading(true);
@@ -124,26 +127,33 @@ const AdminVouchers = () => {
         fetchVouchers();
       } else {
         const text = await response.text();
-        alert('Lỗi: ' + text);
+        setAlertModal({ isOpen: true, message: 'Lỗi: ' + text });
       }
     } catch (err) {
-      alert('Lỗi kết nối Server!');
+      setAlertModal({ isOpen: true, message: 'Lỗi kết nối Server!' });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (voucherCode) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa mã ${voucherCode}?`)) return;
-    try {
-      const response = await fetch(`${API_URL}/${voucherCode}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) fetchVouchers();
-    } catch (err) {
-      console.error(err);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa mã giảm giá',
+      message: `Bạn có chắc muốn xóa mã ${voucherCode}? Hành động này không thể hoàn tác.`,
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        try {
+          const response = await fetch(`${API_URL}/${voucherCode}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.ok) fetchVouchers();
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
   };
 
   const handleToggle = async (voucherCode) => {
@@ -675,6 +685,53 @@ const AdminVouchers = () => {
                 <button type="submit" form="voucherForm" className="btn-primary" disabled={loading} style={{ opacity: loading ? 0.7 : 1 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{loading ? 'sync' : 'save'}</span>
                   {editingCode ? 'Lưu thay đổi' : 'Tạo mã Voucher'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* --- KHỐI MODAL XÁC NHẬN (CONFIRM) --- */}
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} />
+            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+              <h3 className="mb-2 text-lg font-bold text-slate-900">{confirmModal.title}</h3>
+              <p className="mb-6 text-sm leading-relaxed text-slate-500">
+                {confirmModal.message}
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+                  className="btn-ghost"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={confirmModal.onConfirm}
+                  className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 transition-all"
+                >
+                  Xác nhận xóa
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- KHỐI MODAL THÔNG BÁO (ALERT) --- */}
+        {alertModal.isOpen && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setAlertModal({ isOpen: false, message: '' })} />
+            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+              <h3 className="mb-2 text-lg font-bold text-slate-900">Thông báo</h3>
+              <p className="mb-6 text-sm leading-relaxed text-slate-500">
+                {alertModal.message}
+              </p>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                  className="btn-primary"
+                >
+                  Đã hiểu
                 </button>
               </div>
             </div>

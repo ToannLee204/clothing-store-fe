@@ -120,7 +120,16 @@ export default function AdminReports() {
   const [dashboardStat, setDashboardStat] = useState(null);
 
   const [chartMode, setChartMode] = useState('revenue');
-
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+  useEffect(() => {
+    let timer;
+    if (alertModal.isOpen) {
+      timer = setTimeout(() => {
+        setAlertModal({ isOpen: false, message: '' });
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [alertModal.isOpen]);
   const headers = useMemo(
     () => (token ? { Authorization: `Bearer ${token}` } : {}),
     [token]
@@ -198,7 +207,7 @@ export default function AdminReports() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (e) {
-      alert(e?.message || 'Xuất Excel thất bại.');
+      setAlertModal({ isOpen: true, message: e?.message || 'Xuất Excel thất bại.' });
     }
   };
 
@@ -528,6 +537,23 @@ export default function AdminReports() {
             </table>
           </div>
         </div>
+        {/* --- KHỐI MODAL THÔNG BÁO TỰ ĐÓNG --- */}
+        {alertModal.isOpen && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white p-6 max-w-sm w-full rounded-2xl shadow-2xl text-center">
+              <h3 className="text-lg font-black text-slate-900 mb-2">Thông báo</h3>
+              <p className="text-xs text-slate-600 mb-6 leading-relaxed">
+                {alertModal.message}
+              </p>
+              <button 
+                onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                className="w-full py-2.5 text-[11px] uppercase font-bold text-white bg-slate-900 hover:bg-slate-700 transition-all rounded-xl"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
