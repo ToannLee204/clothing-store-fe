@@ -13,7 +13,16 @@ export default function ReturnRequestModal({
   const [images, setImages] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [errors, setErrors] = useState({});
-
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+  useEffect(() => {
+    let timer;
+    if (alertModal.isOpen) {
+      timer = setTimeout(() => {
+        setAlertModal({ isOpen: false, message: '' });
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [alertModal.isOpen]);
   const isCod = order?.paymentMethod === "cod";
 
   if (!show) return null;
@@ -21,7 +30,7 @@ export default function ReturnRequestModal({
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length + images.length > 5) {
-      alert("Chỉ được tải lên tối đa 5 ảnh.");
+      setAlertModal({ isOpen: true, message: "Chỉ được tải lên tối đa 5 ảnh." });
       return;
     }
 
@@ -146,6 +155,23 @@ export default function ReturnRequestModal({
                 )}
               </div>
             )}
+
+            {alertModal.isOpen && (
+                    <div className="absolute inset-0 z-[100000] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+                      <div className="bg-white p-8 max-w-sm w-full shadow-2xl text-center">
+                        <h3 className="serif text-xl text-lumiere-charcoal mb-4">Thông báo</h3>
+                        <p className="text-[13px] text-lumiere-gray mb-8 leading-relaxed">
+                          {alertModal.message}
+                        </p>
+                        <button
+                          onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                          className="w-full py-3 text-[11px] tracking-[0.2em] uppercase font-bold text-white bg-lumiere-charcoal hover:bg-lumiere-terracotta transition-all"
+                        >
+                          Đã hiểu
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
             <div className="space-y-4">
               <label className="text-[11px] tracking-[0.2em] uppercase font-bold text-lumiere-charcoal flex justify-between">

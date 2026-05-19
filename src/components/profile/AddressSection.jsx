@@ -8,12 +8,22 @@ export default function AddressSection({ user, token }) {
   const [districtsOptions, setDistrictsOptions] = useState([]);
   const [wardsOptions, setWardsOptions] = useState([]);
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [addrForm, setAddrForm] = useState({ 
     fullName: '', phone: '', province: '', district: '', ward: '', street: '', isDefault: false 
   });
   const [loading, setLoading] = useState(false);
-
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+  useEffect(() => {
+    let timer;
+    if (alertModal.isOpen) {
+      timer = setTimeout(() => {
+        setAlertModal({ isOpen: false, message: '' });
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [alertModal.isOpen]);
   useEffect(() => {
     fetchAddresses();
     fetchLocationTree();
@@ -68,19 +78,39 @@ export default function AddressSection({ user, token }) {
         body: JSON.stringify(payload) 
       });
       if (res.ok) { fetchAddresses(); setShowAddressModal(false); }
-      else { alert("Lỗi khi lưu địa chỉ."); }
+      else { setAlertModal({ isOpen: true, message: "Lỗi khi lưu địa chỉ." }); }
     } catch (err) { console.error(err); }
   };
 
-  const handleDeleteAddress = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa địa chỉ này?")) {
-      try {
-        const res = await fetch(`/api/v1/addresses/${id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) fetchAddresses();
-      } catch (err) { console.error(err); }
+  // const handleDeleteAddress = async (id) => {
+  //   if (window.confirm("Bạn có chắc chắn muốn xóa địa chỉ này?")) {
+  //     try {
+  //       const res = await fetch(`/api/v1/addresses/${id}`, {
+  //         method: 'DELETE',
+  //         headers: { 'Authorization': `Bearer ${token}` }
+  //       });
+  //       if (res.ok) fetchAddresses();
+  //     } catch (err) { console.error(err); }
+  //   }
+  // };
+
+  // Bước 1: mở confirm
+  const handleDeleteAddress = (id) => {
+    setConfirmDeleteId(id);
+  };
+
+  // Bước 2: user bấm "Xác nhận"
+  const handleConfirmDelete = async () => {
+    try {
+      const res = await fetch(`/api/v1/addresses/${confirmDeleteId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) fetchAddresses();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setConfirmDeleteId(null);
     }
   };
 
@@ -127,6 +157,49 @@ export default function AddressSection({ user, token }) {
         districtsOptions={districtsOptions}
         wardsOptions={wardsOptions}
       />
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white p-8 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="serif text-xl text-lumiere-charcoal mb-2">Xác nhận xóa</h3>
+            <p className="text-[13px] text-lumiere-gray mb-8 leading-relaxed">
+              Bạn có chắc chắn muốn xóa địa chỉ này? Hành động này không thể hoàn tác.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-6 py-2.5 text-[11px] tracking-[0.15em] uppercase font-bold text-lumiere-gray border border-lumiere-gray/20 hover:border-lumiere-charcoal hover:text-lumiere-charcoal transition-all"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-6 py-2.5 text-[11px] tracking-[0.15em] uppercase font-bold text-white bg-rose-500 hover:bg-rose-600 transition-all"
+              >
+                Xóa địa chỉ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Thông báo Modal */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white p-8 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="serif text-xl text-lumiere-charcoal mb-2">Thông báo</h3>
+            <p className="text-[13px] text-lumiere-gray mb-8 leading-relaxed">
+              {alertModal.message}
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                className="px-6 py-2.5 text-[11px] tracking-[0.15em] uppercase font-bold text-white bg-lumiere-charcoal hover:bg-lumiere-terracotta transition-all"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

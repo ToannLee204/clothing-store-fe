@@ -64,7 +64,7 @@ export default function ProductDetailPage() {
   const [reviews, setReviews] = useState([]);
   const [totalReviews, setTotalReviews] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(false);
-
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
   useEffect(() => {
     const fetchProductDetail = async () => {
       setLoading(true);
@@ -101,6 +101,17 @@ export default function ProductDetailPage() {
     if (id) fetchProductDetail();
   }, [id]);
 
+  useEffect(() => {
+    let timer;
+    if (alertModal.isOpen) {
+      // Tự đóng sau 3 giây
+      timer = setTimeout(() => {
+        setAlertModal({ isOpen: false, message: '' });
+      }, 3000);
+    }
+    return () => clearTimeout(timer); // Dọn dẹp timer khi component unmount hoặc modal đóng
+  }, [alertModal.isOpen]);
+
   const fetchProductReviews = async (productId) => {
     setReviewsLoading(true);
     try {
@@ -129,7 +140,7 @@ export default function ProductDetailPage() {
   const handleToggleLike = async (reviewId) => {
     const token = window.localStorage.getItem('token');
     if (!token) {
-      alert('Bạn cần đăng nhập để thực hiện tính năng này.');
+      setAlertModal({ isOpen: true, message: 'Bạn cần đăng nhập để thực hiện tính năng này.' });
       return;
     }
 
@@ -229,12 +240,12 @@ export default function ProductDetailPage() {
     console.log('Selected Variant:', selectedVariant);
 
     if (!selectedVariant) {
-      alert('Vui lòng chọn đầy đủ màu sắc và kích cỡ.');
+      setAlertModal({ isOpen: true, message: 'Vui lòng chọn đầy đủ màu sắc và kích cỡ.' });
       return;
     }
     const token = window.localStorage.getItem('token');
     if (!token) {
-      alert('Bạn cần đăng nhập để thực hiện tính năng này.');
+      setAlertModal({ isOpen: true, message: 'Bạn cần đăng nhập để thực hiện tính năng này.' });
       return;
     }
 
@@ -256,13 +267,13 @@ export default function ProductDetailPage() {
           : quantity;
         saveCartSnapshotCount(totalQty);
         emitCartUpdated({ count: totalQty });
-        alert('Đã thêm vào giỏ hàng!');
+        setAlertModal({ isOpen: true, message: 'Đã thêm vào giỏ hàng!' });
       } else {
-        alert('Có lỗi xảy ra khi thêm vào giỏ hàng.');
+        setAlertModal({ isOpen: true, message: 'Có lỗi xảy ra khi thêm vào giỏ hàng.' });
       }
     } catch (err) {
       console.error(err);
-      alert('Lỗi kết nối.');
+      setAlertModal({ isOpen: true, message: 'Lỗi kết nối.' });
     }
   };
 
@@ -347,6 +358,45 @@ export default function ProductDetailPage() {
               {relatedProducts.map(p => (
                 <ProductCard key={p.id} product={p} />
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* --- KHỐI MODAL THÔNG BÁO (ALERT) --- */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white p-8 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="serif text-xl text-lumiere-charcoal mb-2">Thông báo</h3>
+            <p className="text-[13px] text-lumiere-gray mb-8 leading-relaxed">
+              {alertModal.message}
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                className="px-6 py-2.5 text-[11px] tracking-[0.15em] uppercase font-bold text-white bg-lumiere-charcoal hover:bg-lumiere-terracotta transition-all"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {alertModal.isOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white p-8 max-w-sm w-full mx-4 shadow-2xl">
+              <h3 className="serif text-xl text-lumiere-charcoal mb-2">Thông báo</h3>
+              <p className="text-[13px] text-lumiere-gray mb-8 leading-relaxed">
+                {alertModal.message}
+              </p>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                  className="px-6 py-2.5 text-[11px] tracking-[0.15em] uppercase font-bold text-white bg-lumiere-charcoal hover:bg-lumiere-terracotta transition-all"
+                >
+                  Đã hiểu
+                </button>
+              </div>
             </div>
           </div>
         )}

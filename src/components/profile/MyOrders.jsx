@@ -11,6 +11,7 @@ export default function MyOrders({ token }) {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [actionBusyId, setActionBusyId] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -21,7 +22,16 @@ export default function MyOrders({ token }) {
   const [orderToCancel, setOrderToCancel] = useState(null);
   const [returnLoading, setReturnLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
-
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+  useEffect(() => {
+    let timer;
+    if (alertModal.isOpen) {
+      timer = setTimeout(() => {
+        setAlertModal({ isOpen: false, message: '' });
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [alertModal.isOpen]);
   const [pagination, setPagination] = useState({ totalPages: 1, totalElements: 0 });
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
@@ -76,14 +86,14 @@ export default function MyOrders({ token }) {
         setShowCancelModal(false);
         setOrderToCancel(null);
         await fetchMyOrders();
-        alert('Hủy đơn hàng thành công!');
+        showSuccess('Hủy đơn hàng thành công!');
       } else {
         const data = await res.json();
-        alert(data?.message || 'Có lỗi xảy ra khi hủy đơn hàng.');
+        showError(data?.message || 'Có lỗi xảy ra khi hủy đơn hàng.');
       }
     } catch (e) {
       console.error(e);
-      alert('Lỗi kết nối.');
+      setAlertModal({ isOpen: true, message: 'Lỗi kết nối.' });
     } finally {
       setCancelLoading(false);
     }
@@ -139,14 +149,14 @@ export default function MyOrders({ token }) {
         setShowReturnModal(false);
         setOrderToReturn(null);
         await fetchMyOrders();
-        alert('Gửi yêu cầu trả hàng thành công!');
+        showSuccess('Gửi yêu cầu trả hàng thành công!');
       } else {
         const data = await res.json();
-        alert(data?.message || 'Có lỗi xảy ra khi gửi yêu cầu.');
+        showError(data?.message || 'Có lỗi xảy ra khi gửi yêu cầu.');
       }
     } catch (e) {
       console.error(e);
-      alert('Lỗi kết nối.');
+      setAlertModal({ isOpen: true, message: 'Lỗi kết nối.' });
     } finally {
       setReturnLoading(false);
     }
@@ -157,12 +167,36 @@ export default function MyOrders({ token }) {
     setShowDetailModal(true);
   };
 
+  const showSuccess = (msg, delay = 4000) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(''), delay);
+  };
+  
+  const showError = (msg, delay = 5000) => {
+    setError(msg);
+    setTimeout(() => setError(''), delay);
+  };
+
   return (
     <div className="bg-white border border-lumiere-gray/15 p-8 lg:p-12 animate-fade-in">
       <header className="mb-10">
         <h2 className="serif text-3xl text-lumiere-charcoal mb-2">Lịch sử đơn hàng</h2>
         <p className="text-[13px] text-lumiere-gray">Theo dõi và quản lý các đơn hàng của bạn.</p>
       </header>
+
+      {successMessage && (
+        <div className="mb-8 p-4 bg-emerald-50 border border-emerald-100 flex items-start gap-4 animate-fade-in">
+          <span className="material-symbols-outlined text-emerald-500 mt-0.5">check_circle</span>
+          <p className="text-[13px] text-emerald-700 serif italic font-medium">{successMessage}</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-8 p-4 bg-rose-50 border border-rose-100 flex items-start gap-4">
+          <span className="material-symbols-outlined text-rose-500 mt-0.5">error</span>
+          <p className="text-[13px] text-rose-600 serif italic font-medium">{error}</p>
+        </div>
+      )}
 
       {loading ? (
         <div className="py-20 text-center">
@@ -257,6 +291,24 @@ export default function MyOrders({ token }) {
         onClose={() => setShowCancelModal(false)}
         onSubmit={handleCancelSubmit}
       />
+
+      {/* --- KHỐI MODAL THÔNG BÁO TỰ ĐÓNG --- */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white p-8 max-w-sm w-full shadow-2xl">
+            <h3 className="serif text-xl text-lumiere-charcoal mb-4">Thông báo</h3>
+            <p className="text-[13px] text-lumiere-gray mb-8 leading-relaxed">
+              {alertModal.message}
+            </p>
+            <button
+              onClick={() => setAlertModal({ isOpen: false, message: '' })}
+              className="w-full py-3 text-[11px] tracking-[0.2em] uppercase font-bold text-white bg-lumiere-charcoal hover:bg-lumiere-terracotta transition-all"
+            >
+              Đã hiểu
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

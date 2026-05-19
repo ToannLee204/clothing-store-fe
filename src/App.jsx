@@ -39,12 +39,34 @@ import AdminProductDetail from './pages/admin/AdminProductDetail';
 
 // Hàm bảo vệ Route Admin
 function AdminRoute({ children }) {
+  const [showModal, setShowModal] = useState(false);
   const userStr = localStorage.getItem('user');
+  useEffect(() => {
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user.role !== 'admin') {
+        setShowModal(true);
+        // Tự động đóng modal sau 3 giây rồi chuyển trang
+        setTimeout(() => setShowModal(false), 3000);
+      }
+    }
+  }, [userStr]);
   if (!userStr) return <Navigate to="/auth" replace />;
   const user = JSON.parse(userStr);
   if (user.role !== 'admin') {
-    alert('Bạn không có quyền truy cập trang quản trị!');
-    return <Navigate to="/" replace />;
+    return (
+      <>
+        {showModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white p-8 max-w-sm w-full rounded-2xl shadow-2xl text-center">
+              <h3 className="serif text-lg text-lumiere-charcoal mb-4">Thông báo</h3>
+              <p className="text-[13px] text-lumiere-gray mb-6">Bạn không có quyền truy cập trang quản trị!</p>
+            </div>
+          </div>
+        )}
+        <Navigate to="/" replace />
+      </>
+    );
   }
   return children;
 }

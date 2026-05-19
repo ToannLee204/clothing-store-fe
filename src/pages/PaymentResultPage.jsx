@@ -9,7 +9,16 @@ export default function PaymentResultPage() {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
   const [retryLoading, setRetryLoading] = useState(false);
-
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+  useEffect(() => {
+    let timer;
+    if (alertModal.isOpen) {
+      timer = setTimeout(() => {
+        setAlertModal({ isOpen: false, message: '' });
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [alertModal.isOpen]);
   useEffect(() => {
     const qs = location.search;
     if (qs) {
@@ -56,11 +65,11 @@ export default function PaymentResultPage() {
         const url = payload?.paymentUrl ?? payload?.data?.paymentUrl;
         if (url) window.location.href = url;
       } else {
-        alert(payload?.message || 'Không thể khởi tạo lại thanh toán.');
+        setAlertModal({ isOpen: true, message: payload?.message || 'Không thể khởi tạo lại thanh toán.' });
       }
     } catch (e) {
       console.error(e);
-      alert('Lỗi kết nối.');
+      setAlertModal({ isOpen: true, message: 'Lỗi kết nối.' });
     } finally {
       setRetryLoading(false);
     }
@@ -177,6 +186,24 @@ export default function PaymentResultPage() {
             Nếu bạn đã thanh toán nhưng đơn hàng vẫn báo thất bại, vui lòng liên hệ bộ phận hỗ trợ.
           </p>
         </div>
+
+        {/* --- KHỐI MODAL THÔNG BÁO TỰ ĐÓNG --- */}
+        {alertModal.isOpen && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white p-8 max-w-sm w-full shadow-2xl">
+              <h3 className="serif text-xl text-lumiere-charcoal mb-4">Thông báo</h3>
+              <p className="text-[13px] text-lumiere-gray mb-8 leading-relaxed">
+                {alertModal.message}
+              </p>
+              <button
+                onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                className="w-full py-4 text-[11px] tracking-[0.2em] uppercase font-bold text-white bg-lumiere-charcoal hover:bg-lumiere-terracotta transition-all text-center"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

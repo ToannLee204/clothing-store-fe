@@ -48,7 +48,7 @@ export default function CheckoutPage() {
   const [locationTree, setLocationTree] = useState([]);
   const [districtsOptions, setDistrictsOptions] = useState([]);
   const [wardsOptions, setWardsOptions] = useState([]);
-
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
   useEffect(() => {
     if (!token) {
       navigate('/auth');
@@ -133,23 +133,23 @@ export default function CheckoutPage() {
     const { fullName, phone, province, district, ward, street } = addrForm;
     
     if (fullName.trim().length < 2) {
-      alert("Họ tên phải có ít nhất 2 ký tự.");
+      setAlertModal({ isOpen: true, message: "Họ tên phải có ít nhất 2 ký tự." });
       return;
     }
 
     const phoneRegex = /^(0[3|5|7|8|9])([0-9]{8})$/;
     if (!phoneRegex.test(phone.trim())) {
-      alert("Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng đầu số VN).");
+      setAlertModal({ isOpen: true, message: "Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng đầu số VN)." });
       return;
     }
 
     if (!province || !district || !ward) {
-      alert("Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã.");
+      setAlertModal({ isOpen: true, message: "Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã." });
       return;
     }
 
     if (street.trim().length < 5) {
-      alert("Địa chỉ chi tiết quá ngắn.");
+      setAlertModal({ isOpen: true, message: "Địa chỉ chi tiết quá ngắn." });
       return;
     }
 
@@ -168,7 +168,7 @@ export default function CheckoutPage() {
       }
       else { 
         const errorData = await parseJson(res);
-        alert(extractMessage(errorData, "Lỗi khi lưu địa chỉ.")); 
+        setAlertModal({ isOpen: true, message: extractMessage(errorData, "Lỗi khi lưu địa chỉ.") });
       }
     } catch (err) { console.error(err); }
   };
@@ -202,7 +202,7 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
-      alert('Vui lòng chọn địa chỉ giao hàng.');
+      setAlertModal({ isOpen: true, message: 'Vui lòng chọn địa chỉ giao hàng.' });
       return;
     }
     setSubmitting(true);
@@ -229,7 +229,7 @@ export default function CheckoutPage() {
       } else {
         navigate('/profile', { state: { activeTab: 'orders' } });
       }
-    } catch (e) { alert(e.message); }
+    } catch (e) { setAlertModal({ isOpen: true, message: e.message }); }
     finally { setSubmitting(false); }
   };
 
@@ -296,6 +296,25 @@ export default function CheckoutPage() {
         districtsOptions={districtsOptions}
         wardsOptions={wardsOptions}
       />
+      {/* --- KHỐI MODAL THÔNG BÁO --- */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white p-8 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="serif text-xl text-lumiere-charcoal mb-2">Thông báo</h3>
+            <p className="text-[13px] text-lumiere-gray mb-8 leading-relaxed">
+              {alertModal.message}
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                className="px-6 py-2.5 text-[11px] tracking-[0.15em] uppercase font-bold text-white bg-lumiere-charcoal hover:bg-lumiere-terracotta transition-all"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

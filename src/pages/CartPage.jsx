@@ -41,7 +41,8 @@ export default function CartPage() {
   const [voucherCodeInput, setVoucherCodeInput] = useState('');
   const [voucherActionLoading, setVoucherActionLoading] = useState(false);
   const cartRefreshTimerRef = useRef(null);
-
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
   const isLoggedIn = Boolean(localStorage.getItem('token'));
 
   const loadCart = useCallback(async () => {
@@ -101,22 +102,29 @@ export default function CartPage() {
   };
 
   const removeItem = async (item) => {
-    if (!window.confirm('Xóa sản phẩm này khỏi giỏ hàng?')) return;
-    setUpdatingItemId(item.id ?? item.variantId);
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const response = await fetch(`${API_CART_URL}/items/${item.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-        if (response.ok) loadCart();
-      } else {
-        const nextItems = removeGuestCartItem(cartItems, item.variantId);
-        saveGuestCart(nextItems);
-        setCartItems(nextItems);
-        const subTotal = nextItems.reduce((sum, i) => sum + normalizeMoney(i.lineTotal), 0);
-        setCartSummary(prev => ({ ...prev, subTotal, total: subTotal }));
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa sản phẩm',
+      message: 'Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null }); // Đóng modal
+        setUpdatingItemId(item.id ?? item.variantId);
+        try {
+          const token = localStorage.getItem('token');
+          if (token) {
+            const response = await fetch(`${API_CART_URL}/items/${item.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+            if (response.ok) loadCart();
+          } else {
+            const nextItems = removeGuestCartItem(cartItems, item.variantId);
+            saveGuestCart(nextItems);
+            setCartItems(nextItems);
+            const subTotal = nextItems.reduce((sum, i) => sum + normalizeMoney(i.lineTotal), 0);
+            setCartSummary(prev => ({ ...prev, subTotal, total: subTotal }));
+          }
+        } catch (err) { console.error(err); }
+        finally { setUpdatingItemId(null); }
       }
-    } catch (err) { console.error(err); }
-    finally { setUpdatingItemId(null); }
+    });
   };
 
   const applyVoucher = async () => {
@@ -132,7 +140,7 @@ export default function CartPage() {
       if (response.ok) loadCart();
       else {
         const payload = await parseResponseBody(response);
-        alert(extractMessage(payload, 'Mã giảm giá không hợp lệ.'));
+        setAlertModal({ isOpen: true, message: extractMessage(payload, 'Mã giảm giá không hợp lệ.') });
       }
     } catch (err) { console.error(err); }
     finally { setVoucherActionLoading(false); }
@@ -201,17 +209,23 @@ export default function CartPage() {
                   ← Quay lại mua sắm
                 </button>
                 <button 
-                  onClick={async () => {
-                    if (window.confirm('Xóa tất cả sản phẩm khỏi giỏ hàng?')) {
-                      if (isLoggedIn) {
-                        const token = localStorage.getItem('token');
-                        await fetch(API_CART_URL, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-                        loadCart();
-                      } else {
-                        clearGuestCart();
-                        loadCart();
+                  onClick={() => {
+                    setConfirmModal({
+                      isOpen: true,
+                      title: 'Xóa toàn bộ',
+                      message: 'Bạn có chắc chắn muốn xóa tất cả sản phẩm khỏi giỏ hàng?',
+                      onConfirm: async () => {
+                        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+                        if (isLoggedIn) {
+                          const token = localStorage.getItem('token');
+                          await fetch(API_CART_URL, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+                          loadCart();
+                        } else {
+                          clearGuestCart();
+                          loadCart();
+                        }
                       }
-                    }
+                    });
                   }}
                   className="text-[11px] tracking-[0.2em] uppercase font-semibold text-lumiere-terracotta hover:opacity-70 transition-colors"
                 >
@@ -219,6 +233,51 @@ export default function CartPage() {
                 </button>
               </div>
             </section>
+
+            {confirmModal.isOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                <div className="bg-white p-8 max-w-sm w-full mx-4 shadow-2xl">
+                  <h3 className="serif text-xl text-lumiere-charcoal mb-2">{confirmModal.title}</h3>
+                  <p className="text-[13px] text-lumiere-gray mb-8 leading-relaxed">
+                    {confirmModal.message}
+                  </p>
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+                      className="px-6 py-2.5 text-[11px] tracking-[0.15em] uppercase font-bold text-lumiere-gray border border-lumiere-gray/20 hover:border-lumiere-charcoal hover:text-lumiere-charcoal transition-all"
+                    >
+                      Hủy bỏ
+                    </button>
+                    <button
+                      onClick={confirmModal.onConfirm}
+                      className="px-6 py-2.5 text-[11px] tracking-[0.15em] uppercase font-bold text-white bg-rose-500 hover:bg-rose-600 transition-all"
+                    >
+                      Xác nhận
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- KHỐI MODAL THÔNG BÁO (ALERT) --- */}
+            {alertModal.isOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                <div className="bg-white p-8 max-w-sm w-full mx-4 shadow-2xl">
+                  <h3 className="serif text-xl text-lumiere-charcoal mb-2">Thông báo</h3>
+                  <p className="text-[13px] text-lumiere-gray mb-8 leading-relaxed">
+                    {alertModal.message}
+                  </p>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                      className="px-6 py-2.5 text-[11px] tracking-[0.15em] uppercase font-bold text-white bg-lumiere-charcoal hover:bg-lumiere-terracotta transition-all"
+                    >
+                      Đã hiểu
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <CartSummary 
               summary={cartSummary}

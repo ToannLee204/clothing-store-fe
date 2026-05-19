@@ -95,13 +95,29 @@ async function mergeGuestCartAfterLogin(token) {
   }
 }
 
+// Map field key → label tiếng Việt để hiển thị lỗi rõ ràng
+const REGISTER_FIELD_LABELS = {
+  fullName: 'Họ tên',
+  email: 'Email',
+  password: 'Mật khẩu',
+  soDienThoai: 'Số điện thoại',
+  ngaySinh: 'Ngày sinh',
+  gioiTinh: 'Giới tính',
+};
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
+
+  // Tách riêng error và success để hiển thị đúng ngữ cảnh
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async (loginData) => {
     setError('');
+    setSuccessMessage('');
+    setIsSubmitting(true);
     try {
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
@@ -138,32 +154,38 @@ export default function AuthPage() {
           setError('Không tìm thấy Token trong phản hồi từ Server!');
         }
       } else {
-        const errorMsg = extractMessage(res, 'Đăng nhập thất bại!');
-        setError(errorMsg);
+        setError(extractMessage(res, 'Đăng nhập thất bại!'));
       }
     } catch (err) {
       console.error('Login error details:', err);
       setError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau!');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleRegister = async (regData, confirmPassword) => {
     setError('');
+    setSuccessMessage('');
+
+    // Validate client-side trước khi gọi API
     if (regData.matKhau !== confirmPassword) {
       setError('Mật khẩu xác nhận không khớp!');
       return;
     }
+
+    setIsSubmitting(true);
     try {
       const response = await fetch(`${API_BASE_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          fullName: regData.hoTen, 
-          email: regData.email, 
-          password: regData.matKhau, 
-          ngaySinh: regData.ngaySinh, 
-          gioiTinh: regData.gioiTinh, 
-          soDienThoai: regData.soDienThoai 
+        body: JSON.stringify({
+          fullName: regData.hoTen,
+          email: regData.email,
+          password: regData.matKhau,
+          ngaySinh: regData.ngaySinh,
+          gioiTinh: regData.gioiTinh,
+          soDienThoai: regData.soDienThoai,
         }),
       });
 
@@ -171,21 +193,41 @@ export default function AuthPage() {
       console.log('Register Response:', { status: response.status, data: res });
 
       if (response.ok) {
-        alert('Đăng ký thành công, vui lòng kiểm tra email để xác thực!');
-        setIsLogin(true);
+        // Đăng ký OK → chưa phải "thành công" — chỉ báo đã gửi mail xác nhận
+        // "Đăng ký thành công" sẽ hiển thị ở trang verify-email sau khi user bấm link
+        setSuccessMessage('Đã gửi email xác nhận đến địa chỉ của bạn. Vui lòng kiểm tra hộp thư và bấm vào link xác nhận để hoàn tất đăng ký.');
       } else {
+        // ✅ Gom TẤT CẢ lỗi field, không bỏ sót
         const errData = res.data || res;
-        if (errData.fullName) setError('Lỗi họ tên: ' + errData.fullName);
-        else if (errData.email) setError('Lỗi email: ' + errData.email);
-        else if (errData.password) setError('Lỗi mật khẩu: ' + errData.password);
-        else {
+        const fieldErrors = [];
+
+        Object.entries(REGISTER_FIELD_LABELS).forEach(([key, label]) => {
+          if (errData[key]) {
+            const msg = Array.isArray(errData[key]) ? errData[key].join(', ') : errData[key];
+            fieldErrors.push(`${label}: ${msg}`);
+          }
+        });
+
+        if (fieldErrors.length > 0) {
+          // Hiện từng lỗi trên một dòng, phân cách bằng dấu •
+          setError(fieldErrors.join(' • '));
+        } else {
+          // Fallback: lấy message chung từ response
           setError(extractMessage(res, 'Đăng ký thất bại!'));
         }
       }
     } catch (err) {
       console.error('Register error details:', err);
       setError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau!');
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleSwitchTab = (toLogin) => {
+    setIsLogin(toLogin);
+    setError('');
+    setSuccessMessage('');
   };
 
   return (
@@ -232,7 +274,7 @@ export default function AuthPage() {
         <div className="absolute top-12 right-12 serif text-[14px] text-lumiere-charcoal/40 hidden md:block">
           EST. 2026 — PREMIUM QUALITY
         </div>
-        
+
         <div className="w-full max-w-xl">
           {/* Header Form */}
           <div className="mb-12">
@@ -252,20 +294,31 @@ export default function AuthPage() {
           {/* Nút Tab Chuyển đổi (Premium Tabs) */}
           <div className="flex border-b border-lumiere-gray/10 mb-10">
             <button
-              onClick={() => { setIsLogin(true); setError(''); }}
+              onClick={() => handleSwitchTab(true)}
               className={`pb-4 px-8 text-[11px] tracking-[0.2em] uppercase font-bold transition-all border-b-2 ${isLogin ? 'border-lumiere-terracotta text-lumiere-charcoal' : 'border-transparent text-lumiere-gray hover:text-lumiere-charcoal'}`}
             >
               Đăng nhập
             </button>
             <button
-              onClick={() => { setIsLogin(false); setError(''); }}
+              onClick={() => handleSwitchTab(false)}
               className={`pb-4 px-8 text-[11px] tracking-[0.2em] uppercase font-bold transition-all border-b-2 ${!isLogin ? 'border-lumiere-terracotta text-lumiere-charcoal' : 'border-transparent text-lumiere-gray hover:text-lumiere-charcoal'}`}
             >
               Đăng ký
             </button>
           </div>
 
-          {/* Thông báo Lỗi */}
+          {/* ✅ Thông báo THÀNH CÔNG (xanh lá) */}
+          {successMessage && (
+            <div className="mb-8 p-4 bg-emerald-50 border border-emerald-100 flex items-start gap-4 animate-fade-in">
+              <span className="material-symbols-outlined text-emerald-500 mt-0.5">check_circle</span>
+              <div>
+                <p className="text-[13px] text-emerald-700 serif italic font-medium">{successMessage}</p>
+                <p className="text-[11px] text-emerald-500 mt-1 tracking-wide uppercase">Kiểm tra cả thư mục spam nếu không thấy email.</p>
+              </div>
+            </div>
+          )}
+
+          {/* ✅ Thông báo LỖI (đỏ) — dùng cho cả login lẫn register */}
           {error && (
             <div className="mb-8 p-4 bg-rose-50 border border-rose-100 flex items-start gap-4 animate-shake">
               <span className="material-symbols-outlined text-rose-500 mt-0.5">error</span>
@@ -276,16 +329,16 @@ export default function AuthPage() {
           {/* FORM */}
           <div className="animate-fade-in">
             {isLogin ? (
-              <LoginForm onSubmit={handleLogin} />
+              <LoginForm onSubmit={handleLogin} isSubmitting={isSubmitting} />
             ) : (
-              <RegisterForm onSubmit={handleRegister} />
+              <RegisterForm onSubmit={handleRegister} isSubmitting={isSubmitting} />
             )}
           </div>
 
           <div className="mt-12 pt-8 border-t border-lumiere-gray/5 text-center lg:text-left">
-             <p className="text-[11px] text-lumiere-gray leading-relaxed uppercase tracking-widest">
-                © 2026 CLOTHING STORE. ALL RIGHTS RESERVED.
-             </p>
+            <p className="text-[11px] text-lumiere-gray leading-relaxed uppercase tracking-widest">
+              © 2026 CLOTHING STORE. ALL RIGHTS RESERVED.
+            </p>
           </div>
         </div>
       </div>

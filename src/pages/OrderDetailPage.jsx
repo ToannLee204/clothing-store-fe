@@ -109,7 +109,8 @@ export default function OrderDetailPage() {
   const [editDraftContent, setEditDraftContent] = useState("");
   const [editReviewError, setEditReviewError] = useState("");
   const [editReviewSuccess, setEditReviewSuccess] = useState("");
-
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
   const canRetryVnpay = (o) =>
     o?.status === "payment_failed" || (o?.status === "payment_failed" && o?.paymentMethod === "vnpay");
 
@@ -365,33 +366,40 @@ export default function OrderDetailPage() {
   const deleteReview = async (reviewId) => {
     if (!reviewId) return;
     if (!token) {
-      alert("Bạn cần đăng nhập để xóa đánh giá.");
+      setAlertModal({ isOpen: true, message: "Bạn cần đăng nhập để xóa đánh giá." });
       return;
     }
     if (editBusy) return;
 
-    const ok = window.confirm("Bạn có chắc muốn xóa đánh giá này không?");
-    if (!ok) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa đánh giá',
+      message: 'Bạn có chắc muốn xóa đánh giá này không?',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        setEditBusy(true);
+        try {
+          const res = await fetch(`${API_REVIEWS_URL}/${reviewId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          });
 
-    setEditBusy(true);
-    try {
-      const res = await fetch(`${API_REVIEWS_URL}/${reviewId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || "Không thể xóa đánh giá.");
+          }
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Không thể xóa đánh giá.");
+          await fetchMyReviews();
+          // Thay alert thành công
+          setAlertModal({ isOpen: true, message: "Đã xóa đánh giá thành công!" });
+        } catch (e) {
+          // Thay alert báo lỗi
+          setAlertModal({ isOpen: true, message: e?.message || "Không thể xóa đánh giá." });
+        } finally {
+          setEditBusy(false);
+        }
       }
-
-      await fetchMyReviews();
-      alert("Đã xóa đánh giá thành công!");
-    } catch (e) {
-      alert(e?.message || "Không thể xóa đánh giá.");
-    } finally {
-      setEditBusy(false);
-    }
+    });
   };
 
   const orderCompleted = order?.status === "completed";
@@ -889,6 +897,51 @@ export default function OrderDetailPage() {
           </div>
         )}
       </main>
+      {/* --- KHỐI MODAL XÁC NHẬN (CONFIRM) --- */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white p-6 max-w-sm w-full mx-4 rounded-3xl shadow-2xl border border-slate-100">
+            <h3 className="text-lg font-black text-slate-900 mb-2">{confirmModal.title}</h3>
+            <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+              {confirmModal.message}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-black text-white hover:bg-rose-700 transition-all"
+              >
+                Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- KHỐI MODAL THÔNG BÁO (ALERT) --- */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white p-6 max-w-sm w-full mx-4 rounded-3xl shadow-2xl border border-slate-100">
+            <h3 className="text-lg font-black text-slate-900 mb-2">Thông báo</h3>
+            <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+              {alertModal.message}
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAlertModal({ isOpen: false, message: '' })}
+                className="rounded-xl bg-[#0066A2] px-4 py-2 text-xs font-black text-white hover:bg-[#005587] transition-all"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
