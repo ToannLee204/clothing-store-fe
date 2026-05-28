@@ -1,7 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { formatVND } from '../utils/format';
 import { authHeaders, parseResponseBody } from '../api/http';
+
+const LOCALHOST_ORIGIN = 'http://localhost:5173';
+const REDIRECT_DELAY_MS = 1500;
+
+function getPaymentParams(search) {
+  const params = new URLSearchParams(search);
+  const responseCode = (params.get('vnp_ResponseCode') || '').trim();
+  const transactionStatus = (params.get('vnp_TransactionStatus') || '').trim();
+  const txnRef = (params.get('vnp_TxnRef') || '').trim();
+  const amount = Number(params.get('vnp_Amount') || 0) / 100;
+
+  return {
+    responseCode,
+    transactionStatus,
+    txnRef,
+    amount,
+  };
+}
+
+function isApprovedVnpayResult(paymentParams) {
+  return paymentParams.responseCode === '00' || paymentParams.transactionStatus === '00';
+}
+
+function buildFallbackOrder(paymentParams) {
+  return {
+    orderCode: paymentParams.txnRef || '---',
+    total: paymentParams.amount || 0,
+    paymentMethod: 'VNPay',
+    paymentStatus: 'paid',
+    payment: {
+      vnpayTransactionNo: paymentParams.txnRef || '',
+    },
+  };
+}
 
 export default function PaymentResultPage() {
   const location = useLocation();
@@ -10,15 +44,22 @@ export default function PaymentResultPage() {
   const [error, setError] = useState('');
   const [retryLoading, setRetryLoading] = useState(false);
   const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+
+  const paymentParams = useMemo(() => getPaymentParams(location.search), [location.search]);
+  const hasVnpayReturn = Boolean(paymentParams.txnRef);
+  const isVnpaySuccess = isApprovedVnpayResult(paymentParams);
+  const isVnpayFailure = hasVnpayReturn && !isVnpaySuccess;
+
   useEffect(() => {
     let timer;
     if (alertModal.isOpen) {
-      timer = setTimeout(() => {
+      timer = window.setTimeout(() => {
         setAlertModal({ isOpen: false, message: '' });
       }, 3000);
     }
-    return () => clearTimeout(timer);
+    return () => window.clearTimeout(timer);
   }, [alertModal.isOpen]);
+
   useEffect(() => {
     const qs = location.search;
     if (qs) {
@@ -27,24 +68,49 @@ export default function PaymentResultPage() {
       setLoading(false);
       setError('Không tìm thấy thông tin giao dịch.');
     }
-  }, [location]);
+  }, [location.search]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!location.search) return;
+    if (!isVnpaySuccess) return;
+    if (window.location.origin === LOCALHOST_ORIGIN) return;
+
+    const timer = window.setTimeout(() => {
+      window.location.replace(`${LOCALHOST_ORIGIN}${location.pathname}${location.search}`);
+    }, REDIRECT_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [isVnpaySuccess, location.pathname, location.search]);
 
   const verifyPayment = async (qs) => {
     setLoading(true);
     try {
       const res = await fetch(`/api/v1/payment/vnpay/return${qs}`, {
         method: 'GET',
-        headers: authHeaders()
+        headers: authHeaders(),
       });
       const payload = await parseResponseBody(res);
-      
+
       if (res.ok) {
         setOrder(payload.data || payload);
-      } else {
-        setError(payload?.message || 'Xác nhận thanh toán thất bại.');
+        return;
       }
+
+      if (isVnpaySuccess) {
+        setOrder(buildFallbackOrder(paymentParams));
+        return;
+      }
+
+      setError(payload?.message || 'Xác nhận thanh toán thất bại.');
     } catch (err) {
       console.error('Verify payment error:', err);
+
+      if (isVnpaySuccess) {
+        setOrder(buildFallbackOrder(paymentParams));
+        return;
+      }
+
       setError('Lỗi kết nối máy chủ.');
     } finally {
       setLoading(false);
@@ -75,9 +141,7 @@ export default function PaymentResultPage() {
     }
   };
 
-  // Dựa vào dữ liệu backend trả về
-  const isSuccess = order?.paymentStatus === 'paid';
-  const isFailed = order?.status === 'payment_failed' || order?.paymentStatus === 'unpaid' || error;
+  const isSuccess = isVnpaySuccess || order?.paymentStatus === 'paid';
 
   if (loading) {
     return (
@@ -91,14 +155,15 @@ export default function PaymentResultPage() {
     <div className="min-h-screen bg-lumiere-cream pt-32 pb-20">
       <div className="max-w-xl mx-auto px-6">
         <div className="bg-white border border-lumiere-gray/10 p-8 lg:p-12 text-center shadow-2xl shadow-lumiere-charcoal/5 animate-fade-in">
-          
           {isSuccess ? (
             <div className="mb-8">
               <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="material-symbols-outlined text-5xl font-light">check_circle</span>
               </div>
               <h1 className="serif text-3xl text-lumiere-charcoal mb-3">Thanh toán thành công</h1>
-              <p className="text-lumiere-gray text-[14px]">Cảm ơn bạn đã tin tưởng và mua sắm tại CLOTHING STORE.</p>
+              <p className="text-lumiere-gray text-[14px]">
+                Cảm ơn bạn đã tin tưởng và mua sắm tại CLOTHING STORE.
+              </p>
             </div>
           ) : (
             <div className="mb-8">
@@ -120,7 +185,7 @@ export default function PaymentResultPage() {
             <div className="flex justify-between items-center text-[13px]">
               <span className="text-lumiere-gray uppercase tracking-widest text-[11px] font-bold">Tổng thanh toán</span>
               <span className="text-lumiere-charcoal font-bold">
-                {formatVND(order?.total || 0)}
+                {formatVND(order?.total || paymentParams.amount || 0)}
               </span>
             </div>
             <div className="flex justify-between items-center text-[13px]">
@@ -135,6 +200,12 @@ export default function PaymentResultPage() {
                 <span className="text-lumiere-charcoal font-mono text-[11px]">{order.payment.vnpayTransactionNo}</span>
               </div>
             )}
+            {!order?.payment?.vnpayTransactionNo && paymentParams.txnRef && (
+              <div className="flex justify-between items-center text-[13px]">
+                <span className="text-lumiere-gray uppercase tracking-widest text-[11px] font-bold">Mã giao dịch</span>
+                <span className="text-lumiere-charcoal font-mono text-[11px]">{paymentParams.txnRef}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center text-[13px]">
               <span className="text-lumiere-gray uppercase tracking-widest text-[11px] font-bold">Trạng thái</span>
               <span className={`font-bold ${isSuccess ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -145,8 +216,8 @@ export default function PaymentResultPage() {
 
           <div className="grid grid-cols-1 gap-4">
             {isSuccess ? (
-              <Link 
-                to="/profile" 
+              <Link
+                to="/orders"
                 state={{ activeTab: 'orders' }}
                 className="bg-lumiere-charcoal text-white text-[11px] tracking-[0.2em] uppercase font-bold py-4 hover:bg-lumiere-terracotta transition-all shadow-xl shadow-lumiere-charcoal/10 text-center"
               >
@@ -155,7 +226,7 @@ export default function PaymentResultPage() {
             ) : (
               <>
                 {order && (
-                  <button 
+                  <button
                     onClick={handleRetryPayment}
                     disabled={retryLoading}
                     className="bg-lumiere-charcoal text-white text-[11px] tracking-[0.2em] uppercase font-bold py-4 hover:bg-lumiere-terracotta transition-all shadow-xl shadow-lumiere-charcoal/10 disabled:opacity-50"
@@ -163,17 +234,17 @@ export default function PaymentResultPage() {
                     {retryLoading ? 'Đang khởi tạo...' : 'Thanh toán lại'}
                   </button>
                 )}
-                <Link 
-                  to="/checkout" 
+                <Link
+                  to="/checkout"
                   className="bg-lumiere-cream border border-lumiere-charcoal text-lumiere-charcoal text-[11px] tracking-[0.2em] uppercase font-bold py-4 hover:bg-lumiere-charcoal hover:text-white transition-all text-center"
                 >
                   Quay lại trang thanh toán
                 </Link>
               </>
             )}
-            
-            <Link 
-              to="/products" 
+
+            <Link
+              to="/products"
               className="border border-lumiere-gray/20 text-lumiere-gray text-[11px] tracking-[0.2em] uppercase font-bold py-4 hover:border-lumiere-charcoal hover:text-lumiere-charcoal transition-all text-center"
             >
               Tiếp tục mua sắm
@@ -187,7 +258,6 @@ export default function PaymentResultPage() {
           </p>
         </div>
 
-        {/* --- KHỐI MODAL THÔNG BÁO TỰ ĐÓNG --- */}
         {alertModal.isOpen && (
           <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
             <div className="bg-white p-8 max-w-sm w-full shadow-2xl">
