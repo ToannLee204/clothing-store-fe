@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { normalizeBackendCartItem } from '../utils/cart';
 import CheckoutAddressSelector from '../components/checkout/CheckoutAddressSelector';
@@ -49,6 +49,8 @@ export default function CheckoutPage() {
   const [districtsOptions, setDistrictsOptions] = useState([]);
   const [wardsOptions, setWardsOptions] = useState([]);
   const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
+  const [successToast, setSuccessToast] = useState({ isOpen: false, message: '' });
+  const redirectTimerRef = useRef(null);
   useEffect(() => {
     if (!token) {
       navigate('/auth');
@@ -57,6 +59,24 @@ export default function CheckoutPage() {
     fetchData();
     fetchLocationTree();
   }, [token, navigate]);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        window.clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!successToast.isOpen) return;
+
+    const timer = window.setTimeout(() => {
+      setSuccessToast({ isOpen: false, message: '' });
+    }, 2400);
+
+    return () => window.clearTimeout(timer);
+  }, [successToast.isOpen]);
 
   const fetchLocationTree = async () => {
     try {
@@ -227,7 +247,18 @@ export default function CheckoutPage() {
         const url = orderData?.paymentUrl ?? data?.paymentUrl;
         if (url) window.location.href = url;
       } else {
-        navigate('/profile', { state: { activeTab: 'orders' } });
+        setSuccessToast({
+          isOpen: true,
+          message: 'Đặt hàng thành công. Đơn hàng COD đã được tạo.',
+        });
+
+        if (redirectTimerRef.current) {
+          window.clearTimeout(redirectTimerRef.current);
+        }
+
+        redirectTimerRef.current = window.setTimeout(() => {
+          navigate('/orders');
+        }, 2800);
       }
     } catch (e) { setAlertModal({ isOpen: true, message: e.message }); }
     finally { setSubmitting(false); }
@@ -312,6 +343,17 @@ export default function CheckoutPage() {
                 Đã hiểu
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {successToast.isOpen && (
+        <div className="fixed left-1/2 top-8 z-[110] w-[calc(100%-2rem)] max-w-md -translate-x-1/2">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-2xl">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700">Thành công</p>
+            <p className="mt-2 text-sm font-medium leading-6 text-emerald-800">
+              {successToast.message}
+            </p>
           </div>
         </div>
       )}

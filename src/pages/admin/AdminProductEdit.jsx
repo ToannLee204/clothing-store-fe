@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import showToast from '../../utils/toast';
 import './AdminAddProduct.css';
 
 const getImageUrl = (url) => {
@@ -21,16 +22,6 @@ const AdminProductEdit = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
-  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
-  useEffect(() => {
-    let timer;
-    if (alertModal.isOpen) {
-      timer = setTimeout(() => {
-        setAlertModal({ isOpen: false, message: '' });
-      }, 3000);
-    }
-    return () => clearTimeout(timer);
-  }, [alertModal.isOpen]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -189,14 +180,14 @@ const AdminProductEdit = () => {
       });
 
       if (response.ok) {
-        setAlertModal({ isOpen: true, message: 'Cập nhật sản phẩm thành công!' });
+        showToast('Cập nhật sản phẩm thành công!', 'success');
         setTimeout(() => navigate('/admin/products'), 3000);
       } else {
         const text = await response.text();
-        setError('Có lỗi xảy ra: ' + text);
+        showToast('Có lỗi xảy ra: ' + text, 'error');
       }
     } catch (err) {
-      setError('Không thể kết nối đến máy chủ!');
+      showToast('Không thể kết nối đến máy chủ!', 'error');
     } finally {
       setLoading(false);
     }
@@ -492,23 +483,6 @@ const AdminProductEdit = () => {
           </div>
         </div>
       </div>
-      {/* --- KHỐI MODAL THÔNG BÁO TỰ ĐÓNG --- */}
-      {alertModal.isOpen && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
-          <div className="bg-white p-6 max-w-sm w-full rounded-2xl shadow-2xl text-center border border-stone-200">
-            <h3 className="mb-2 text-lg font-black text-stone-900">Thông báo</h3>
-            <p className="mb-6 text-xs leading-relaxed text-stone-600">
-              {alertModal.message}
-            </p>
-            <button 
-              onClick={() => setAlertModal({ isOpen: false, message: '' })}
-              className="w-full py-2.5 text-[11px] uppercase font-bold text-white bg-stone-900 hover:bg-stone-700 transition-all rounded-xl"
-            >
-              Đã hiểu
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 };

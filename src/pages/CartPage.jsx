@@ -15,6 +15,17 @@ import CartSummary from '../components/cart/CartSummary';
 const API_CART_URL = '/api/v1/cart';
 const API_PRODUCTS_URL = '/api/v1/products';
 const API_VOUCHER_URL = '/api/v1/vouchers';
+const TOAST_EVENT = 'app:toast';
+
+const showToast = (message, type = 'info') => {
+  window.dispatchEvent(new CustomEvent(TOAST_EVENT, {
+    detail: {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      message,
+      type,
+    },
+  }));
+};
 
 const parseResponseBody = async (response) => {
   const text = await response.text();
@@ -113,13 +124,17 @@ export default function CartPage() {
           const token = localStorage.getItem('token');
           if (token) {
             const response = await fetch(`${API_CART_URL}/items/${item.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-            if (response.ok) loadCart();
+            if (response.ok) {
+              await loadCart();
+              showToast('Đã xóa sản phẩm khỏi giỏ hàng', 'success');
+            }
           } else {
             const nextItems = removeGuestCartItem(cartItems, item.variantId);
             saveGuestCart(nextItems);
             setCartItems(nextItems);
             const subTotal = nextItems.reduce((sum, i) => sum + normalizeMoney(i.lineTotal), 0);
             setCartSummary(prev => ({ ...prev, subTotal, total: subTotal }));
+            showToast('Đã xóa sản phẩm khỏi giỏ hàng', 'success');
           }
         } catch (err) { console.error(err); }
         finally { setUpdatingItemId(null); }
@@ -218,11 +233,15 @@ export default function CartPage() {
                         setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
                         if (isLoggedIn) {
                           const token = localStorage.getItem('token');
-                          await fetch(API_CART_URL, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-                          loadCart();
+                          const response = await fetch(API_CART_URL, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+                          if (response.ok) {
+                            await loadCart();
+                            showToast('Đã xóa toàn bộ giỏ hàng', 'success');
+                          }
                         } else {
                           clearGuestCart();
-                          loadCart();
+                          await loadCart();
+                          showToast('Đã xóa toàn bộ giỏ hàng', 'success');
                         }
                       }
                     });

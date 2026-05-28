@@ -22,6 +22,16 @@ const COLOR_MAP = {
 
 const API_CART_URL = '/api/v1/cart';
 
+const showToast = (message, type = 'info') => {
+  window.dispatchEvent(new CustomEvent('app:toast', {
+    detail: {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      message,
+      type,
+    },
+  }));
+};
+
 export default function QuickAddModal({ product: initialProduct, onClose }) {
   const [product, setProduct] = useState(null);
   const [selectedColor, setSelectedColor] = useState('');
@@ -30,16 +40,6 @@ export default function QuickAddModal({ product: initialProduct, onClose }) {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(true);
   const [activeImage, setActiveImage] = useState('');
-  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
-  useEffect(() => {
-    let timer;
-    if (alertModal.isOpen) {
-      timer = setTimeout(() => {
-        setAlertModal({ isOpen: false, message: '' });
-      }, 3000);
-    }
-    return () => clearTimeout(timer);
-  }, [alertModal.isOpen]);
   useEffect(() => {
     const fetchDetail = async () => {
       setDetailLoading(true);
@@ -96,12 +96,12 @@ export default function QuickAddModal({ product: initialProduct, onClose }) {
 
   const handleAddToCart = async () => {
     if (!selectedVariant) {
-      setAlertModal({ isOpen: true, message: 'Vui lòng chọn đầy đủ màu sắc và kích cỡ.' });
+      showToast('Vui lòng chọn đầy đủ màu sắc và kích cỡ', 'error');
       return;
     }
     const token = window.localStorage.getItem('token');
     if (!token) {
-      setAlertModal({ isOpen: true, message: 'Bạn cần đăng nhập để thực hiện tính năng này.' });
+      showToast('Bạn cần đăng nhập để thực hiện tính năng này', 'error');
       return;
     }
 
@@ -124,13 +124,14 @@ export default function QuickAddModal({ product: initialProduct, onClose }) {
           : quantity;
         saveCartSnapshotCount(totalQty);
         emitCartUpdated({ count: totalQty });
+        showToast('Đã thêm vào giỏ hàng', 'success');
         onClose();
       } else {
-        setAlertModal({ isOpen: true, message: 'Có lỗi xảy ra khi thêm vào giỏ hàng.' });
+        showToast('Có lỗi xảy ra khi thêm vào giỏ hàng', 'error');
       }
     } catch (err) {
       console.error(err);
-      setAlertModal({ isOpen: true, message: 'Lỗi kết nối.' });
+      showToast('Lỗi kết nối', 'error');
     } finally {
       setLoading(false);
     }
@@ -291,23 +292,6 @@ export default function QuickAddModal({ product: initialProduct, onClose }) {
           </>
         )}
 
-        {/* --- KHỐI MODAL THÔNG BÁO TỰ ĐÓNG --- */}
-        {alertModal.isOpen && (
-          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
-            <div className="bg-white p-6 max-w-sm w-full rounded-2xl shadow-2xl text-center">
-              <h3 className="serif text-lg text-lumiere-charcoal mb-4">Thông báo</h3>
-              <p className="text-[13px] text-lumiere-gray mb-6 leading-relaxed">
-                {alertModal.message}
-              </p>
-              <button 
-                onClick={() => setAlertModal({ isOpen: false, message: '' })}
-                className="w-full py-3 text-[11px] tracking-[0.15em] uppercase font-bold text-white bg-lumiere-charcoal hover:bg-lumiere-terracotta transition-all"
-              >
-                Đã hiểu
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

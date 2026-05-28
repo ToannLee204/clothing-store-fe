@@ -1,4 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import './AdminProducts.css';
+import showToast from '../../utils/toast';
+import { getImageUrl } from '../../utils/format';
 
 const priceFormatter = new Intl.NumberFormat('vi-VN');
 const formatPriceDisplay = (raw) => {
@@ -8,8 +12,6 @@ const formatPriceDisplay = (raw) => {
   return priceFormatter.format(Number(digits));
 };
 const parsePriceRaw = (formatted) => String(formatted).replace(/\D/g, '');
-import { useNavigate } from 'react-router-dom';
-import './AdminProducts.css';
 
 const currencyFormatter = new Intl.NumberFormat('vi-VN');
 
@@ -18,11 +20,19 @@ const formatCurrency = (value) => {
   return `${currencyFormatter.format(numericValue)}đ`;
 };
 
-const getImageUrl = (url) => {
-  if (!url) return '';
-  if (url.startsWith('blob:') || url.startsWith('http') || url.startsWith('data:')) return url;
-  if (url.startsWith('/uploads/')) return `http://localhost:8080/api/v1${url}`;
-  return `http://localhost:8080/api/v1/uploads/products/${url}`;
+const getProductThumbnail = (product) => {
+  const candidates = [
+    product?.thumbnailUrl,
+    product?.thumbnail_url,
+    product?.thumbnail,
+    product?.imageUrl,
+    product?.anhDaiDien,
+    Array.isArray(product?.imageUrls) ? product.imageUrls[0] : '',
+    Array.isArray(product?.images) ? product.images[0] : '',
+    Array.isArray(product?.productImages) ? product.productImages[0] : '',
+  ].filter(Boolean);
+
+  return candidates[0] || '';
 };
 
 const SORT_OPTIONS = [
@@ -48,7 +58,6 @@ const AdminProducts = () => {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0, pages: 1 });
 
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
-  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
 
   // Tất cả filter theo ProductFilterRequest
   const [filters, setFilters] = useState({
@@ -201,13 +210,13 @@ const AdminProducts = () => {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (response.ok) {
-            setAlertModal({ isOpen: true, message: 'Xóa sản phẩm thành công!' });
+            showToast('Xóa sản phẩm thành công!', 'success');
             fetchProducts(pagination.current);
           } else {
-            setAlertModal({ isOpen: true, message: 'Lỗi khi xóa sản phẩm.' });
+            showToast('Lỗi khi xóa sản phẩm.', 'error');
           }
         } catch {
-          setAlertModal({ isOpen: true, message: 'Không thể kết nối Server để xóa.' });
+          showToast('Không thể kết nối Server để xóa.', 'error');
         }
       }
     });
@@ -219,9 +228,15 @@ const AdminProducts = () => {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.ok) fetchProducts(pagination.current);
+      if (response.ok) {
+        showToast('Đã cập nhật trạng thái hiển thị.', 'success');
+        fetchProducts(pagination.current);
+      } else {
+        showToast('Không thể cập nhật trạng thái sản phẩm.', 'error');
+      }
     } catch (err) {
       console.error('Lỗi khi thay đổi trạng thái:', err);
+      showToast('Không thể cập nhật trạng thái sản phẩm.', 'error');
     }
   };
 
@@ -240,12 +255,13 @@ const AdminProducts = () => {
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
+        showToast('Đã tải file mẫu thành công.', 'success');
       } else {
-        setAlertModal({ isOpen: true, message: 'Không thể tải file mẫu.' });
+        showToast('Không thể tải file mẫu.', 'error');
       }
     } catch (err) {
       console.error('Lỗi tải template:', err);
-      setAlertModal({ isOpen: true, message: 'Lỗi kết nối máy chủ.' });
+      showToast('Lỗi kết nối máy chủ.', 'error');
     }
   };
 
@@ -268,12 +284,13 @@ const AdminProducts = () => {
       if (response.ok) {
         setImportResult(res.data || res);
         fetchProducts(pagination.current);
+        showToast('Import sản phẩm thành công.', 'success');
       } else {
-        setAlertModal({ isOpen: true, message: res.message || 'Lỗi khi import sản phẩm.' });
+        showToast(res.message || 'Lỗi khi import sản phẩm.', 'error');
       }
     } catch (err) {
       console.error('Lỗi import:', err);
-      setAlertModal({ isOpen: true, message: 'Lỗi kết nối máy chủ.' });
+      showToast('Lỗi kết nối máy chủ.', 'error');
     } finally {
       setImportLoading(false);
       e.target.value = ''; // Reset input
@@ -606,9 +623,9 @@ const AdminProducts = () => {
                 <div className="tbl-row" key={product.id}>
                   <div>
                     <div className="prod-thumb">
-                      {product.thumbnailUrl || product.thumbnail_url ? (
+                      {getProductThumbnail(product) ? (
                         <img
-                          src={getImageUrl(product.thumbnailUrl || product.thumbnail_url)}
+                          src={getImageUrl(getProductThumbnail(product))}
                           alt={product.name}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           onError={(e) => { e.currentTarget.src = 'https://placehold.co/100x140?text=?'; }}
@@ -724,26 +741,6 @@ const AdminProducts = () => {
         </div>
       )}
 
-      {/* --- KHỐI MODAL THÔNG BÁO (ALERT) --- */}
-      {alertModal.isOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setAlertModal({ isOpen: false, message: '' })} />
-          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <h3 className="mb-2 text-lg font-bold text-slate-900">Thông báo</h3>
-            <p className="mb-6 text-sm leading-relaxed text-slate-500">
-              {alertModal.message}
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setAlertModal({ isOpen: false, message: '' })}
-                className="btn-primary"
-              >
-                Đã hiểu
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 };

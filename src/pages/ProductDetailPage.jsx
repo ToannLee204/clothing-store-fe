@@ -48,6 +48,16 @@ const COLOR_MAP = {
   "Màu khác": "#A8A29E"
 };
 
+const showToast = (message, type = 'info') => {
+  window.dispatchEvent(new CustomEvent('app:toast', {
+    detail: {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      message,
+      type,
+    },
+  }));
+};
+
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -63,6 +73,7 @@ export default function ProductDetailPage() {
   
   const [reviews, setReviews] = useState([]);
   const [totalReviews, setTotalReviews] = useState(0);
+  const [reviewAverage, setReviewAverage] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
   useEffect(() => {
@@ -129,6 +140,8 @@ export default function ProductDetailPage() {
         const { result, meta } = normalizePagination(payload);
         setReviews(result);
         setTotalReviews(meta?.totals ?? result.length);
+        const sum = result.reduce((acc, review) => acc + (Number(review.starRating || review.rating) || 0), 0);
+        setReviewAverage(result.length ? sum / result.length : 0);
       }
     } catch (e) { 
       console.error('Lỗi tải đánh giá:', e); 
@@ -267,12 +280,14 @@ export default function ProductDetailPage() {
           : quantity;
         saveCartSnapshotCount(totalQty);
         emitCartUpdated({ count: totalQty });
-        setAlertModal({ isOpen: true, message: 'Đã thêm vào giỏ hàng!' });
+        showToast('Đã thêm vào giỏ hàng', 'success');
       } else {
+        showToast('Có lỗi xảy ra khi thêm vào giỏ hàng', 'error');
         setAlertModal({ isOpen: true, message: 'Có lỗi xảy ra khi thêm vào giỏ hàng.' });
       }
     } catch (err) {
       console.error(err);
+      showToast('Lỗi kết nối khi thêm vào giỏ hàng', 'error');
       setAlertModal({ isOpen: true, message: 'Lỗi kết nối.' });
     }
   };
@@ -333,6 +348,8 @@ export default function ProductDetailPage() {
               hasDiscount={hasDiscount}
               discountPercent={discountPercent}
               stockMessage={stockMessage}
+              reviewCount={totalReviews}
+              reviewAverage={reviewAverage}
               colorMap={COLOR_MAP}
             />
             

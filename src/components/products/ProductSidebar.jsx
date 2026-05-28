@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 const AccordionItem = ({ title, children, defaultOpen = false }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-
   return (
     <div className="border-b border-lumiere-gray/20">
       <button 
@@ -15,6 +14,55 @@ const AccordionItem = ({ title, children, defaultOpen = false }) => {
       <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-[500px] pb-5' : 'max-h-0'}`}>
         {children}
       </div>
+    </div>
+  );
+};
+
+// Component đệ quy hiển thị cây danh mục có nút mở rộng/thu gọn
+const CategoryNode = ({ cat, selectedCategoryId, onCategoryChange, expanded, onToggle, level = 0 }) => {
+  const hasChildren = cat.children && cat.children.length > 0;
+  const isExpanded = expanded[cat.id];
+  const paddingLeft = level * 20;
+
+  return (
+    <div className="flex flex-col" style={{ marginLeft: paddingLeft }}>
+      <div className="flex items-center justify-between py-1.5">
+        <label className="flex items-center gap-3 cursor-pointer group flex-1">
+          <input
+            type="radio"
+            name="category"
+            checked={selectedCategoryId === String(cat.id)}
+            onChange={() => onCategoryChange(String(cat.id))}
+            className="accent-lumiere-terracotta w-3.5 h-3.5"
+          />
+          <span className={`text-[13px] transition-colors ${selectedCategoryId === String(cat.id) ? 'text-lumiere-charcoal font-medium' : 'text-lumiere-gray group-hover:text-lumiere-charcoal'}`}>
+            {cat.name}
+          </span>
+        </label>
+        {hasChildren && (
+          <button
+            onClick={() => onToggle(cat.id)}
+            className="text-lumiere-gray hover:text-lumiere-charcoal w-5 h-5 flex items-center justify-center"
+          >
+            {isExpanded ? '−' : '+'}
+          </button>
+        )}
+      </div>
+      {hasChildren && isExpanded && (
+        <div className="flex flex-col">
+          {cat.children.map(child => (
+            <CategoryNode
+              key={child.id}
+              cat={child}
+              selectedCategoryId={selectedCategoryId}
+              onCategoryChange={onCategoryChange}
+              expanded={expanded}
+              onToggle={onToggle}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -36,6 +84,13 @@ export default function ProductSidebar({
   onInStockChange,
   onReset
 }) {
+  // State lưu trạng thái mở/đóng của từng danh mục (key = id)
+  const [expandedCategories, setExpandedCategories] = useState({});
+
+  const toggleCategory = (catId) => {
+    setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }));
+  };
+
   const COLOR_MAP = {
     "Màu đen": "#000000",
     "Màu trắng": "#FFFFFF",
@@ -53,14 +108,16 @@ export default function ProductSidebar({
     "Nhiều màu": "linear-gradient(45deg, red, blue, green)",
     "Màu khác": "#A8A29E"
   };
+
   return (
     <aside className="hidden lg:block space-y-2">
       <div className="text-[10px] tracking-[0.25em] uppercase text-lumiere-charcoal mb-6 font-medium">
         Bộ lọc
       </div>
 
+      {/* Danh mục (dạng cây có thể mở rộng) */}
       <AccordionItem title="Danh mục" defaultOpen={true}>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
           <label className="flex items-center gap-3 cursor-pointer group">
             <input 
               type="radio" 
@@ -73,23 +130,21 @@ export default function ProductSidebar({
               Tất cả sản phẩm
             </span>
           </label>
-          {categories.map((cat) => (
-            <label key={cat.id} className="flex items-center gap-3 cursor-pointer group">
-              <input 
-                type="radio" 
-                name="category"
-                checked={selectedCategoryId === String(cat.id)}
-                onChange={() => onCategoryChange(String(cat.id))}
-                className="accent-lumiere-terracotta w-3.5 h-3.5"
-              />
-              <span className={`text-[13px] transition-colors ${selectedCategoryId === String(cat.id) ? 'text-lumiere-charcoal font-medium' : 'text-lumiere-gray group-hover:text-lumiere-charcoal'}`}>
-                {cat.displayName}
-              </span>
-            </label>
+          {categories.map(cat => (
+            <CategoryNode
+              key={cat.id}
+              cat={cat}
+              selectedCategoryId={selectedCategoryId}
+              onCategoryChange={onCategoryChange}
+              expanded={expandedCategories}
+              onToggle={toggleCategory}
+              level={0}
+            />
           ))}
         </div>
       </AccordionItem>
 
+      {/* Khoảng giá */}
       <AccordionItem title="Khoảng giá">
         <div className="space-y-4 pt-2">
           {Object.entries(priceRanges).map(([key, item]) => (
@@ -109,6 +164,7 @@ export default function ProductSidebar({
         </div>
       </AccordionItem>
 
+      {/* Kích cỡ */}
       <AccordionItem title="Kích cỡ">
         <div className="flex flex-wrap gap-2 pt-2">
           {sizes.map(sizeObj => {
@@ -131,12 +187,12 @@ export default function ProductSidebar({
         </div>
       </AccordionItem>
 
+      {/* Màu sắc */}
       <AccordionItem title="Màu sắc">
         <div className="flex flex-wrap gap-3 pt-2">
           {colors.map(colorObj => {
             const colorName = typeof colorObj === 'object' ? colorObj.name : colorObj;
             const isSelected = selectedColors.includes(colorName);
-            
             return (
               <button 
                 key={colorName}
@@ -149,15 +205,18 @@ export default function ProductSidebar({
                 }`}
                 style={{ background: COLOR_MAP[colorName] || '#EEE' }}
               >
-                 {isSelected && (
-                   <span className={`material-symbols-outlined text-[16px] ${colorName === 'Màu đen' || colorName === 'Xanh navy' ? 'text-white' : 'text-stone-900'}`}>check</span>
-                 )}
+                {isSelected && (
+                  <span className={`material-symbols-outlined text-[16px] ${colorName === 'Màu đen' || colorName === 'Xanh navy' ? 'text-white' : 'text-stone-900'}`}>
+                    check
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
       </AccordionItem>
 
+      {/* Chỉ hiện còn hàng */}
       <div className="pt-6 border-t border-lumiere-gray/10 mt-4">
         <label className="flex items-center gap-3 cursor-pointer group">
           <input 
@@ -172,6 +231,7 @@ export default function ProductSidebar({
         </label>
       </div>
 
+      {/* Nút xóa lọc */}
       <button 
         onClick={onReset}
         className="w-full mt-6 py-3 border border-lumiere-gray/30 text-[11px] tracking-[0.15em] uppercase text-lumiere-gray hover:text-lumiere-charcoal hover:border-lumiere-charcoal transition-all font-medium"

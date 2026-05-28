@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { parseResponseBody, extractMessage, jsonAuthHeaders } from '../../api/http';
+import showToast from '../../utils/toast';
 import './AdminAddProduct.css';
 
 const currencyFormatter = new Intl.NumberFormat('vi-VN');
@@ -27,9 +28,7 @@ const AdminProductVariants = () => {
   const [duplicateIndices, setDuplicateIndices] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
-  // Pagination & Filter state
   const [pagination, setPagination] = useState({
     currentPage: 0,
     pageSize: 20,
@@ -42,8 +41,8 @@ const AdminProductVariants = () => {
     size: '',
     sortBy: ''
   });
+
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
-  const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' });
 
   const SORT_OPTIONS = [
     { value: '', label: 'Mặc định' },
@@ -56,43 +55,43 @@ const AdminProductVariants = () => {
   ];
 
   const STANDARD_COLORS = [
-    { code: "BLACK", name: "Màu đen" },
-    { code: "WHITE", name: "Màu trắng" },
-    { code: "RED", name: "Màu đỏ" },
-    { code: "BLUE", name: "Xanh dương" },
-    { code: "GREEN", name: "Xanh lá" },
-    { code: "YELLOW", name: "Màu vàng" },
-    { code: "PINK", name: "Màu hồng" },
-    { code: "PURPLE", name: "Màu tím" },
-    { code: "GRAY", name: "Màu xám" },
-    { code: "BROWN", name: "Màu nâu" },
-    { code: "ORANGE", name: "Màu cam" },
-    { code: "BEIGE", name: "Màu be" },
-    { code: "NAVY", name: "Xanh navy" },
-    { code: "MULTI", name: "Nhiều màu" },
-    { code: "OTHER", name: "Màu khác" }
+    { code: 'BLACK', name: 'Màu đen' },
+    { code: 'WHITE', name: 'Màu trắng' },
+    { code: 'RED', name: 'Màu đỏ' },
+    { code: 'BLUE', name: 'Xanh dương' },
+    { code: 'GREEN', name: 'Xanh lá' },
+    { code: 'YELLOW', name: 'Màu vàng' },
+    { code: 'PINK', name: 'Màu hồng' },
+    { code: 'PURPLE', name: 'Màu tím' },
+    { code: 'GRAY', name: 'Màu xám' },
+    { code: 'BROWN', name: 'Màu nâu' },
+    { code: 'ORANGE', name: 'Màu cam' },
+    { code: 'BEIGE', name: 'Màu be' },
+    { code: 'NAVY', name: 'Xanh navy' },
+    { code: 'MULTI', name: 'Nhiều màu' },
+    { code: 'OTHER', name: 'Màu khác' }
   ];
 
   const STANDARD_SIZES = [
-    { code: "XS", name: "XS" },
-    { code: "S", name: "S" },
-    { code: "M", name: "M" },
-    { code: "L", name: "L" },
-    { code: "XL", name: "XL" },
-    { code: "XXL", name: "XXL" },
-    { code: "SIZE_35", name: "35" },
-    { code: "SIZE_36", name: "36" },
-    { code: "SIZE_37", name: "37" },
-    { code: "SIZE_38", name: "38" },
-    { code: "SIZE_39", name: "39" },
-    { code: "SIZE_40", name: "40" },
-    { code: "SIZE_41", name: "41" },
-    { code: "SIZE_42", name: "42" },
-    { code: "SIZE_43", name: "43" },
-    { code: "SIZE_44", name: "44" },
-    { code: "SIZE_45", name: "45" },
-    { code: "FREESIZE", name: "Freesize" },
-    { code: "OTHER", name: "Khác" }
+    { code: 'XS', name: 'XS' },
+    { code: 'S', name: 'S' },
+    { code: 'M', name: 'M' },
+    { code: 'L', name: 'L' },
+    { code: 'XL', name: 'XL' },
+    { code: 'XXL', name: 'XXL' },
+    { code: 'SIZE_35', name: '35' },
+    { code: 'SIZE_36', name: '36' },
+    { code: 'SIZE_37', name: '37' },
+    { code: 'SIZE_38', name: '38' },
+    { code: 'SIZE_39', name: '39' },
+    { code: 'SIZE_40', name: '40' },
+    { code: 'SIZE_41', name: '41' },
+    { code: 'SIZE_42', name: '42' },
+    { code: 'SIZE_43', name: '43' },
+    { code: 'SIZE_44', name: '44' },
+    { code: 'SIZE_45', name: '45' },
+    { code: 'FREESIZE', name: 'Freesize' },
+    { code: 'OTHER', name: 'Khác' }
   ];
 
   const fetchProduct = useCallback(async () => {
@@ -113,9 +112,9 @@ const AdminProductVariants = () => {
   const fetchVariants = useCallback(async (page = 0, currentFilters = filters) => {
     try {
       setLoading(true);
-      
+
       const queryParams = new URLSearchParams({
-        page: page,
+        page,
         pageSize: pagination.pageSize,
       });
 
@@ -132,9 +131,9 @@ const AdminProductVariants = () => {
       const metaData = dataPayload.meta || {};
 
       if (response.ok) {
-        const mappedVariants = resultItems.map(v => ({ ...v, isModified: false, isNew: false }));
+        const mappedVariants = resultItems.map((v) => ({ ...v, isModified: false, isNew: false }));
         setVariants(mappedVariants);
-        setPagination(prev => ({
+        setPagination((prev) => ({
           ...prev,
           currentPage: metaData.page ?? 0,
           pageSize: metaData.pageSize ?? 20,
@@ -161,19 +160,17 @@ const AdminProductVariants = () => {
   }, [id, filters]);
 
   const handleFilterChange = (field, value) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
+    setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
   const clearFilters = () => {
     setFilters({ color: '', size: '', sortBy: '' });
   };
 
-  // AttributeSelector component
-  const AttributeSelector = ({ value, onChange, options, placeholder, isError, className = "" }) => {
+  const AttributeSelector = ({ value, onChange, options, placeholder, isError, className = '' }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [searchTerm, setSearchTerm] = useState('');
     const containerRef = React.useRef(null);
-    const searchInputRef = React.useRef(null);
 
     useEffect(() => {
       const handleClickOutside = (event) => {
@@ -181,11 +178,11 @@ const AdminProductVariants = () => {
           setIsOpen(false);
         }
       };
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const filteredOptions = options.filter(opt => 
+    const filteredOptions = options.filter((opt) =>
       opt.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       opt.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -193,14 +190,14 @@ const AdminProductVariants = () => {
     const handleSelect = (opt) => {
       onChange(opt.name);
       setIsOpen(false);
-      setSearchTerm("");
+      setSearchTerm('');
     };
 
     return (
-      <div className={`relative ${isOpen ? "z-[100]" : "z-0"} ${className}`} ref={containerRef}>
+      <div className={`relative ${isOpen ? 'z-[100]' : 'z-0'} ${className}`} ref={containerRef}>
         <div className="relative">
           <input
-            className={`w-full bg-transparent border ${isError ? "border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,0.2)]" : "border-transparent hover:border-stone-200"} focus:border-stone-900 focus:bg-white rounded-lg px-3 py-2 text-sm transition-all outline-none pr-8`}
+            className={`w-full bg-transparent border ${isError ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,0.2)]' : 'border-transparent hover:border-stone-200'} focus:border-stone-900 focus:bg-white rounded-lg px-3 py-2 text-sm transition-all outline-none pr-8`}
             type="text"
             placeholder={placeholder}
             value={value}
@@ -221,7 +218,6 @@ const AdminProductVariants = () => {
             <div className="sticky top-0 bg-white p-2 border-b border-stone-100">
               <div className="relative">
                 <input
-                  ref={searchInputRef}
                   type="text"
                   className="w-full bg-stone-50 border-none rounded-lg px-8 py-1.5 text-xs outline-none focus:ring-1 focus:ring-stone-200"
                   placeholder="Tìm nhanh..."
@@ -263,7 +259,7 @@ const AdminProductVariants = () => {
     newVariants[index].isModified = true;
     setVariants(newVariants);
     if (duplicateIndices.length > 0) setDuplicateIndices([]);
-    if (error && error.includes("Trùng biến thể")) setError("");
+    if (error && error.includes('Trùng biến thể')) setError('');
   };
 
   const addNewVariant = () => {
@@ -281,23 +277,24 @@ const AdminProductVariants = () => {
   const handleSaveVariant = async (index) => {
     const variant = variants[index];
     if (!variant.color || !variant.size) {
-      return setError("Vui lòng nhập đầy đủ Màu sắc và Kích cỡ.");
+      showToast('Vui lòng nhập đầy đủ Màu sắc và Kích cỡ.', 'error');
+      return;
     }
 
-    const isDuplicate = variants.some((v, idx) => 
-      idx !== index && 
-      v.color?.toLowerCase() === variant.color?.toLowerCase() && 
+    const isDuplicate = variants.some((v, idx) =>
+      idx !== index &&
+      v.color?.toLowerCase() === variant.color?.toLowerCase() &&
       v.size?.toLowerCase() === variant.size?.toLowerCase()
     );
 
     if (isDuplicate) {
       setDuplicateIndices([index]);
-      return setError(`Trùng biến thể: ${variant.color} - ${variant.size}`);
+      showToast(`Trùng biến thể: ${variant.color} - ${variant.size}`, 'error');
+      return;
     }
 
     setIsSaving(true);
     setError('');
-    setSuccess('');
 
     try {
       const payload = {
@@ -309,12 +306,12 @@ const AdminProductVariants = () => {
       };
 
       const method = variant.isNew ? 'POST' : 'PUT';
-      const url = variant.isNew 
+      const url = variant.isNew
         ? `/api/v1/admin/products/${id}/variants`
         : `/api/v1/admin/products/${id}/variants/${variant.id}`;
 
       const response = await fetch(url, {
-        method: method,
+        method,
         headers: jsonAuthHeaders(),
         body: JSON.stringify(payload)
       });
@@ -322,13 +319,13 @@ const AdminProductVariants = () => {
       const res = await parseResponseBody(response);
 
       if (response.ok) {
-        setSuccess(`Đã lưu biến thể ${variant.color} - ${variant.size} thành công!`);
+        showToast(`Đã lưu biến thể ${variant.color} - ${variant.size} thành công!`, 'success');
         await fetchVariants(pagination.currentPage);
       } else {
-        setError(extractMessage(res, 'Lỗi khi lưu biến thể.'));
+        showToast(extractMessage(res, 'Lỗi khi lưu biến thể.'), 'error');
       }
     } catch (err) {
-      setError('Lỗi kết nối máy chủ!');
+      showToast('Lỗi kết nối máy chủ!', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -355,14 +352,14 @@ const AdminProductVariants = () => {
           });
 
           if (response.ok) {
-            setSuccess('Đã xóa biến thể thành công.');
+            showToast('Đã xóa biến thể thành công.', 'success');
             await fetchVariants(pagination.currentPage);
           } else {
             const res = await parseResponseBody(response);
-            setError(extractMessage(res, 'Không thể xóa biến thể.'));
+            showToast(extractMessage(res, 'Không thể xóa biến thể.'), 'error');
           }
         } catch (err) {
-          setError('Lỗi kết nối máy chủ!');
+          showToast('Lỗi kết nối máy chủ!', 'error');
         } finally {
           setIsSaving(false);
         }
@@ -371,13 +368,14 @@ const AdminProductVariants = () => {
   };
 
   const handleUpdateStock = (index, newQty) => {
-    handleVariantChange(index, "stockQty", newQty);
+    handleVariantChange(index, 'stockQty', newQty);
   };
 
   const handleSaveAll = async () => {
-    const modifiedVariants = variants.filter(v => v.isModified);
+    const modifiedVariants = variants.filter((v) => v.isModified);
     if (modifiedVariants.length === 0) {
-      setAlertModal({ isOpen: true, message: 'Không tìm thấy thay đổi nào mới để lưu dữ liệu.' });
+      showToast('Không tìm thấy thay đổi nào mới để lưu dữ liệu.', 'info');
+      return;
     }
 
     setIsSaving(true);
@@ -385,35 +383,35 @@ const AdminProductVariants = () => {
     let hasError = false;
 
     for (const variant of modifiedVariants) {
-        try {
-            const payload = {
-                color: variant.color,
-                size: variant.size,
-                stockQty: Number(variant.stockQty) || 0,
-                salePrice: variant.salePrice ? Number(variant.salePrice) : null,
-                importPrice: variant.importPrice ? Number(variant.importPrice) : null
-            };
-            const method = variant.isNew ? 'POST' : 'PUT';
-            const url = variant.isNew 
-                ? `/api/v1/admin/products/${id}/variants`
-                : `/api/v1/admin/products/${id}/variants/${variant.id}`;
+      try {
+        const payload = {
+          color: variant.color,
+          size: variant.size,
+          stockQty: Number(variant.stockQty) || 0,
+          salePrice: variant.salePrice ? Number(variant.salePrice) : null,
+          importPrice: variant.importPrice ? Number(variant.importPrice) : null
+        };
+        const method = variant.isNew ? 'POST' : 'PUT';
+        const url = variant.isNew
+          ? `/api/v1/admin/products/${id}/variants`
+          : `/api/v1/admin/products/${id}/variants/${variant.id}`;
 
-            const response = await fetch(url, {
-                method: method,
-                headers: jsonAuthHeaders(),
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) hasError = true;
-        } catch (err) {
-            hasError = true;
-        }
+        const response = await fetch(url, {
+          method,
+          headers: jsonAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) hasError = true;
+      } catch (err) {
+        hasError = true;
+      }
     }
 
     if (hasError) {
-        setError("Có lỗi xảy ra khi lưu một số biến thể. Vui lòng kiểm tra lại.");
+      showToast('Có lỗi xảy ra khi lưu một số biến thể. Vui lòng kiểm tra lại.', 'error');
     } else {
-        setSuccess("Đã lưu tất cả thay đổi!");
-        await fetchVariants(pagination.currentPage);
+      showToast('Đã lưu tất cả thay đổi!', 'success');
+      await fetchVariants(pagination.currentPage);
     }
     setIsSaving(false);
   };
@@ -422,10 +420,6 @@ const AdminProductVariants = () => {
     const totalVariants = pagination.totalElements;
     const totalStock = variants.reduce((sum, item) => sum + (Number(item.stockQty) || 0), 0);
     const activeVariants = variants.filter((item) => Number(item.stockQty) > 0).length;
-    const lowStockVariants = variants.filter((item) => {
-      const stock = Number(item.stockQty) || 0;
-      return stock > 0 && stock < 10;
-    }).length;
 
     return [
       { label: 'Tổng biến thể', value: totalVariants, icon: 'layers', color: 'bg-stone-900' },
@@ -447,7 +441,6 @@ const AdminProductVariants = () => {
 
   return (
     <main className="min-h-screen flex-1 bg-stone-100 text-stone-800 font-sans h-screen flex flex-col">
-      {/* Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-stone-200 px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-4">
           <button
@@ -471,7 +464,7 @@ const AdminProductVariants = () => {
           </button>
           <button
             onClick={handleSaveAll}
-            disabled={isSaving || !variants.some(v => v.isModified)}
+            disabled={isSaving || !variants.some((v) => v.isModified)}
             className="px-6 py-2.5 rounded-xl bg-stone-900 text-white hover:bg-stone-800 text-xs font-bold transition-all shadow-lg shadow-stone-200 flex items-center gap-2 disabled:opacity-50 active:scale-[0.98]"
           >
             {isSaving ? (
@@ -491,14 +484,7 @@ const AdminProductVariants = () => {
             {error}
           </div>
         )}
-        {success && (
-          <div className="bg-emerald-50 text-emerald-600 p-4 rounded-2xl text-xs font-bold flex items-center gap-3 border border-emerald-100 animate-fadeIn">
-            <span className="material-symbols-outlined text-[20px]">check_circle</span>
-            {success}
-          </div>
-        )}
 
-        {/* Summary Cards */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {summary.map((item) => (
             <div key={item.label} className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
@@ -513,7 +499,6 @@ const AdminProductVariants = () => {
           ))}
         </section>
 
-        {/* Filter Bar */}
         <section className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2 min-w-[200px]">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Màu sắc:</span>
@@ -542,7 +527,7 @@ const AdminProductVariants = () => {
               onChange={(e) => handleFilterChange('sortBy', e.target.value)}
               className="bg-stone-50 border border-stone-100 rounded-lg px-3 py-2 text-sm outline-none focus:border-stone-900 transition-all flex-1"
             >
-              {SORT_OPTIONS.map(opt => (
+              {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
@@ -558,9 +543,7 @@ const AdminProductVariants = () => {
           )}
         </section>
 
-        {/* Variants Table */}
         <section className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-
           <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-stone-400">reorder</span>
@@ -571,7 +554,6 @@ const AdminProductVariants = () => {
 
           <div className="overflow-x-auto pb-64 -mb-64">
             <table className="w-full text-left border-collapse relative z-10">
-
               <thead>
                 <tr className="bg-white">
                   <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-stone-100">SKU / ID</th>
@@ -591,8 +573,8 @@ const AdminProductVariants = () => {
                     <tr key={variant.id || `new-${index}`} className={`group hover:bg-stone-50/30 transition-all ${variant.isModified ? 'bg-amber-50/10' : ''}`}>
                       <td className="px-6 py-3">
                         <div className="flex flex-col">
-                            <span className="text-xs font-mono text-stone-600">{variant.sku || 'N/A'}</span>
-                            <span className="text-[9px] text-stone-400 uppercase">{variant.isNew ? 'Mới' : `ID: ${variant.id?.substring(0, 8)}...`}</span>
+                          <span className="text-xs font-mono text-stone-600">{variant.sku || 'N/A'}</span>
+                          <span className="text-[9px] text-stone-400 uppercase">{variant.isNew ? 'Mới' : `ID: ${variant.id?.substring(0, 8)}...`}</span>
                         </div>
                       </td>
                       <td className="px-2 py-3">
@@ -600,7 +582,7 @@ const AdminProductVariants = () => {
                           placeholder="Màu sắc"
                           value={variant.color}
                           options={STANDARD_COLORS}
-                          onChange={(val) => handleVariantChange(index, "color", val)}
+                          onChange={(val) => handleVariantChange(index, 'color', val)}
                           isError={duplicateIndices.includes(index)}
                         />
                       </td>
@@ -609,11 +591,10 @@ const AdminProductVariants = () => {
                           placeholder="Size"
                           value={variant.size}
                           options={STANDARD_SIZES}
-                          onChange={(val) => handleVariantChange(index, "size", val)}
+                          onChange={(val) => handleVariantChange(index, 'size', val)}
                           isError={duplicateIndices.includes(index)}
                         />
                       </td>
-
                       <td className="px-2 py-3 w-24">
                         <input
                           className="w-full bg-transparent border border-transparent hover:border-stone-200 focus:border-stone-900 focus:bg-white rounded-lg px-3 py-2 text-sm text-center transition-all outline-none"
@@ -631,7 +612,7 @@ const AdminProductVariants = () => {
                           value={variant.importPrice ? Number(variant.importPrice).toLocaleString('vi-VN') : ''}
                           onChange={(e) => {
                             const rawValue = e.target.value.replace(/\D/g, '');
-                            handleVariantChange(index, "importPrice", rawValue);
+                            handleVariantChange(index, 'importPrice', rawValue);
                           }}
                         />
                       </td>
@@ -643,7 +624,7 @@ const AdminProductVariants = () => {
                           value={variant.salePrice ? Number(variant.salePrice).toLocaleString('vi-VN') : ''}
                           onChange={(e) => {
                             const rawValue = e.target.value.replace(/\D/g, '');
-                            handleVariantChange(index, "salePrice", rawValue);
+                            handleVariantChange(index, 'salePrice', rawValue);
                           }}
                         />
                       </td>
@@ -656,14 +637,14 @@ const AdminProductVariants = () => {
                       <td className="px-6 py-3 text-right pr-10">
                         <div className="flex items-center justify-end gap-2">
                           {variant.isModified && (
-                              <button
-                                onClick={() => handleSaveVariant(index)}
-                                disabled={isSaving}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all shadow-sm"
-                                title="Lưu dòng này"
-                              >
-                                <span className="material-symbols-outlined text-[18px]">save</span>
-                              </button>
+                            <button
+                              onClick={() => handleSaveVariant(index)}
+                              disabled={isSaving}
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all shadow-sm"
+                              title="Lưu dòng này"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">save</span>
+                            </button>
                           )}
                           <button
                             type="button"
@@ -693,41 +674,40 @@ const AdminProductVariants = () => {
           </div>
         </section>
 
-        {/* Pagination Controls */}
         {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
-                <button 
-                    disabled={pagination.currentPage === 0 || loading}
-                    onClick={() => fetchVariants(pagination.currentPage - 1)}
-                    className="w-10 h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-600 hover:bg-stone-50 disabled:opacity-50 transition-all"
-                >
-                    <span className="material-symbols-outlined">chevron_left</span>
-                </button>
-                <div className="px-4 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-stone-800">
-                    Trang {pagination.currentPage + 1} / {pagination.totalPages}
-                </div>
-                <button 
-                    disabled={pagination.currentPage >= pagination.totalPages - 1 || loading}
-                    onClick={() => fetchVariants(pagination.currentPage + 1)}
-                    className="w-10 h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-600 hover:bg-stone-50 disabled:opacity-50 transition-all"
-                >
-                    <span className="material-symbols-outlined">chevron_right</span>
-                </button>
+          <div className="flex items-center justify-center gap-2 pt-4">
+            <button
+              disabled={pagination.currentPage === 0 || loading}
+              onClick={() => fetchVariants(pagination.currentPage - 1)}
+              className="w-10 h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-600 hover:bg-stone-50 disabled:opacity-50 transition-all"
+            >
+              <span className="material-symbols-outlined">chevron_left</span>
+            </button>
+            <div className="px-4 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-stone-800">
+              Trang {pagination.currentPage + 1} / {pagination.totalPages}
             </div>
+            <button
+              disabled={pagination.currentPage >= pagination.totalPages - 1 || loading}
+              onClick={() => fetchVariants(pagination.currentPage + 1)}
+              className="w-10 h-10 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-600 hover:bg-stone-50 disabled:opacity-50 transition-all"
+            >
+              <span className="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
         )}
 
         <div className="flex justify-end pt-4 pb-10">
           <button
             onClick={handleSaveAll}
-            disabled={isSaving || !variants.some(v => v.isModified)}
+            disabled={isSaving || !variants.some((v) => v.isModified)}
             className="px-8 py-4 rounded-2xl bg-stone-900 text-white hover:bg-stone-800 text-sm font-bold transition-all shadow-xl shadow-stone-200 flex items-center gap-3 active:scale-[0.98] disabled:opacity-50"
           >
-            {isSaving ? "Đang xử lý hệ thống..." : "Lưu tất cả biến thể đã sửa"}
+            {isSaving ? 'Đang xử lý hệ thống...' : 'Lưu tất cả biến thể đã sửa'}
             <span className="material-symbols-outlined">arrow_forward</span>
           </button>
         </div>
       </div>
-      {/* --- KHỐI MODAL XÁC NHẬN (CONFIRM) --- */}
+
       {confirmModal.isOpen && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} />
@@ -748,27 +728,6 @@ const AdminProductVariants = () => {
                 className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 transition-all shadow-md shadow-red-100"
               >
                 Xác nhận xóa
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- KHỐI MODAL THÔNG BÁO (ALERT) --- */}
-      {alertModal.isOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={() => setAlertModal({ isOpen: false, message: '' })} />
-          <div className="relative z-10 w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl animate-fadeIn">
-            <h3 className="mb-2 text-base font-bold text-stone-900">Thông báo</h3>
-            <p className="mb-6 text-xs leading-relaxed text-stone-500">
-              {alertModal.message}
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setAlertModal({ isOpen: false, message: '' })}
-                className="rounded-xl bg-stone-900 px-5 py-2 text-xs font-bold text-white hover:bg-stone-800 transition-all shadow-md"
-              >
-                Đã hiểu
               </button>
             </div>
           </div>

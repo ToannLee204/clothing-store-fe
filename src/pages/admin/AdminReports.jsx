@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { getImageUrl } from '../../utils/format';
 import './AdminProducts.css';
 
 const API_ADMIN_DASHBOARD_URL = '/api/v1/admin/dashboard';
@@ -7,12 +8,7 @@ const API_STATISTICS_ORDERS_URL = '/api/v1/admin/statistics/orders';
 const API_STATISTICS_PRODUCTS_URL = '/api/v1/admin/statistics/products';
 const API_STATISTICS_EXPORT_URL = '/api/v1/admin/statistics/export';
 
-const getImageUrl = (url) => {
-  if (!url) return '';
-  if (url.startsWith('blob:') || url.startsWith('http') || url.startsWith('data:')) return url;
-  if (url.startsWith('/uploads/')) return `http://localhost:8080/api/v1${url}`;
-  return `http://localhost:8080/api/v1/uploads/products/${url}`;
-};
+const FALLBACK_PRODUCT_IMAGE = 'https://placehold.co/96x96?text=No+Image';
 
 function safeParseJson(res) {
   return res
@@ -491,8 +487,21 @@ export default function AdminReports() {
                 {productStat?.topSelling?.map(p => (
                   <tr key={p.productId} style={{ borderBottom: '1px solid #f8fafc' }}>
                     <td style={{ padding: '12px 20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <img src={getImageUrl(p.thumbnailUrl)} alt="" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <div className="prod-thumb" style={{ width: '40px', height: '40px', flexShrink: 0 }}>
+                          <img
+                            src={getImageUrl(p.thumbnailUrl)}
+                            alt={p.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => {
+                              const current = e.currentTarget;
+                              if (current.src !== FALLBACK_PRODUCT_IMAGE) {
+                                current.src = FALLBACK_PRODUCT_IMAGE;
+                                current.style.objectFit = 'contain';
+                              }
+                            }}
+                          />
+                        </div>
                         <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                       </div>
                     </td>
@@ -522,8 +531,21 @@ export default function AdminReports() {
                 {productStat?.slowMoving?.map(p => (
                   <tr key={p.productId} style={{ borderBottom: '1px solid #f8fafc' }}>
                     <td style={{ padding: '12px 20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <img src={getImageUrl(p.thumbnailUrl)} alt="" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <div className="prod-thumb" style={{ width: '40px', height: '40px', flexShrink: 0 }}>
+                          <img
+                            src={getImageUrl(p.thumbnailUrl)}
+                            alt={p.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => {
+                              const current = e.currentTarget;
+                              if (current.src !== FALLBACK_PRODUCT_IMAGE) {
+                                current.src = FALLBACK_PRODUCT_IMAGE;
+                                current.style.objectFit = 'contain';
+                              }
+                            }}
+                          />
+                        </div>
                         <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                       </div>
                     </td>

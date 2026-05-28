@@ -51,7 +51,7 @@ export default function ProductCard({ product, onAddToCart }) {
 
       <div className="space-y-1">
         <h3 className="text-xl font-normal serif transition-colors group-hover:text-lumiere-terracotta">
-          {product.productName || product.ten}
+          {product.productName || product.name}
         </h3>
         <p className="text-[11px] tracking-[0.1em] text-lumiere-gray uppercase">
           {product.categoryName || 'Sản phẩm'}

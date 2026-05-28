@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import SearchHeader from '../components/products/SearchHeader';
 import ProductSidebar from '../components/products/ProductSidebar';
 import SortBar from '../components/products/SortBar';
@@ -24,15 +25,16 @@ function normalizePagination(payload) {
 }
 
 export default function ProductsPage() {
-  const queryParams = new URLSearchParams(window.location.search);
-  const collection = queryParams.get('collection');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const collection = searchParams.get('collection');
+  const categoryIdFromUrl = searchParams.get('categoryId') ?? '';
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState(categoryIdFromUrl);
   const [selectedColors, setSelectedColors] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [colors, setColors] = useState([]);
@@ -46,6 +48,12 @@ export default function ProductsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [quickAddProduct, setQuickAddProduct] = useState(null);
+
+  const selectedCategoryLabel = useMemo(() => {
+    if (!selectedCategoryId) return '';
+    const match = categories.find((c) => String(c.id) === String(selectedCategoryId));
+    return match?.displayName ?? match?.name ?? '';
+  }, [categories, selectedCategoryId]);
 
   const priceRanges = useMemo(() => ({
     all: { label: 'Tất cả sản phẩm', minPrice: null, maxPrice: null },
@@ -79,7 +87,7 @@ export default function ProductsPage() {
           const payload = await catRes.json().catch(() => null);
           if (payload) {
             const rawItems = normalizeList(payload);
-            setCategories(flattenCategories(rawItems));
+            setCategories(rawItems);
           }
         }
         
@@ -98,6 +106,31 @@ export default function ProductsPage() {
     };
     fetchData();
   }, []);
+
+  // Đồng bộ lọc danh mục khi chuyển từ HomePage (?categoryId=...)
+  useEffect(() => {
+    const urlCategoryId = searchParams.get('categoryId') ?? '';
+    if (urlCategoryId !== selectedCategoryId) {
+      setSelectedCategoryId(urlCategoryId);
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
+
+  const updateCategoryInUrl = (categoryId) => {
+    const next = new URLSearchParams(searchParams);
+    if (categoryId) {
+      next.set('categoryId', categoryId);
+    } else {
+      next.delete('categoryId');
+    }
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleCategoryChange = (id) => {
+    setSelectedCategoryId(id);
+    setCurrentPage(1);
+    updateCategoryInUrl(id);
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -137,15 +170,16 @@ export default function ProductsPage() {
     fetchProducts();
   }, [currentPage, keyword, priceRange, selectedCategoryId, selectedColors, selectedSizes, sortBy, inStock, priceRanges]);
 
-    const handleReset = () => {
-      setKeyword(''); 
-      setPriceRange('all'); 
-      setSelectedCategoryId(''); 
-      setSelectedColors([]);
-      setSelectedSizes([]);
-      setInStock(false);
-      setCurrentPage(1);
-    };
+  const handleReset = () => {
+    setKeyword('');
+    setPriceRange('all');
+    setSelectedCategoryId('');
+    setSelectedColors([]);
+    setSelectedSizes([]);
+    setInStock(false);
+    setCurrentPage(1);
+    updateCategoryInUrl('');
+  };
 
     return (
     <div className="min-h-screen bg-lumiere-cream">
@@ -157,12 +191,19 @@ export default function ProductsPage() {
           totalCount={totalCount}
         />
 
+        {selectedCategoryLabel && !keyword && (
+          <p className="mt-3 text-[13px] text-lumiere-gray">
+            Danh mục:{' '}
+            <span className="font-medium text-lumiere-charcoal">{selectedCategoryLabel}</span>
+          </p>
+        )}
+
         <div className="lg:grid lg:grid-cols-4 gap-12 mt-10 pb-20">
           {/* 2. Sidebar Filters */}
           <ProductSidebar 
             categories={categories}
             selectedCategoryId={selectedCategoryId}
-            onCategoryChange={(id) => { setSelectedCategoryId(id); setCurrentPage(1); }}
+            onCategoryChange={handleCategoryChange}
             colors={colors}
             selectedColors={selectedColors}
             onColorChange={(color) => {
@@ -213,14 +254,7 @@ export default function ProductsPage() {
                 <h3 className="serif text-2xl font-light text-lumiere-charcoal mb-2">Không tìm thấy sản phẩm</h3>
                 <p className="text-sm text-lumiere-gray mb-8">Hãy thử đổi từ khóa hoặc xóa bớt bộ lọc.</p>
                 <button 
-                  onClick={() => { 
-                    setKeyword(''); 
-                    setPriceRange('all'); 
-                    setSelectedCategoryId(''); 
-                    setSelectedColors([]);
-                    setSelectedSizes([]);
-                    setInStock(false);
-                  }}
+                  onClick={handleReset}
                   className="btn-outline"
                 >
                   Xóa tất cả bộ lọc

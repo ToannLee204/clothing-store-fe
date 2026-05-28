@@ -1,78 +1,176 @@
 import React, { useState, useEffect } from 'react';
-import { DANH_MUC, SAN_PHAM } from '../data/mockData';
-
+import { useNavigate } from 'react-router-dom';
 import HeroSection from '../components/home/HeroSection';
 import Marquee from '../components/home/Marquee';
-import CategorySpotlight from '../components/home/CategorySpotlight';
-import FeaturedProducts from '../components/home/FeaturedProducts';
 import EditorialSection from '../components/home/EditorialSection';
 import Newsletter from '../components/home/Newsletter';
-import ReviewSection from '../components/home/ReviewSection';
+import ProductCard from '../components/common/ProductCard';
+import QuickAddModal from '../components/products/QuickAddModal';
+
+const API_CATEGORIES = '/api/v1/categories';
+const API_PRODUCTS = '/api/v1/products';
+const PRODUCTS_PER_CATEGORY = 4; // Số sản phẩm tối đa cho mỗi danh mục cha
+
+// Helper lấy danh mục gốc (parentId == null)
+function getRootCategories(categoriesTree) {
+  if (!Array.isArray(categoriesTree)) return [];
+  return categoriesTree.filter(cat => cat.parentId == null || cat.parentId === undefined);
+}
+
+// Lấy sản phẩm theo categoryId
+async function fetchProductsByCategory(categoryId, limit = PRODUCTS_PER_CATEGORY) {
+  const params = new URLSearchParams({
+    page: '0',
+    pageSize: String(limit),
+    categoryId: String(categoryId),
+    sortBy: 'newest',
+  });
+  const res = await fetch(`${API_PRODUCTS}?${params.toString()}`);
+  if (!res.ok) return [];
+  const payload = await res.json();
+  // Chuẩn hóa dữ liệu (giống normalizeList trong ProductsPage)
+  const data = payload?.data ?? payload;
+  const items = data?.content ?? data?.result ?? data ?? [];
+  return items.slice(0, limit);
+}
+
+// Map sản phẩm cho ProductCard (giữ nguyên các trường cần thiết)
+function mapProduct(product) {
+  if (!product) return null;
+  return {
+    id: product.id,
+    productName: product.productName ?? product.name,
+    thumbnailUrl: product.thumbnailUrl ?? product.imageUrl,
+    basePrice: product.basePrice ?? product.price,
+    salePrice: product.salePrice,
+    categoryName: product.categoryName,
+    isNew: product.isNew,
+    variants: product.variants || [], // quan trọng cho QuickAddModal
+  };
+}
 
 export default function HomePage() {
-  const [products, setProducts] = useState(SAN_PHAM.slice(0, 4));
-  const [categories, setCategories] = useState(DANH_MUC);
+  const navigate = useNavigate();
+  const [sections, setSections] = useState([]); // [{ category, products }]
+  const [loading, setLoading] = useState(true);
+  const [quickAddProduct, setQuickAddProduct] = useState(null); // state cho modal
 
   useEffect(() => {
-    const fetchHomeData = async () => {
+    let cancelled = false;
+
+    const fetchData = async () => {
       try {
-        const prodRes = await fetch('/api/v1/products?page=0&pageSize=4');
-        if (prodRes.ok) {
-          const prodData = await prodRes.json();
-          let prodArr = [];
-          if (Array.isArray(prodData)) prodArr = prodData;
-          else if (prodData.data && Array.isArray(prodData.data)) prodArr = prodData.data;
-          else if (prodData.data?.content && Array.isArray(prodData.data.content)) prodArr = prodData.data.content;
-          else if (prodData.content && Array.isArray(prodData.content)) prodArr = prodData.content;
-          else if (prodData.result && Array.isArray(prodData.result)) prodArr = prodData.result;
+        // 1. Lấy danh mục cha
+        const catRes = await fetch(API_CATEGORIES);
+        if (!catRes.ok) throw new Error('Không thể tải danh mục');
+        const catPayload = await catRes.json();
+        const categoriesTree = catPayload?.data ?? catPayload ?? [];
+        const rootCats = getRootCategories(categoriesTree);
 
-          if (prodArr.length > 0) {
-            setProducts(prodArr.slice(0, 4));
-          }
+        if (rootCats.length === 0) {
+          if (!cancelled) setSections([]);
+          return;
         }
 
-        const catRes = await fetch('/api/v1/categories');
-        if (catRes.ok) {
-          const catData = await catRes.json();
-          let catArr = [];
-          if (Array.isArray(catData)) catArr = catData;
-          else if (catData.data && Array.isArray(catData.data)) catArr = catData.data;
-          else if (catData.result && Array.isArray(catData.result)) catArr = catData.result;
+        // 2. Với mỗi danh mục cha, lấy sản phẩm (chạy song song)
+        const sectionsData = await Promise.all(
+          rootCats.map(async (cat) => {
+            const productsRaw = await fetchProductsByCategory(cat.id);
+            const products = productsRaw.map(mapProduct).filter(Boolean);
+            return { category: cat, products };
+          })
+        );
 
-          if (catArr.length > 0) {
-            setCategories(catArr);
-          }
+        if (!cancelled) {
+          // Chỉ giữ những danh mục có sản phẩm
+          setSections(sectionsData.filter(section => section.products.length > 0));
         }
-      } catch (error) {
-        console.error("Lỗi kết nối API trang chủ:", error);
+      } catch (err) {
+        console.error('Lỗi tải trang chủ:', err);
+        if (!cancelled) setSections([]);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
 
-    fetchHomeData();
+    fetchData();
+    return () => { cancelled = true; };
   }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-lumiere-cream min-h-screen">
+        <HeroSection />
+        <div className="max-w-screen-xl mx-auto px-6 py-20">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="mb-16">
+              <div className="h-8 w-48 bg-lumiere-gray/20 animate-pulse mb-8" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Array(4).fill().map((_, idx) => (
+                  <div key={idx} className="aspect-[3/4] bg-lumiere-blush/40 animate-pulse" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (sections.length === 0) {
+    return (
+      <div className="bg-lumiere-cream min-h-screen">
+        <HeroSection />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center text-lumiere-gray">Chưa có sản phẩm nào.</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-lumiere-cream">
-      {/* 1. Hero Section - LUMIÈRE Redesign */}
       <HeroSection />
-
-      {/* 2. Marquee - Animated Stats Strip */}
       <Marquee />
 
-      {/* 3. Category Grid - Featured Categories */}
-      <CategorySpotlight />
+      {sections.map(({ category, products }) => (
+        <section key={category.id} className="py-12 lg:py-20 border-b border-lumiere-gray/10 last:border-none">
+          <div className="max-w-screen-xl mx-auto px-6 lg:px-12">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="serif text-3xl lg:text-4xl font-light text-lumiere-charcoal">
+                {category.name}
+              </h2>
+              <button
+                onClick={() => navigate(`/products?categoryId=${category.id}`)}
+                className="text-xs tracking-wider uppercase text-lumiere-gray hover:text-lumiere-charcoal transition"
+              >
+                Xem tất cả →
+              </button>
+            </div>
 
-      {/* 4. Featured Products - Trending Items */}
-      <FeaturedProducts products={products} />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
+              {products.map(product => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={(prod) => setQuickAddProduct(prod)} // mở modal
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
 
-      {/* 5. Editorial Section - Capsule Collection */}
       <EditorialSection />
-
-      {/* 6. Newsletter - Subscription */}
       <Newsletter />
 
-      {/* 7. Review Section - Social Proof */}
-      <ReviewSection />
+      {/* QuickAddModal để thêm vào giỏ hàng */}
+      {quickAddProduct && (
+        <QuickAddModal
+          product={quickAddProduct}
+          onClose={() => setQuickAddProduct(null)}
+        />
+      )}
     </div>
   );
 }

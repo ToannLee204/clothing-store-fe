@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect,useState } from 'react';
 
 // Layout components
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import AdminLayout from './components/layout/AdminLayout';
 import ScrollToTop from './components/layout/ScrollToTop';
+import ToastHost from './components/common/ToastHost';
 
 // User pages
 import HomePage from './pages/HomePage';
@@ -114,6 +115,7 @@ function AppContent() {
 
   return (
     <div className="bg-background min-h-screen flex flex-col font-body antialiased">
+      <ToastHost />
       {!isAuthOrAdmin && <Header />}
 
       <main className="flex-grow">

@@ -63,7 +63,7 @@ export default function ProductReviews({ token }) {
     const firstPayload = await parseResponseBody(firstRes);
 
     if (!firstRes.ok) {
-      throw new Error(extractMessage(firstPayload, 'Khong the tai danh sach danh gia cua ban.'));
+      throw new Error(extractMessage(firstPayload, 'Không thể tải danh sách đánh giá của bạn.'));
     }
 
     const firstPage = normalizePagination(firstPayload);
@@ -79,7 +79,7 @@ export default function ProductReviews({ token }) {
       }).then(async (res) => {
         const payload = await parseResponseBody(res);
         if (!res.ok) {
-          throw new Error(extractMessage(payload, 'Khong the tai danh sach danh gia cua ban.'));
+          throw new Error(extractMessage(payload, 'Không thể tải danh sách đánh giá của bạn.'));
         }
         return normalizePagination(payload).result;
       })
@@ -120,7 +120,7 @@ export default function ProductReviews({ token }) {
             String(productId),
             product
               ? {
-                  productName: product.name || product.productName || `San pham #${productId}`,
+                  productName: product.name || product.productName || `Sản phẩm #${productId}`,
                   thumbnailUrl: product.thumbnailUrl || product.imageUrl || product.anhDaiDien || product.imageUrls?.[0] || '',
                 }
               : null,
@@ -160,7 +160,7 @@ export default function ProductReviews({ token }) {
         }));
         setPendingItems(pendingList);
       } else {
-        console.error('Fetch pending reviews error:', extractMessage(pendingPayload, 'Khong the tai danh sach san pham chua danh gia.'));
+        console.error('Fetch pending reviews error:', extractMessage(pendingPayload, 'Không thể tải danh sách sản phẩm chưa đánh giá'));
         setPendingItems([]);
       }
 
@@ -170,7 +170,7 @@ export default function ProductReviews({ token }) {
         }).then(async (ordersRes) => {
           const ordersPayload = await parseResponseBody(ordersRes);
           if (!ordersRes.ok) {
-            throw new Error(extractMessage(ordersPayload, 'Khong the tai danh sach don hang.'));
+            throw new Error(extractMessage(ordersPayload, 'Không thể tải danh sách đơn hàng.'));
           }
 
           let orders = [];
@@ -234,7 +234,7 @@ export default function ProductReviews({ token }) {
         orderItemId: review.orderItemId,
         productId: resolveProductId(matchedItem) || resolveProductId(review),
         orderCode: matchedItem?.orderCode || `Order item #${review.orderItemId}`,
-        productName: matchedItem?.productName || productMeta?.productName || `San pham #${review.productId ?? review.orderItemId}`,
+        productName: matchedItem?.productName || productMeta?.productName || `Sản phẩm #${review.productId ?? review.orderItemId}`,
         color: matchedItem?.color || '--',
         size: matchedItem?.size || '--',
         unitPrice: matchedItem?.unitPrice || 0,
@@ -257,8 +257,8 @@ export default function ProductReviews({ token }) {
   return (
     <div className="bg-white border border-lumiere-gray/15 p-8 lg:p-12 animate-fade-in">
       <header className="mb-10">
-        <h2 className="serif text-3xl text-lumiere-charcoal mb-2">Danh gia san pham</h2>
-        <p className="text-[13px] text-lumiere-gray">Chia se cam nhan cua ban ve cac san pham da mua.</p>
+        <h2 className="serif text-3xl text-lumiere-charcoal mb-2">Đánh giá sản phẩm</h2>
+        <p className="text-[13px] text-lumiere-gray">Chia sẻ cảm nhận của bạn về sản phẩm đã mua.</p>
       </header>
 
       <div className="flex border-b border-lumiere-gray/10 mb-8">
@@ -268,7 +268,7 @@ export default function ProductReviews({ token }) {
             activeSubTab === 'pending' ? 'border-lumiere-terracotta text-lumiere-charcoal' : 'border-transparent text-lumiere-gray hover:text-lumiere-charcoal'
           }`}
         >
-          Chua danh gia ({pendingItems.length})
+          Chưa đánh giá ({pendingItems.length})
         </button>
         <button
           onClick={() => setActiveSubTab('completed')}
@@ -276,7 +276,7 @@ export default function ProductReviews({ token }) {
             activeSubTab === 'completed' ? 'border-lumiere-terracotta text-lumiere-charcoal' : 'border-transparent text-lumiere-gray hover:text-lumiere-charcoal'
           }`}
         >
-          Da danh gia ({reviewedItems.length})
+          Đã đánh giá ({reviewedItems.length})
         </button>
       </div>
 
@@ -288,7 +288,7 @@ export default function ProductReviews({ token }) {
         <div className="space-y-6">
           {(activeSubTab === 'pending' ? pendingItems : reviewedItems).length === 0 ? (
             <div className="py-16 text-center border border-dashed border-lumiere-gray/20">
-              <p className="serif text-xl text-lumiere-gray italic">Khong co san pham nao.</p>
+              <p className="serif text-xl text-lumiere-gray italic">Không có sản phẩm nào.</p>
             </div>
           ) : (
             (activeSubTab === 'pending' ? pendingItems : reviewedItems).map((item, idx) => (
@@ -304,7 +304,7 @@ export default function ProductReviews({ token }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="mb-4">
-                    <p className="text-[11px] tracking-widest text-lumiere-gray uppercase mb-1">Don hang: {item.orderCode}</p>
+                    <p className="text-[11px] tracking-widest text-lumiere-gray uppercase mb-1">Đơn hàng: {item.orderCode}</p>
                     <h4 className="text-lg truncate">
                       <Link
                         to={`/product/${item.productId}`}
@@ -315,10 +315,10 @@ export default function ProductReviews({ token }) {
                       {item.productName}
                       </Link>
                     </h4>
-                    <p className="text-[12px] text-lumiere-gray mt-1">Mau: {item.color} / Size: {item.size}</p>
+                    <p className="text-[12px] text-lumiere-gray mt-1">Màu: {item.color} / Size: {item.size}</p>
                     {activeSubTab === 'pending' ? (
                       <p className="text-[12px] text-lumiere-gray mt-1">
-                        So luong: {item.quantity || 0} • Tam tinh: {formatVND(item.lineTotal ?? item.unitPrice ?? 0)}
+                        Số lượng: {item.quantity || 0} • Tạm tính: {formatVND(item.lineTotal ?? item.unitPrice ?? 0)}
                       </p>
                     ) : null}
                   </div>
@@ -345,7 +345,7 @@ export default function ProductReviews({ token }) {
                       {item.review.likeCount > 0 && (
                         <div className="flex items-center gap-1 mt-2 text-[11px] text-lumiere-terracotta">
                           <span className="material-symbols-outlined text-[14px]">favorite</span>
-                          <span>{item.review.likeCount} nguoi thich</span>
+                          <span>{item.review.likeCount} người thích</span>
                         </div>
                       )}
                     </div>
@@ -362,7 +362,7 @@ export default function ProductReviews({ token }) {
                         onClick={() => handleOpenReview(item)}
                         className="bg-lumiere-charcoal text-white text-[11px] tracking-[0.2em] uppercase font-medium px-6 py-2.5 hover:bg-lumiere-terracotta transition-all shadow-lg shadow-lumiere-charcoal/10"
                       >
-                        Viet danh gia
+                        Viết đánh giá
                       </button>
                     ) : (
                     <div className="flex gap-2">

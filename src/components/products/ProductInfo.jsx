@@ -21,15 +21,24 @@ export default function ProductInfo({
   hasDiscount,
   discountPercent,
   stockMessage,
+  reviewCount = 0,
+  reviewAverage = 0,
   colorMap = {}
 }) {
+  const displayReviewCount = Number(reviewCount) || 0;
+  const displayReviewAverage = Math.max(0, Math.min(5, Number(reviewAverage) || 0));
+  const filledStars = Math.round(displayReviewAverage);
   return (
     <div className="flex flex-col">
       <div className="flex items-center gap-3 mb-2">
         <span className="text-[10px] tracking-[0.2em] uppercase text-lumiere-gray font-medium">CLOTHING STORE Studio</span>
         <span className="w-1 h-1 rounded-full bg-lumiere-gray" />
-        <div className="flex gap-0.5 text-lumiere-gold text-sm">★★★★★</div>
-        <span className="text-[12px] text-lumiere-gray">(128 đánh giá)</span>
+        <div className="flex gap-0.5 text-lumiere-gold text-sm">
+          {Array.from({ length: 5 }, (_, idx) => (
+            <span key={idx}>{idx < filledStars ? '★' : '☆'}</span>
+          ))}
+        </div>
+        <span className="text-[12px] text-lumiere-gray">({displayReviewCount} đánh giá)</span>
       </div>
 
       <h1 className="serif text-[clamp(32px,4vw,48px)] font-light leading-[1.1] mb-3 text-lumiere-charcoal">

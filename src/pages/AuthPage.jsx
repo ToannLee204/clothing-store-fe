@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   CART_STORAGE_KEY,
@@ -12,6 +12,10 @@ import RegisterForm from '../components/auth/RegisterForm';
 
 const API_BASE_URL = '/api/v1/auth';
 const API_CART_URL = '/api/v1/cart';
+const LOGIN_REDIRECT_DELAY = 2500;
+const LOGIN_TOAST_AUTOHIDE_DELAY = 2300;
+const REGISTER_SUCCESS_MESSAGE =
+  'Đăng ký thành công. Vui lòng kiểm tra email và bấm link xác thực để hoàn tất.';
 
 const sumCartCount = (items) =>
   (Array.isArray(items) ? items : []).reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0);
@@ -109,15 +113,50 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
 
+  const loginRedirectTimerRef = useRef(null);
+  const loginToastTimerRef = useRef(null);
+
   // Tách riêng error và success để hiển thị đúng ngữ cảnh
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successToast, setSuccessToast] = useState({ isOpen: false, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (loginRedirectTimerRef.current) {
+        window.clearTimeout(loginRedirectTimerRef.current);
+      }
+      if (loginToastTimerRef.current) {
+        window.clearTimeout(loginToastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const hideSuccessToast = () => {
+    setSuccessToast({ isOpen: false, message: '' });
+  };
+
+  const showSuccessToast = (message, { autoHide = false, duration = 2500 } = {}) => {
+    setSuccessToast({ isOpen: true, message });
+
+    if (loginToastTimerRef.current) {
+      window.clearTimeout(loginToastTimerRef.current);
+      loginToastTimerRef.current = null;
+    }
+
+    if (autoHide) {
+      loginToastTimerRef.current = window.setTimeout(() => {
+        hideSuccessToast();
+        loginToastTimerRef.current = null;
+      }, duration);
+    }
+  };
 
   const handleLogin = async (loginData) => {
     setError('');
-    setSuccessMessage('');
+    hideSuccessToast();
     setIsSubmitting(true);
+
     try {
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
@@ -131,6 +170,7 @@ export default function AuthPage() {
       if (response.ok) {
         const token = res.accessToken || (res.data && res.data.accessToken);
         const user = res.user || (res.data && res.data.user);
+
         if (token) {
           localStorage.setItem('token', token);
           localStorage.setItem('user', JSON.stringify(user));
@@ -147,9 +187,19 @@ export default function AuthPage() {
             mergeFailed: mergeResult.mergeFailed,
           });
 
-          const role = user && user.role ? user.role.toUpperCase() : '';
-          if (role.includes('ADMIN')) navigate('/admin');
-          else navigate('/');
+          showSuccessToast('Đăng nhập thành công. Đang chuyển hướng...', {
+            autoHide: true,
+            duration: LOGIN_TOAST_AUTOHIDE_DELAY,
+          });
+
+          if (loginRedirectTimerRef.current) {
+            window.clearTimeout(loginRedirectTimerRef.current);
+          }
+
+          loginRedirectTimerRef.current = window.setTimeout(() => {
+            const role = user && user.role ? user.role.toUpperCase() : '';
+            navigate(role.includes('ADMIN') ? '/admin' : '/');
+          }, LOGIN_REDIRECT_DELAY);
         } else {
           setError('Không tìm thấy Token trong phản hồi từ Server!');
         }
@@ -166,7 +216,7 @@ export default function AuthPage() {
 
   const handleRegister = async (regData, confirmPassword) => {
     setError('');
-    setSuccessMessage('');
+    hideSuccessToast();
 
     // Validate client-side trước khi gọi API
     if (regData.matKhau !== confirmPassword) {
@@ -193,9 +243,7 @@ export default function AuthPage() {
       console.log('Register Response:', { status: response.status, data: res });
 
       if (response.ok) {
-        // Đăng ký OK → chưa phải "thành công" — chỉ báo đã gửi mail xác nhận
-        // "Đăng ký thành công" sẽ hiển thị ở trang verify-email sau khi user bấm link
-        setSuccessMessage('Đã gửi email xác nhận đến địa chỉ của bạn. Vui lòng kiểm tra hộp thư và bấm vào link xác nhận để hoàn tất đăng ký.');
+        showSuccessToast(REGISTER_SUCCESS_MESSAGE, { autoHide: false });
       } else {
         // ✅ Gom TẤT CẢ lỗi field, không bỏ sót
         const errData = res.data || res;
@@ -227,7 +275,7 @@ export default function AuthPage() {
   const handleSwitchTab = (toLogin) => {
     setIsLogin(toLogin);
     setError('');
-    setSuccessMessage('');
+    hideSuccessToast();
   };
 
   return (
@@ -307,13 +355,14 @@ export default function AuthPage() {
             </button>
           </div>
 
-          {/* ✅ Thông báo THÀNH CÔNG (xanh lá) */}
-          {successMessage && (
-            <div className="mb-8 p-4 bg-emerald-50 border border-emerald-100 flex items-start gap-4 animate-fade-in">
-              <span className="material-symbols-outlined text-emerald-500 mt-0.5">check_circle</span>
-              <div>
-                <p className="text-[13px] text-emerald-700 serif italic font-medium">{successMessage}</p>
-                <p className="text-[11px] text-emerald-500 mt-1 tracking-wide uppercase">Kiểm tra cả thư mục spam nếu không thấy email.</p>
+          {/* Toast thông báo thành công */}
+          {successToast.isOpen && (
+            <div className="fixed left-1/2 top-8 z-[110] w-[calc(100%-2rem)] max-w-md -translate-x-1/2">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-2xl">
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700">Thành công</p>
+                <p className="mt-2 text-sm font-medium leading-6 text-emerald-800">
+                  {successToast.message}
+                </p>
               </div>
             </div>
           )}
