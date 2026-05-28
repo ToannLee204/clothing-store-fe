@@ -4,6 +4,7 @@ import OrderDetailModal from './OrderDetailModal';
 import ReturnRequestModal from './ReturnRequestModal';
 import CancelOrderModal from './CancelOrderModal';
 import ReturnRequestDetailModal from './ReturnRequestDetailModal';
+import { rewriteVnpayReturnUrl } from '../../utils/vnpay';
 
 const API_ORDERS_URL = '/api/v1/orders';
 
@@ -110,7 +111,7 @@ export default function MyOrders({ token }) {
       const payload = await res.json();
       if (res.ok) {
         const url = payload?.paymentUrl ?? payload?.data?.paymentUrl;
-        if (url) window.location.href = url;
+        if (url) window.location.href = rewriteVnpayReturnUrl(url);
       }
     } catch (e) { console.error(e); }
     finally { setActionBusyId(null); }
