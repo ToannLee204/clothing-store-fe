@@ -1,94 +1,184 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const banners = [
+  {
+    id: 1,
+    image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=1600&q=80',
+    title: 'Bộ sưu tập Thu Đông',
+    highlight: '2024',
+    description: 'Thanh lịch & tinh tế từ những đường cắt may đương đại',
+    btnText: 'Khám phá ngay',
+    link: '/products?categoryId=1',
+    color: '#C4714A'
+  },
+  {
+    id: 2,
+    image: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1600&q=80',
+    title: 'Phong cách tối giản',
+    highlight: 'Essential',
+    description: 'Tôn vinh vẻ đẹp thuần khiết, chất liệu tự nhiên',
+    btnText: 'Xem bộ sưu tập',
+    link: '/products?categoryId=2',
+    color: '#8B5A2B'
+  },
+  {
+    id: 3,
+    image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=80',
+    title: 'Xu hướng mới nhất',
+    highlight: 'Statement',
+    description: 'Cá tính và phóng khoáng – dành riêng cho bạn',
+    btnText: 'Mua ngay',
+    link: '/products',
+    color: '#A55233'
+  },
+  {
+    id: 4,
+    image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&q=80',
+    title: 'Bộ sưu tập giới hạn',
+    highlight: 'Exclusive',
+    description: 'Mỗi thiết kế là một tác phẩm nghệ thuật',
+    btnText: 'Đặt trước',
+    link: '/products',
+    color: '#3D2B1F'
+  }
+];
 
 export default function HeroSection() {
   const navigate = useNavigate();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  // Auto-play logic
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % banners.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isAutoPlaying]);
+
+  const goToSlide = (index) => {
+    setCurrentIndex(index);
+    setIsAutoPlaying(false);
+    // Optional: restart auto-play after 10 seconds of inactivity
+    setTimeout(() => setIsAutoPlaying(true), 10000);
+  };
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % banners.length);
+    setIsAutoPlaying(false);
+    setTimeout(() => setIsAutoPlaying(true), 10000);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
+    setIsAutoPlaying(false);
+    setTimeout(() => setIsAutoPlaying(true), 10000);
+  };
+
+  const current = banners[currentIndex];
 
   return (
-    <section className="hero-bg min-h-screen flex items-center pt-20">
-      <div className="hero-accent absolute bottom-[-40px] right-[-40px] text-[clamp(100px,18vw,220px)] font-light text-white/5 pointer-events-none leading-none serif">
-        MODE
-      </div>
-      
-      <div className="max-w-screen-xl mx-auto px-6 lg:px-12 w-full py-20 grid lg:grid-cols-2 gap-16 items-center">
-        <div className="fade-up">
-          <div className="inline-block text-[10px] tracking-[0.25em] uppercase text-lumiere-terracotta border border-lumiere-terracotta px-3.5 py-1.5 mb-6">
-            Bộ sưu tập Xuân / Hè 2024
+    <section className="relative w-full h-screen overflow-hidden">
+      {/* Background Image with Zoom Animation */}
+      <div
+        className="absolute inset-0 bg-cover bg-center transition-transform duration-[8000ms] ease-out"
+        style={{
+          backgroundImage: `url(${current.image})`,
+          transform: 'scale(1.05)',
+          transformOrigin: 'center',
+          animation: 'slowZoom 8s ease-out forwards'
+        }}
+      />
+
+      {/* Dark Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+
+      {/* Content Container */}
+      <div className="relative z-10 flex items-center h-full max-w-screen-xl mx-auto px-6 lg:px-12">
+        <div className="text-lumiere-cream max-w-2xl fade-up">
+          <div className="inline-block text-[11px] tracking-[0.25em] uppercase border-l-2 border-lumiere-terracotta pl-3 mb-6 font-medium">
+            {current.highlight}
           </div>
-          
-          <h1 className="text-[clamp(52px,8vw,96px)] font-light leading-[1.05] text-lumiere-cream tracking-tight serif mb-8">
-            Phong cách<br />
-            của <em className="italic text-lumiere-terracotta">bạn</em>,<br />
-            câu chuyện<br />
-            của tôi.
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-light leading-[1.1] serif mb-6">
+            {current.title}
           </h1>
-          
-          <p className="text-sm leading-relaxed text-lumiere-cream/55 max-w-[400px] mb-10">
-            Khám phá những thiết kế thời trang tinh tế, kết hợp giữa vẻ đẹp đương đại và sự thanh lịch trường tồn. Mỗi trang phục là một tác phẩm nghệ thuật.
+          <p className="text-base md:text-lg text-white/80 max-w-lg mb-10 leading-relaxed">
+            {current.description}
           </p>
-          
-          <div className="flex flex-wrap gap-4 mb-14">
-            <button 
-              onClick={() => navigate('/products')}
-              className="btn-primary"
-            >
-              Mua ngay
-            </button>
-            <button className="btn-outline">Xem lookbook</button>
-          </div>
-          
-          <div className="flex gap-12 pt-8 border-t border-white/10">
-            <div>
-              <div className="text-4xl text-lumiere-cream font-light serif">12K+</div>
-              <div className="text-[10px] tracking-[0.2em] uppercase text-lumiere-cream/40 mt-1">Khách hàng</div>
-            </div>
-            <div>
-              <div className="text-4xl text-lumiere-cream font-light serif">380+</div>
-              <div className="text-[10px] tracking-[0.2em] uppercase text-lumiere-cream/40 mt-1">Mẫu thiết kế</div>
-            </div>
-            <div>
-              <div className="text-4xl text-lumiere-cream font-light serif">98%</div>
-              <div className="text-[10px] tracking-[0.2em] uppercase text-lumiere-cream/40 mt-1">Hài lòng</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Hero Visual Placeholder */}
-        <div className="relative fade-up delay-1 h-[580px]">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#3D2B1F] to-lumiere-terracotta/10 rounded overflow-hidden flex flex-col items-center justify-center gap-4">
-            <svg width="160" height="320" viewBox="0 0 160 320" fill="none" className="opacity-40">
-              <ellipse cx="80" cy="38" rx="28" ry="32" stroke="rgba(248,243,236,0.5)" strokeWidth="1.5" />
-              <path
-                d="M52 68 C30 90 20 130 24 180 L40 180 L44 280 L116 280 L120 180 L136 180 C140 130 130 90 108 68 C96 76 64 76 52 68Z"
-                stroke="rgba(248,243,236,0.4)" strokeWidth="1.5" fill="rgba(196,113,74,0.1)" />
-              <path d="M52 68 L20 140" stroke="rgba(248,243,236,0.3)" strokeWidth="1.2" />
-              <path d="M108 68 L140 140" stroke="rgba(248,243,236,0.3)" strokeWidth="1.2" />
+          <button
+            onClick={() => navigate(current.link)}
+            className="group relative inline-flex items-center gap-2 bg-lumiere-terracotta hover:bg-lumiere-terracotta/90 text-white text-sm tracking-wider uppercase px-8 py-4 rounded-none transition-all duration-300 shadow-lg hover:shadow-xl"
+          >
+            {current.btnText}
+            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
-            <div className="text-[14px] text-lumiere-cream/30 tracking-[0.15em] uppercase serif">Hình ảnh sản phẩm</div>
-          </div>
-          
-          {/* Bestseller Badge Card */}
-          <div className="absolute bottom-10 left-[-20px] bg-lumiere-cream p-5 md:p-6 shadow-2xl">
-            <div className="text-[10px] tracking-[0.2em] uppercase text-lumiere-gray mb-1">Bestseller</div>
-            <div className="text-xl serif">Áo Linen Trắng</div>
-            <div className="text-[13px] text-lumiere-terracotta mt-0.5">790.000 ₫</div>
-          </div>
+          </button>
         </div>
       </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        .hero-bg {
-          background: linear-gradient(135deg, #2C2420 0%, #1A1A1A 40%, #3D2B1F 100%);
-          position: relative;
-          overflow: hidden;
+      {/* Navigation Arrows */}
+      <button
+        onClick={prevSlide}
+        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 bg-white/10 backdrop-blur-sm hover:bg-white/25 p-3 rounded-full transition-all duration-300 group"
+        aria-label="Previous slide"
+      >
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <button
+        onClick={nextSlide}
+        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 bg-white/10 backdrop-blur-sm hover:bg-white/25 p-3 rounded-full transition-all duration-300 group"
+        aria-label="Next slide"
+      >
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
+      {/* Dots Indicator */}
+      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-3 z-20">
+        {banners.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => goToSlide(idx)}
+            className={`h-1 rounded-full transition-all duration-300 ${
+              idx === currentIndex
+                ? 'w-10 bg-lumiere-terracotta'
+                : 'w-6 bg-white/40 hover:bg-white/70'
+            }`}
+            aria-label={`Go to slide ${idx + 1}`}
+          />
+        ))}
+      </div>
+
+      {/* CSS Animation */}
+      <style>{`
+        @keyframes slowZoom {
+          0% {
+            transform: scale(1);
+          }
+          100% {
+            transform: scale(1.08);
+          }
         }
-        .hero-bg::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(ellipse at 70% 50%, rgba(196, 113, 74, 0.15) 0%, transparent 60%);
+        .fade-up {
+          animation: fadeUp 0.8s ease-out forwards;
         }
-      `}} />
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </section>
   );
 }
